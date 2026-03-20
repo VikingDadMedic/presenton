@@ -272,7 +272,7 @@
       document.getElementById('prompt-heading').textContent = step === 'libreoffice' ? 'LibreOffice required' : 'Chromium required';
       document.getElementById('prompt-sub').innerHTML = step === 'libreoffice'
         ? '<strong>Presenton</strong> uses LibreOffice to generate custom templates from PPTX files.'
-        : '<strong>Presenton</strong> uses Chromium for export and slide rendering. Download it now (~150 MB).';
+        : '<strong>Presenton</strong> uses Chromium for export and slide rendering. We will use bundled Chromium when available, with download fallback (~150 MB).';
       document.getElementById('btn-install').onclick = () => startInstall(step);
       document.getElementById('btn-skip').onclick = () => handleSkip();
       showState('prompt');
@@ -287,8 +287,8 @@
         document.getElementById('dl-phase').textContent = 'This may take a few minutes (~300 MB)';
         window.setupInstaller.installLibreOffice();
       } else {
-        document.getElementById('dl-heading').textContent = 'Downloading Chromium';
-        document.getElementById('dl-phase').textContent = 'This may take a few minutes (~150 MB)';
+        document.getElementById('dl-heading').textContent = 'Preparing Chromium';
+        document.getElementById('dl-phase').textContent = 'Using bundled runtime when available; otherwise downloading (~150 MB)';
         window.setupInstaller.installChrome().then(res => {
           if (!res.ok && currentStep === 'chrome') {
             document.getElementById('err-msg').textContent = res.error || 'Chrome download failed.';

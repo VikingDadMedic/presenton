@@ -17,6 +17,7 @@ import {
   resolveBuildId,
 } from "@puppeteer/browsers";
 import { getSetupStatus } from "../utils/setup-dependencies";
+import { getPuppeteerExecutablePath } from "../utils/puppeteer-check";
 
 function getPuppeteerCacheDir(): string {
   const configCache =
@@ -51,6 +52,17 @@ export function setupSetupInstallHandlers() {
     "setup:install-chrome",
     async (event): Promise<{ ok: boolean; error?: string }> => {
       const wc = event.sender;
+
+      // Prefer bundled Chromium from @sparticuz/chromium and only download
+      // from browser-snapshots if no executable is available.
+      const bundledExecutablePath = await getPuppeteerExecutablePath();
+      if (bundledExecutablePath && fs.existsSync(bundledExecutablePath)) {
+        sendChromeLog(wc, "info", "Using bundled Chromium runtime.");
+        sendChromeLog(wc, "ok", `Chromium ready at ${bundledExecutablePath}`);
+        sendChromeProgress(wc, "extracting", 100, "Preparing Chromium runtime…");
+        sendChromeProgress(wc, "done", 100);
+        return { ok: true };
+      }
 
       const cacheDir = getPuppeteerCacheDir();
       const platform = detectBrowserPlatform();

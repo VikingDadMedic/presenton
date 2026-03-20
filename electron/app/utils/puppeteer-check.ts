@@ -10,6 +10,26 @@ import path from "path";
 import puppeteer from "puppeteer";
 import { Browser, getInstalledBrowsers } from "@puppeteer/browsers";
 
+let sparticuzLoadFailed = false;
+
+async function getSparticuzChromiumExecutablePath(): Promise<string | undefined> {
+  if (sparticuzLoadFailed) return undefined;
+  if (process.env.PRESENTON_DISABLE_SPARTICUZ_CHROMIUM) return undefined;
+
+  try {
+    const module = await import("@sparticuz/chromium");
+    const chromium = (module as any).default ?? module;
+    const executablePath = await chromium.executablePath();
+    if (typeof executablePath === "string" && fs.existsSync(executablePath)) {
+      return executablePath;
+    }
+  } catch {
+    sparticuzLoadFailed = true;
+  }
+
+  return undefined;
+}
+
 function getPuppeteerCacheDir(): string {
   const configCache =
     (puppeteer as any).configuration?.cacheDirectory ??
@@ -36,9 +56,14 @@ export interface SetupStatus {
  * Chrome (Puppeteer default) if present, or Chromium from the cache.
  */
 export async function getPuppeteerExecutablePath(): Promise<string | undefined> {
-  if (shouldSkipDownload()) return undefined;
+  const sparticuzPath = await getSparticuzChromiumExecutablePath();
+  if (sparticuzPath) return sparticuzPath;
+
   const chromePath = puppeteer.executablePath();
   if (chromePath && fs.existsSync(chromePath)) return chromePath;
+
+  if (shouldSkipDownload()) return undefined;
+
   const cacheDir = getPuppeteerCacheDir();
   const browsers = await getInstalledBrowsers({ cacheDir });
   const chromium = browsers.find((b) => b.browser === Browser.CHROMIUM);
@@ -52,7 +77,6 @@ export async function getPuppeteerExecutablePath(): Promise<string | undefined> 
  * Returns true if a supported browser (Chrome or Chromium) is already installed.
  */
 export async function isChromeInstalled(): Promise<boolean> {
-  if (shouldSkipDownload()) return false;
   const execPath = await getPuppeteerExecutablePath();
   return Boolean(execPath);
 }

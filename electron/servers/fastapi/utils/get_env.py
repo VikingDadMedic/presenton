@@ -166,8 +166,3 @@ def get_memori_session_id_env():
 
 def get_memori_sqlite_path_env():
     return os.getenv("MEMORI_SQLITE_PATH")
-
-
-def get_memori_cloud_augmentation_env():
-    """Set to enable Memori SDK cloud augmentation (memorilabs API). When unset, off."""
-    return os.getenv("MEMORI_CLOUD_AUGMENTATION")

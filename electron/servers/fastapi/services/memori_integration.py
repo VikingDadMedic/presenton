@@ -11,7 +11,6 @@ from models.llm_message import LLMMessage
 from utils.db_utils import get_database_url_and_connect_args
 from utils.get_env import (
     get_app_data_directory_env,
-    get_memori_cloud_augmentation_env,
     get_memori_enabled_env,
     get_memori_entity_id_env,
     get_memori_process_id_env,
@@ -41,14 +40,6 @@ def _env_memori_enabled() -> bool:
     raw = get_memori_enabled_env()
     if raw is None or str(raw).strip() == "":
         return True
-    return str(raw).strip().lower() in {"1", "true", "yes", "y", "on"}
-
-
-def _env_memori_cloud_augmentation_enabled() -> bool:
-    """Memori SDK optional remote augmentation; default off (machine-local sqlite only)."""
-    raw = get_memori_cloud_augmentation_env()
-    if raw is None or str(raw).strip() == "":
-        return False
     return str(raw).strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
@@ -152,16 +143,6 @@ class MemoriIntegration:
             mem.attribution(entity_id=entity_id, process_id=process_id)
             session_id = self._resolve_session_id()
             mem.set_session(session_id)
-
-            # Optional SDK augmentation that uses the network; off by default so only
-            # local sqlite is used. Set MEMORI_CLOUD_AUGMENTATION=1 to enable.
-            aug = getattr(mem.config, "augmentation", None)
-            if aug is not None and not _env_memori_cloud_augmentation_enabled():
-                aug._active = False
-                LOGGER.info(
-                    "memori.local_only_augmentation_disabled sqlite_path=%s",
-                    self._get_memori_sqlite_path(),
-                )
 
             LOGGER.info(
                 "memori.instance_ready sqlite_path=%s entity_id=%s process_id=%s session_id=%s",

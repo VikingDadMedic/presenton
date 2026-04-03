@@ -146,3 +146,28 @@ def get_migrate_database_on_startup_env():
 
 def get_next_public_fast_api_env():
     return os.getenv("FASTAPI_PUBLIC_URL")
+
+
+def get_memori_enabled_env():
+    return os.getenv("MEMORI_ENABLED")
+
+
+def get_memori_entity_id_env():
+    return os.getenv("MEMORI_ENTITY_ID")
+
+
+def get_memori_process_id_env():
+    return os.getenv("MEMORI_PROCESS_ID")
+
+
+def get_memori_session_id_env():
+    return os.getenv("MEMORI_SESSION_ID")
+
+
+def get_memori_sqlite_path_env():
+    return os.getenv("MEMORI_SQLITE_PATH")
+
+
+def get_memori_cloud_augmentation_env():
+    """Set to enable Memori SDK cloud augmentation (memorilabs API). When unset, off."""
+    return os.getenv("MEMORI_CLOUD_AUGMENTATION")

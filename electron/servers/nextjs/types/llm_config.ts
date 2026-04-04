@@ -42,6 +42,7 @@ export interface LLMConfig {
   DISABLE_THINKING?: boolean;
   EXTENDED_REASONING?: boolean;
   WEB_GROUNDING?: boolean;
+  MEMORI_ENABLED?: boolean;
 
   // Codex OAuth (ChatGPT)
   CODEX_MODEL?: string;

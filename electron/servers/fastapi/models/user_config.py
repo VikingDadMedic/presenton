@@ -48,6 +48,7 @@ class UserConfig(BaseModel):
 
     # Web Search
     WEB_GROUNDING: Optional[bool] = None
+    MEMORI_ENABLED: Optional[bool] = None
 
     # Codex OAuth (ChatGPT)
     CODEX_MODEL: Optional[str] = None

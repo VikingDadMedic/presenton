@@ -25,6 +25,13 @@ _DEFAULT_PROCESS_ID = "presenton"
 _DEFAULT_SESSION_ID = "presenton-desktop"
 
 
+def _is_memori_enabled() -> bool:
+    raw = get_memori_enabled_env()
+    if raw is None:
+        return False
+    return str(raw).strip().lower() == "true"
+
+
 @dataclass(frozen=True)
 class MemoriScope:
     # Kept for backward compatibility with existing call sites.
@@ -33,15 +40,6 @@ class MemoriScope:
     user_id: Optional[str] = None
     allow_creative_influence: bool = False
     top_k: int = 3
-
-
-def _env_memori_enabled() -> bool:
-    """When unset, Memori is enabled with local sqlite storage."""
-    raw = get_memori_enabled_env()
-    if raw is None or str(raw).strip() == "":
-        return True
-    return str(raw).strip().lower() in {"1", "true", "yes", "y", "on"}
-
 
 class MemoriIntegration:
     def __init__(self):
@@ -164,7 +162,7 @@ class MemoriIntegration:
 
     def get_memori_singleton(self) -> Any | None:
         """Return the process-wide Memori instance, creating it once."""
-        if not _env_memori_enabled():
+        if not _is_memori_enabled():
             return None
 
         with self._singleton_lock:
@@ -176,7 +174,7 @@ class MemoriIntegration:
 
     def initialize_local_storage(self) -> bool:
         """Eagerly initialize Memori local sqlite storage at app startup."""
-        if not _env_memori_enabled():
+        if not _is_memori_enabled():
             LOGGER.info("memori.disabled_by_env")
             return False
 
@@ -217,7 +215,7 @@ class MemoriIntegration:
         return messages
 
     def register_client(self, client: Any) -> Any:
-        if not _env_memori_enabled():
+        if not _is_memori_enabled():
             return client
 
         mem = self.get_memori_singleton()

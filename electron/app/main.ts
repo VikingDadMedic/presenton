@@ -17,6 +17,24 @@ import { getLiteParseRunnerPath } from "./utils/liteparse-check";
 import { getImageMagickBinaryPath, isImageMagickInstalled } from "./utils/imagemagick-check";
 import { startUpdateChecker, stopUpdateChecker } from "./utils/update-checker";
 
+const MEMORI_ENABLED_DEFAULT = false;
+
+function normalizeBooleanEnv(value: string | undefined, defaultValue: boolean): "true" | "false" {
+  if (value === undefined) {
+    return defaultValue ? "true" : "false";
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "true") {
+    return "true";
+  }
+  if (normalized === "false") {
+    return "false";
+  }
+
+  return defaultValue ? "true" : "false";
+}
+
 
 var win: BrowserWindow | undefined;
 var fastApiProcess: ChildProcessByStdio<any, any, any> | undefined;
@@ -86,6 +104,9 @@ const createWindow = () => {
 
 async function startServers(fastApiPort: number, nextjsPort: number) {
   try {
+    const memoriEnabled = normalizeBooleanEnv(process.env.MEMORI_ENABLED, MEMORI_ENABLED_DEFAULT);
+    process.env.MEMORI_ENABLED = memoriEnabled;
+
     const fastApi = await startFastApiServer(
       fastapiDir,
       fastApiPort,
@@ -122,13 +143,10 @@ async function startServers(fastApiPort: number, nextjsPort: number) {
         TEMP_DIRECTORY: tempDir,
         USER_CONFIG_PATH: userConfigPath,
         MIGRATE_DATABASE_ON_STARTUP: "True",
-        // Resolved by libreoffice-check.ts at startup; lets Python invoke the
-        // exact binary path instead of relying on the system PATH.
+        MEMORI_ENABLED: memoriEnabled,
         SOFFICE_PATH: getSofficePath(),
         IMAGEMAGICK_BINARY: getImageMagickBinaryPath(),
         LITEPARSE_RUNNER_PATH: getLiteParseRunnerPath(),
-        // Use Electron's embedded runtime for LiteParse so parsing does not
-        // depend on a system-wide Node installation.
         LITEPARSE_NODE_BINARY: process.execPath,
         ELECTRON_RUN_AS_NODE: "1",
       },
@@ -260,6 +278,7 @@ app.whenReady().then(async () => {
     COMFYUI_WORKFLOW: process.env.COMFYUI_WORKFLOW,
     DALL_E_3_QUALITY: process.env.DALL_E_3_QUALITY,
     GPT_IMAGE_1_5_QUALITY: process.env.GPT_IMAGE_1_5_QUALITY,
+    MEMORI_ENABLED: process.env.MEMORI_ENABLED,
   })
 
   const [fastApiPort, nextjsPort] = await findUnusedPorts();

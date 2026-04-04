@@ -20,6 +20,7 @@ import SettingSideBar from "./SettingSideBar";
 import TextProvider from "./TextProvider";
 import ImageProvider from "./ImageProvider";
 import PrivacySettings from "./PrivacySettings";
+import MemorySettings from "./MemorySettings";
 import { IMAGE_PROVIDERS, LLM_PROVIDERS } from "@/utils/providerConstants";
 
 // Button state interface
@@ -36,7 +37,7 @@ const SettingsPage = () => {
   const router = useRouter();
   const pathname = usePathname();
   const [mode, setMode] = useState<'nanobanana' | 'presenton'>('presenton')
-  const [selectedProvider, setSelectedProvider] = useState<'text-provider' | 'image-provider' | 'privacy'>('text-provider')
+  const [selectedProvider, setSelectedProvider] = useState<'text-provider' | 'image-provider' | 'privacy' | 'memory'>('text-provider')
   const userConfigState = useSelector((state: RootState) => state.userConfig);
   const [llmConfig, setLlmConfig] = useState<LLMConfig>(
     userConfigState.llm_config
@@ -281,6 +282,7 @@ const SettingsPage = () => {
             llmConfig={llmConfig}
           />}
           {mode === 'presenton' && selectedProvider === 'image-provider' && <ImageProvider llmConfig={llmConfig} setLlmConfig={setLlmConfig} />}
+          {selectedProvider === 'memory' && <MemorySettings />}
           {selectedProvider === 'privacy' && <PrivacySettings />}
 
         </div>

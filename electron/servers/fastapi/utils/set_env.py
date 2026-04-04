@@ -89,6 +89,10 @@ def set_web_grounding_env(value):
     os.environ["WEB_GROUNDING"] = value
 
 
+def set_memori_enabled_env(value):
+    os.environ["MEMORI_ENABLED"] = value
+
+
 def set_comfyui_url_env(value):
     os.environ["COMFYUI_URL"] = value
 

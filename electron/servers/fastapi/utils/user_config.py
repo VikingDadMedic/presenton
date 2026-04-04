@@ -27,6 +27,7 @@ from utils.get_env import (
     get_image_provider_env,
     get_pixabay_api_key_env,
     get_extended_reasoning_env,
+    get_memori_enabled_env,
     get_web_grounding_env,
     get_codex_access_token_env,
     get_codex_refresh_token_env,
@@ -50,6 +51,7 @@ from utils.set_env import (
     set_disable_image_generation_env,
     set_disable_thinking_env,
     set_extended_reasoning_env,
+    set_memori_enabled_env,
     set_google_api_key_env,
     set_google_model_env,
     set_gpt_image_1_5_quality_env,
@@ -134,6 +136,11 @@ def get_user_config():
             if existing_config.WEB_GROUNDING is not None
             else (parse_bool_or_none(get_web_grounding_env()) or False)
         ),
+        MEMORI_ENABLED=(
+            existing_config.MEMORI_ENABLED
+            if existing_config.MEMORI_ENABLED is not None
+            else (parse_bool_or_none(get_memori_enabled_env()) or False)
+        ),
         CODEX_MODEL=existing_config.CODEX_MODEL or get_codex_model_env(),
         CODEX_ACCESS_TOKEN=existing_config.CODEX_ACCESS_TOKEN or get_codex_access_token_env(),
         CODEX_REFRESH_TOKEN=existing_config.CODEX_REFRESH_TOKEN or get_codex_refresh_token_env(),
@@ -199,6 +206,8 @@ def update_env_with_user_config():
         set_extended_reasoning_env(str(user_config.EXTENDED_REASONING))
     if user_config.WEB_GROUNDING is not None:
         set_web_grounding_env(str(user_config.WEB_GROUNDING))
+    if user_config.MEMORI_ENABLED is not None:
+        set_memori_enabled_env(str(user_config.MEMORI_ENABLED))
     if user_config.CODEX_MODEL:
         set_codex_model_env(user_config.CODEX_MODEL)
     if user_config.CODEX_ACCESS_TOKEN:

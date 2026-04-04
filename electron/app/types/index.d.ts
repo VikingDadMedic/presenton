@@ -31,6 +31,7 @@ interface FastApiEnv {
   TEMP_DIRECTORY?: string,
   USER_CONFIG_PATH?: string,
   MIGRATE_DATABASE_ON_STARTUP?: string,
+  MEMORI_ENABLED?: string,
   /** Absolute path to the soffice binary resolved at startup by libreoffice-check.ts. */
   SOFFICE_PATH?: string,
   /** Absolute path to the ImageMagick binary resolved at startup by imagemagick-check.ts. */
@@ -80,6 +81,7 @@ interface UserConfig {
   COMFYUI_WORKFLOW?: string,
   DALL_E_3_QUALITY?: string,
   GPT_IMAGE_1_5_QUALITY?: string,
+  MEMORI_ENABLED?: string,
   CODEX_MODEL?: string,
   CODEX_ACCESS_TOKEN?: string,
   CODEX_REFRESH_TOKEN?: string,

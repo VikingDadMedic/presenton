@@ -46,6 +46,11 @@ const masDevProvisioningProfile = resolveProvisioningProfile(
   "AppleDevelopment.provisionprofile"
 )
 
+const macIcnsPath = path.join(__dirname, "build", "icon.icns")
+const macIcon = fs.existsSync(macIcnsPath)
+  ? "build/icon.icns"
+  : "resources/ui/assets/images/presenton_short_filled.png"
+
 // AfterPack hook: set executable permissions on macOS; no-op on Windows
 const afterPack = async (context) => {
   if (context.electronPlatformName === "darwin") {
@@ -103,7 +108,7 @@ const afterPack = async (context) => {
 }
 
 const config = {
-  appId: "PresentonAI.Presenton",
+  appId: "com.presenton.presenton",
   asar: false,
   copyright: "Copyright © 2026 Presenton",
   directories: {
@@ -121,7 +126,7 @@ const config = {
     artifactName: "Presenton-${version}.${ext}",
     target: macTargets,
     category: "public.app-category.productivity",
-    icon: "resources/ui/assets/images/presenton_short_filled.png",
+    icon: macIcon,
   },
   mas: {
     type: "distribution",

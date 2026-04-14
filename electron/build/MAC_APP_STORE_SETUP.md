@@ -86,3 +86,4 @@ If you need to sign an already built `.app` directly:
 - Apps signed with Apple Distribution usually do not run locally; they run after App Store processing.
 - Development signed apps only run on devices included by your provisioning profile.
 - Provisioning profiles expire (typically yearly). Regenerate and replace them when expired.
+- For macOS App Store packaging, place `icon.icns` at `electron/build/icon.icns`.

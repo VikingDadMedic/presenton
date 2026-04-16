@@ -24,7 +24,16 @@ def get_system_prompt(
     tone: Optional[str] = None,
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
+    memory_context: Optional[str] = None,
 ):
+    memory_block = ""
+    if memory_context and memory_context.strip():
+        memory_block = f"""
+    # Prior context remembered for this presentation only
+    The following notes were recalled from earlier edits of this same deck. Use them when relevant; ignore if unrelated to the current prompt.
+    {memory_context.strip()}
+    """
+
     return f"""
     Edit Slide data and speaker note based on provided prompt, follow mentioned steps and notes and provide structured output.
 
@@ -36,6 +45,7 @@ def get_system_prompt(
 
     {"# Verbosity:" if verbosity else ""}
     {verbosity or ""}
+    {memory_block}
 
     # Notes
     - Provide output in language mentioned in **Input**.
@@ -77,10 +87,11 @@ def get_messages(
     tone: Optional[str] = None,
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
+    memory_context: Optional[str] = None,
 ):
     return [
         LLMSystemMessage(
-            content=get_system_prompt(tone, verbosity, instructions),
+            content=get_system_prompt(tone, verbosity, instructions, memory_context),
         ),
         LLMUserMessage(
             content=get_user_prompt(prompt, slide_data, language),
@@ -96,6 +107,7 @@ async def get_edited_slide_content(
     tone: Optional[str] = None,
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
+    memory_context: Optional[str] = None,
 ):
     model = get_model()
 
@@ -120,7 +132,13 @@ async def get_edited_slide_content(
         response = await client.generate_structured(
             model=model,
             messages=get_messages(
-                prompt, slide.content, language, tone, verbosity, instructions
+                prompt,
+                slide.content,
+                language,
+                tone,
+                verbosity,
+                instructions,
+                memory_context,
             ),
             response_format=response_schema,
             strict=False,

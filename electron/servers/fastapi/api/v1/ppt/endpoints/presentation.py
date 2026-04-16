@@ -34,12 +34,19 @@ from services.webhook_service import WebhookService
 from services.image_generation_service import ImageGenerationService
 from utils.dict_utils import deep_update
 from utils.export_utils import export_presentation
-from utils.llm_calls.generate_presentation_outlines import generate_ppt_outline
+from utils.llm_calls.generate_presentation_outlines import (
+    generate_ppt_outline,
+    get_system_prompt,
+)
 from models.sql.slide import SlideModel
 from models.sql.presentation_layout_code import PresentationLayoutCodeModel
 from models.sse_response import SSECompleteResponse, SSEErrorResponse, SSEResponse
 
 from services.database import get_async_session
+from services.presentation_memory_service import (
+    delete_all_memories_for_presentation,
+    record_outline_system_and_documents,
+)
 from services.temp_file_service import TEMP_FILE_SERVICE
 from services.concurrent_service import CONCURRENT_SERVICE
 from models.sql.presentation import PresentationModel
@@ -193,6 +200,7 @@ async def delete_presentation(
 
     await sql_session.delete(presentation)
     await sql_session.commit()
+    await delete_all_memories_for_presentation(id)
 
 
 @PRESENTATION_ROUTER.post("/create", response_model=PresentationModel)
@@ -641,6 +649,20 @@ async def generate_presentation_handler(
                         title_slide=request.include_title_slide,
                     )
                 )
+
+            system_prompt = get_system_prompt(
+                request.tone.value,
+                request.verbosity.value,
+                request.instructions,
+                request.include_title_slide,
+                request.include_table_of_contents,
+                request.web_search,
+            )
+            await record_outline_system_and_documents(
+                presentation_id,
+                system_prompt=system_prompt,
+                document_context=additional_context,
+            )
 
             presentation_outlines_text = ""
             async for chunk in generate_ppt_outline(

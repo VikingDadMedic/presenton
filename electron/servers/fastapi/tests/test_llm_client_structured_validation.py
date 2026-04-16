@@ -15,6 +15,7 @@ from utils.llm_calls.generate_presentation_structure import (
 )
 from utils.llm_calls.generate_slide_content import get_slide_content_from_type_and_outline
 from utils.llm_calls.select_slide_type_on_edit import get_slide_layout_from_prompt
+from utils.schema_utils import coerce_instance_to_schema_string_limits
 
 
 def _build_client() -> LLMClient:
@@ -336,3 +337,49 @@ def test_select_slide_type_on_edit_enables_schema_validation():
 
     assert response.id == "layout-1"
     assert mock_client.generate_structured.await_args.kwargs["validate_schema"] is True
+
+
+def test_coerce_instance_to_schema_string_limits_truncates():
+    schema = {
+        "type": "object",
+        "properties": {
+            "title": {"type": "string", "maxLength": 10},
+            "nested": {
+                "type": "object",
+                "properties": {"note": {"type": "string", "maxLength": 4}},
+            },
+        },
+    }
+    raw = {
+        "title": "a" * 50,
+        "nested": {"note": "hello world"},
+        "extra": 1,
+    }
+    out = coerce_instance_to_schema_string_limits(schema, raw, strict=False)
+    assert out["title"] == "a" * 10
+    assert out["nested"]["note"] == "hell"
+    assert out["extra"] == 1
+
+
+def test_generate_structured_coerces_oversized_strings_without_retry_loop():
+    client = _build_client()
+    client._generate_structured_once = AsyncMock(
+        return_value={"title": "b" * 30},
+    )
+
+    response = asyncio.run(
+        client.generate_structured(
+            model="test-model",
+            messages=[LLMUserMessage(content="Generate JSON")],
+            response_format={
+                "type": "object",
+                "properties": {"title": {"type": "string", "maxLength": 5}},
+                "required": ["title"],
+                "additionalProperties": False,
+            },
+            validate_schema=True,
+        )
+    )
+
+    assert response["title"] == "b" * 5
+    assert client._generate_structured_once.await_count == 1

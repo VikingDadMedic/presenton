@@ -371,6 +371,123 @@ def get_schema_validation_errors(
     ]
 
 
+def _schema_defs(root: dict) -> dict[str, Any]:
+    defs: dict[str, Any] = {}
+    if isinstance(root, dict):
+        defs.update(root.get("$defs") or {})
+        defs.update(root.get("definitions") or {})
+    return defs
+
+
+def _deref_schema(sch: Any, root: dict, defs: dict[str, Any]) -> Any:
+    seen: set[str] = set()
+    while isinstance(sch, dict) and "$ref" in sch:
+        ref = sch["$ref"]
+        if not isinstance(ref, str) or ref in seen:
+            break
+        seen.add(ref)
+        if ref.startswith("#/$defs/") or ref.startswith("#/definitions/"):
+            name = ref.rsplit("/", 1)[-1]
+            nxt = defs.get(name)
+            if nxt is None:
+                break
+            sch = nxt
+            continue
+        break
+    return sch
+
+
+def _coerce_schema_strings(
+    sch: Any,
+    inst: Any,
+    root: dict,
+    defs: dict[str, Any],
+) -> Any:
+    sch = _deref_schema(sch, root, defs)
+    if sch is None or inst is None:
+        return inst
+
+    if not isinstance(sch, dict):
+        return inst
+
+    if "allOf" in sch and isinstance(sch["allOf"], list):
+        out = deepcopy(inst)
+        for part in sch["allOf"]:
+            out = _coerce_schema_strings(part, out, root, defs)
+        return out
+
+    if "anyOf" in sch or "oneOf" in sch:
+        variants = sch.get("anyOf") or sch.get("oneOf") or []
+        if isinstance(inst, dict):
+            for variant in variants:
+                v = _deref_schema(variant, root, defs)
+                if isinstance(v, dict) and isinstance(v.get("properties"), dict):
+                    if any(k in v["properties"] for k in inst.keys()):
+                        return _coerce_schema_strings(v, inst, root, defs)
+        return inst
+
+    props = sch.get("properties")
+    if isinstance(props, dict) and isinstance(inst, dict):
+        out = dict(inst)
+        for key, prop_sch in props.items():
+            if key not in out:
+                continue
+            out[key] = _coerce_schema_strings(prop_sch, out[key], root, defs)
+        return out
+
+    typ = sch.get("type")
+    types_list: list[Any]
+    if isinstance(typ, list):
+        types_list = typ
+    elif typ is not None:
+        types_list = [typ]
+    elif props:
+        return _coerce_schema_strings({**sch, "type": "object"}, inst, root, defs)
+    else:
+        types_list = []
+
+    if "array" in types_list and isinstance(inst, list):
+        items = sch.get("items")
+        if not items:
+            return inst
+        return [_coerce_schema_strings(items, item, root, defs) for item in inst]
+
+    if "string" in types_list and isinstance(inst, str):
+        ml = sch.get("maxLength")
+        if isinstance(ml, int) and len(inst) > ml:
+            return inst[:ml]
+        return inst
+
+    if "object" in types_list and isinstance(inst, dict):
+        return _coerce_schema_strings(
+            {**sch, "type": "object", "properties": sch.get("properties", {})},
+            inst,
+            root,
+            defs,
+        )
+
+    return inst
+
+
+def coerce_instance_to_schema_string_limits(
+    schema: dict,
+    instance: Any,
+    strict: bool = False,
+) -> Any:
+    """
+    Return a deep copy of ``instance`` with string values truncated to each property's
+    JSON Schema ``maxLength`` where applicable. Reduces noisy validation retry loops when
+    the LLM slightly overshoots layout string limits.
+    """
+    if not isinstance(instance, (dict, list)):
+        return instance
+    prepared = prepare_schema_for_validation(schema, strict=strict)
+    if not isinstance(prepared, dict):
+        return instance
+    defs = _schema_defs(prepared)
+    return _coerce_schema_strings(prepared, instance, prepared, defs)
+
+
 def remove_titles_from_schema(schema: dict) -> dict[str, Any]:
 
     def _strip_titles(node: Any) -> Any:

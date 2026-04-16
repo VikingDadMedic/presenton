@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated, Optional
 from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +8,10 @@ from models.sql.presentation import PresentationModel
 from models.sql.slide import SlideModel
 from services.database import get_async_session
 from services.image_generation_service import ImageGenerationService
+from services.presentation_memory_service import (
+    record_slide_edit_memory,
+    search_slide_edit_memories,
+)
 from utils.asset_directory_utils import get_images_directory
 from utils.llm_calls.edit_slide import get_edited_slide_content
 from utils.llm_calls.edit_slide_html import get_edited_slide_html
@@ -16,6 +21,7 @@ import uuid
 
 
 SLIDE_ROUTER = APIRouter(prefix="/slide", tags=["Slide"])
+_slide_memory_log = logging.getLogger(__name__)
 
 
 @SLIDE_ROUTER.post("/edit")
@@ -36,8 +42,24 @@ async def edit_slide(
         prompt, presentation_layout, slide
     )
 
+    memory_context = await search_slide_edit_memories(presentation.id, prompt)
+    if memory_context:
+        _slide_memory_log.info(
+            "presentation_memory: injecting context into slide edit presentation_id=%s bytes=%s",
+            presentation.id,
+            len(memory_context.encode("utf-8")),
+        )
+    else:
+        _slide_memory_log.info(
+            "presentation_memory: no retrieved context for slide edit presentation_id=%s",
+            presentation.id,
+        )
     edited_slide_content = await get_edited_slide_content(
-        prompt, slide, presentation.language, slide_layout
+        prompt,
+        slide,
+        presentation.language,
+        slide_layout,
+        memory_context=memory_context or None,
     )
 
     image_generation_service = ImageGenerationService(get_images_directory())
@@ -58,6 +80,8 @@ async def edit_slide(
     slide.speaker_note = edited_slide_content.get("__speaker_note__", "")
     sql_session.add_all(new_assets)
     await sql_session.commit()
+
+    await record_slide_edit_memory(presentation.id, prompt)
 
     return slide
 

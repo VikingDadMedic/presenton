@@ -2,6 +2,8 @@ interface FastApiEnv {
   DEBUG?: string,
   CAN_CHANGE_KEYS?: string,
   LLM?: string,
+  /** Optional dedicated OpenAI API key used by Mem0 memory service. */
+  MEM0_OPENAI_API_KEY?: string,
   OPENAI_API_KEY?: string,
   OPENAI_MODEL?: string,
   GOOGLE_API_KEY?: string,
@@ -32,6 +34,8 @@ interface FastApiEnv {
   TEMP_DIRECTORY?: string,
   USER_CONFIG_PATH?: string,
   MIGRATE_DATABASE_ON_STARTUP?: string,
+  /** When true, FastAPI uses Mem0 for per-presentation slide-edit memory. */
+  PRESENTATION_MEMORY_ENABLED?: string,
   /** Absolute path to the resolved LibreOffice executable discovered at startup. */
   SOFFICE_PATH?: string,
   /** Absolute path to the ImageMagick binary resolved at startup by imagemagick-check.ts. */
@@ -56,6 +60,7 @@ interface NextJsEnv {
 interface UserConfig {
   CAN_CHANGE_KEYS?: string,
   LLM?: string,
+  MEM0_OPENAI_API_KEY?: string,
   OPENAI_API_KEY?: string,
   OPENAI_MODEL?: string,
   GOOGLE_API_KEY?: string,

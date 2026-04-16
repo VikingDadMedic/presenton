@@ -170,3 +170,13 @@ def get_sentry_traces_sample_rate_env():
 
 def get_sentry_send_default_pii_env():
     return os.getenv("SENTRY_SEND_DEFAULT_PII")
+
+
+def get_presentation_memory_enabled_env() -> bool:
+    v = (os.getenv("PRESENTATION_MEMORY_ENABLED") or "").strip().lower()
+    return v in {"1", "true", "yes", "on"}
+
+
+def get_mem0_openai_api_key_env():
+    """Optional OpenAI key used only for Mem0 LLM init when the main app LLM is not OpenAI."""
+    return os.getenv("MEM0_OPENAI_API_KEY")

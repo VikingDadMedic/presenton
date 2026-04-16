@@ -67,6 +67,7 @@ from utils.set_env import (
 from utils.llm_provider import get_llm_provider, get_model
 from utils.parsers import parse_bool_or_none
 from utils.schema_utils import (
+    coerce_instance_to_schema_string_limits,
     ensure_array_schemas_have_items,
     ensure_strict_json_schema,
     flatten_json_schema,
@@ -1253,6 +1254,13 @@ class LLMClient:
                 raise HTTPException(
                     status_code=400,
                     detail="LLM did not return any content",
+                )
+
+            if validate_schema and isinstance(content, (dict, list)):
+                content = coerce_instance_to_schema_string_limits(
+                    response_format,
+                    content,
+                    strict=strict,
                 )
 
             if not validate_schema:

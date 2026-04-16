@@ -121,6 +121,7 @@ async function startServers(fastApiPort: number, nextjsPort: number) {
         DEBUG: isDev ? "True" : "False",
         CAN_CHANGE_KEYS: process.env.CAN_CHANGE_KEYS,
         LLM: process.env.LLM,
+        MEM0_OPENAI_API_KEY: process.env.MEM0_OPENAI_API_KEY,
         OPENAI_API_KEY: process.env.OPENAI_API_KEY,
         OPENAI_MODEL: process.env.OPENAI_MODEL,
         GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
@@ -151,6 +152,9 @@ async function startServers(fastApiPort: number, nextjsPort: number) {
         TEMP_DIRECTORY: tempDir,
         USER_CONFIG_PATH: userConfigPath,
         MIGRATE_DATABASE_ON_STARTUP: "True",
+        // Intra-presentation Mem0 (FastAPI). Override with PRESENTATION_MEMORY_ENABLED=false in .env to disable.
+        PRESENTATION_MEMORY_ENABLED:
+          process.env.PRESENTATION_MEMORY_ENABLED ?? "true",
         // Resolved by libreoffice-check.ts at startup when available; lets
         // Python invoke the exact binary path instead of relying on PATH.
         ...(sofficePath && {
@@ -279,6 +283,7 @@ app.whenReady().then(async () => {
   setUserConfig({
     CAN_CHANGE_KEYS: process.env.CAN_CHANGE_KEYS,
     LLM: process.env.LLM,
+    MEM0_OPENAI_API_KEY: process.env.MEM0_OPENAI_API_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     OPENAI_MODEL: process.env.OPENAI_MODEL,
     GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,

@@ -22,7 +22,11 @@ from utils.outline_utils import (
     get_no_of_outlines_to_generate_for_n_slides,
     get_presentation_title_from_presentation_outline,
 )
-from utils.llm_calls.generate_presentation_outlines import generate_ppt_outline
+from services.presentation_memory_service import record_outline_system_and_documents
+from utils.llm_calls.generate_presentation_outlines import (
+    generate_ppt_outline,
+    get_system_prompt,
+)
 
 OUTLINES_ROUTER = APIRouter(prefix="/outlines", tags=["Outlines"])
 
@@ -53,6 +57,20 @@ async def stream_outlines(
             documents = documents_loader.documents
             if documents:
                 additional_context = "\n\n".join(documents)
+
+        system_prompt = get_system_prompt(
+            presentation.tone,
+            presentation.verbosity,
+            presentation.instructions,
+            presentation.include_title_slide,
+            presentation.include_table_of_contents,
+            presentation.web_search,
+        )
+        await record_outline_system_and_documents(
+            id,
+            system_prompt=system_prompt,
+            document_context=additional_context,
+        )
 
         presentation_outlines_text = ""
 

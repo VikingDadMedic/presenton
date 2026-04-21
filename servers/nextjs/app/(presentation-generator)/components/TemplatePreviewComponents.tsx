@@ -22,7 +22,7 @@ export function TemplatePreviewStage({ children }: { children: React.ReactNode }
 
 export const LayoutsBadge = memo(function LayoutsBadge({ count }: { count: number }) {
     return (
-        <span className="text-xs font-syne absolute top-3.5 left-4 z-40 inline-flex items-center rounded-full bg-[#333333] px-3 py-1 font-semibold text-white">
+        <span className="text-xs font-display absolute top-3.5 left-4 z-40 inline-flex items-center rounded-full bg-[#333333] px-3 py-1 font-semibold text-white">
             Layouts-{count}
         </span>
     );

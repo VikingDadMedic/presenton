@@ -8,4 +8,7 @@ class Tone(str, Enum):
     FUNNY = "funny"
     EDUCATIONAL = "educational"
     SALES_PITCH = "sales_pitch"
+    INSPIRATIONAL = "inspirational"
+    ADVENTUROUS = "adventurous"
+    LUXURY = "luxury"
 

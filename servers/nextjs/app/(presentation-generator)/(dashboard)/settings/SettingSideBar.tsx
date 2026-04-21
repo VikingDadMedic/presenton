@@ -14,7 +14,7 @@ const SettingSideBar = ({ mode, setMode, selectedProvider, setSelectedProvider }
             <div className='mt-6 flex-1'>
                 <p className='text-[#3A3A3A] text-xs font-medium pb-2.5'>Select Mode</p>
                 <div className='p-0.5 rounded-[40px] bg-[#ffffff] w-fit border border-[#EDEEEF] flex items-center justify-center mb-[34px] '>
-                    <button className='px-3 font-syne h-[26px] text-[10px] font-medium text-[#3A3A3A] rounded-[70px]'
+                    <button className='px-3 font-display h-[26px] text-[10px] font-medium text-[#3A3A3A] rounded-[70px]'
                         onClick={() => setMode('presenton')}
                         style={{
                             background: mode === 'presenton' ? '#F4F3FF' : 'transparent',
@@ -26,7 +26,7 @@ const SettingSideBar = ({ mode, setMode, selectedProvider, setSelectedProvider }
                         <path d="M1 0V16.5" stroke="#EDECEC" strokeWidth="2" />
                     </svg>
                     <div className='relative'>
-                        <button className='px-3 font-syne  h-[26px] text-[10px] font-medium rounded-[70px] cursor-not-allowed opacity-60'
+                        <button className='px-3 font-display  h-[26px] text-[10px] font-medium rounded-[70px] cursor-not-allowed opacity-60'
                             disabled
                             style={{
                                 background: 'transparent',

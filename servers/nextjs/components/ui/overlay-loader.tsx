@@ -45,7 +45,7 @@ export const OverlayLoader = ({
         >
             <div
                 className={cn(
-                    "flex flex-col items-center justify-center px-6 pt-6 pb-10 rounded-xl bg-white shadow-2xl relative min-h-[347px]",
+                    "flex flex-col items-center justify-center px-6 pt-6 pb-10 rounded-xl bg-card shadow-2xl relative min-h-[347px]",
                     "min-w-[280px] sm:min-w-[447px] border border-white/10 transition-all duration-400 ease-out",
                     isVisible ? "opacity-100 scale-100" : "opacity-0 scale-90",
                     className
@@ -65,19 +65,19 @@ export const OverlayLoader = ({
                         />
                         {text && (
                             <div className="space-y-1">
-                                <p className="text-[#191919] text-base text-center font-medium font-inter">
+                                <p className="text-foreground text-base text-center font-medium font-sans">
                                     {text}
                                 </p>
-                                {extra_info && <p className="text-[#191919]/80 text-xs text-center font-medium font-inter">{extra_info}</p>}
+                                {extra_info && <p className="text-muted-foreground text-xs text-center font-medium font-sans">{extra_info}</p>}
                             </div>
                         )}
                     </div>
                 ) : (
                     <>
-                        <p className="text-[#191919] text-base text-center font-medium font-inter">
+                        <p className="text-foreground text-base text-center font-medium font-sans">
                             {text}
                         </p>
-                        {extra_info && <p className="text-[#191919]/80 text-xs text-center font-medium font-inter">{extra_info}</p>}
+                        {extra_info && <p className="text-muted-foreground text-xs text-center font-medium font-sans">{extra_info}</p>}
                     </>
 
                 )}
@@ -97,8 +97,8 @@ export const OverlayLoader = ({
                             <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_4852_6112" result="shape" />
                         </filter>
                         <radialGradient id="paint0_radial_4852_6112" cx="0" cy="0" r="1" gradientTransform="matrix(-987.419 -112.408 219.823 -2016.77 351.693 300.327)" gradientUnits="userSpaceOnUse">
-                            <stop stop-color="#D9D6FE" />
-                            <stop offset="1" stop-color="white" stop-opacity="0" />
+                            <stop stop-color="rgba(201,168,76,0.18)" />
+                            <stop offset="1" stop-color="var(--card)" stop-opacity="0" />
                         </radialGradient>
                     </defs>
                 </svg>
@@ -110,7 +110,7 @@ export const OverlayLoader = ({
                     aspect-ratio: 1;
                     --_c: no-repeat radial-gradient(
                         farthest-side,
-                        #7A5AF8 92%,
+                        var(--primary) 92%,
                         #0000
                     );
                     background:

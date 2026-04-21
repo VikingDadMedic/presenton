@@ -4,6 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       # You can replace 5000 with any other port number of your choice to run Presenton on a different port number.
       - "5000:80"
@@ -45,12 +46,19 @@ services:
       - LITEPARSE_NUM_WORKERS=${LITEPARSE_NUM_WORKERS:-1}
       - OPEN_WEBUI_IMAGE_URL=${OPEN_WEBUI_IMAGE_URL}
       - OPEN_WEBUI_IMAGE_API_KEY=${OPEN_WEBUI_IMAGE_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - SERPAPI_API_KEY=${SERPAPI_API_KEY}
+      - VISUAL_CROSSING_API_KEY=${VISUAL_CROSSING_API_KEY}
+      - UNSPLASH_ACCESS_KEY=${UNSPLASH_ACCESS_KEY}
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
 
   production-gpu:
     # image: ghcr.io/presenton/presenton:latest
     build:
       context: .
       dockerfile: Dockerfile
+    restart: unless-stopped
     deploy:
       resources:
         reservations:
@@ -100,11 +108,18 @@ services:
   
       - OPEN_WEBUI_IMAGE_URL=${OPEN_WEBUI_IMAGE_URL}
       - OPEN_WEBUI_IMAGE_API_KEY=${OPEN_WEBUI_IMAGE_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - SERPAPI_API_KEY=${SERPAPI_API_KEY}
+      - VISUAL_CROSSING_API_KEY=${VISUAL_CROSSING_API_KEY}
+      - UNSPLASH_ACCESS_KEY=${UNSPLASH_ACCESS_KEY}
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
 
   development:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    restart: unless-stopped
     ports:
       - "5000:80"
       # Required for Codex OAuth callback (OpenAI redirects browser directly to localhost:1455)
@@ -150,11 +165,18 @@ services:
       - LITEPARSE_NUM_WORKERS=${LITEPARSE_NUM_WORKERS:-1}
       - OPEN_WEBUI_IMAGE_URL=${OPEN_WEBUI_IMAGE_URL}
       - OPEN_WEBUI_IMAGE_API_KEY=${OPEN_WEBUI_IMAGE_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - SERPAPI_API_KEY=${SERPAPI_API_KEY}
+      - VISUAL_CROSSING_API_KEY=${VISUAL_CROSSING_API_KEY}
+      - UNSPLASH_ACCESS_KEY=${UNSPLASH_ACCESS_KEY}
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
 
   development-gpu:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    restart: unless-stopped
     deploy:
       resources:
         reservations:
@@ -206,6 +228,12 @@ services:
       - LITEPARSE_NUM_WORKERS=${LITEPARSE_NUM_WORKERS:-1}
       - OPEN_WEBUI_IMAGE_URL=${OPEN_WEBUI_IMAGE_URL}
       - OPEN_WEBUI_IMAGE_API_KEY=${OPEN_WEBUI_IMAGE_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - SERPAPI_API_KEY=${SERPAPI_API_KEY}
+      - VISUAL_CROSSING_API_KEY=${VISUAL_CROSSING_API_KEY}
+      - UNSPLASH_ACCESS_KEY=${UNSPLASH_ACCESS_KEY}
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
 
 volumes:
   presenton_root_node_modules:

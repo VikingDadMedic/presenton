@@ -1,31 +1,28 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
-import { Syne, Unbounded } from "next/font/google";
+import { Cormorant_Garamond, DM_Sans, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import MixpanelInitializer from "./MixpanelInitializer";
 import { Toaster } from "@/components/ui/sonner";
-const inter = localFont({
-  src: [
-    {
-      path: "./fonts/Inter.ttf",
-      weight: "400",
-      style: "normal",
-    },
-  ],
-  variable: "--font-inter",
+import { ThemeProvider } from "next-themes";
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-sans",
 });
 
-const syne = Syne({
+const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-syne",
+  weight: ["300", "400", "500", "600"],
+  style: ["normal", "italic"],
+  variable: "--font-display",
 });
 
-const unbounded = Unbounded({
+const dmMono = DM_Mono({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-unbounded",
+  weight: ["300", "400", "500"],
+  variable: "--font-mono",
 });
 
 
@@ -80,18 +77,20 @@ export default function RootLayout({
 }>) {
 
   return (
-    <html lang="en">
+    <html lang="en" data-theme="light" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${unbounded.variable} ${syne.variable} antialiased`}
+        className={`${dmSans.variable} ${cormorant.variable} ${dmMono.variable} min-h-screen bg-background text-foreground font-sans antialiased`}
       >
-        <Providers>
-          <MixpanelInitializer>
+        <ThemeProvider attribute="data-theme" defaultTheme="light">
+          <Providers>
+            <MixpanelInitializer>
 
-            {children}
+              {children}
 
-          </MixpanelInitializer>
-        </Providers>
-        <Toaster position="top-center" />
+            </MixpanelInitializer>
+          </Providers>
+          <Toaster position="top-center" />
+        </ThemeProvider>
       </body>
     </html>
   );

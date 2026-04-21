@@ -368,7 +368,7 @@ const SettingsPage = () => {
 
 
   return (
-    <div className="h-screen font-syne flex flex-col overflow-hidden relative">
+    <div className="h-screen font-display flex flex-col overflow-hidden relative">
       <div
         className="fixed z-0 bottom-[-14.5rem] left-0 w-full h-full"
         style={{
@@ -389,7 +389,7 @@ const SettingsPage = () => {
         <div className="w-full">
           <div className="sticky top-0 right-0 z-50 py-[28px]   backdrop-blur mb-4 ">
             <div className="flex  gap-3 items-center ">
-              <h3 className=" text-[28px] tracking-[-0.84px] font-unbounded font-normal text-black flex items-center gap-2">
+              <h3 className=" text-[28px] tracking-[-0.84px] font-display font-normal text-black flex items-center gap-2">
                 Settings
               </h3>
               <p className="text-[10px] px-2.5 py-0.5 rounded-[50px] text-[#7A5AF8] border border-[#EDEEEF]  font-medium ">
@@ -428,7 +428,7 @@ const SettingsPage = () => {
               "linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)",
             color: "#101323",
           }}
-          className={`w-full font-syne font-semibold flex items-center justify-center gap-2 py-3 px-5 rounded-[58px] transition-all duration-500 ${buttonState.isDisabled
+          className={`w-full font-display font-semibold flex items-center justify-center gap-2 py-3 px-5 rounded-[58px] transition-all duration-500 ${buttonState.isDisabled
             ? "bg-gray-400 cursor-not-allowed"
             : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-200"
             } text-white`}

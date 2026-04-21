@@ -23,7 +23,7 @@ No SaaS lock-in · No forced subscriptions · Full control over models and data
 
 What makes Presenton different?
 
-- Fully **self-hosted**; Web (Docker) & Desktop (Mac, Windows & Linux)
+- Fully **self-hosted**; Web (Docker) with optional Desktop app via [presenton.ai](https://presenton.ai/download)
 - Works with OpenAI, Gemini, Anthropic, Ollama, or custom models
 - API deployable
 - Fully open-source (Apache 2.0)
@@ -106,8 +106,8 @@ Presenton gives you complete control over your AI presentation workflow. Choose 
 - API Deployment — Host as your own API service for your team
 - Fully Open-Source — Apache 2.0 licensed, inspect, modify, and contribute
 - Docker Ready — One-command deployment with GPU support for local models
-- Electron Desktop App — Run Presenton as a native desktop application on Windows, macOS, and Linux (no browser required)
 - Sign in with ChatGPT — Use your free or paid ChatGPT account to sign in and start creating presentations instantly — no separate API key required
+- Travel Presentation Mode — Purpose-built layouts for destinations, itineraries, deals, accommodation, flights, and booking CTAs with 5 travel-themed color presets
 
 #
 
@@ -126,51 +126,19 @@ Run Presenton directly in your browser — no installation, no setup required. S
 ### ⚡ Running Presenton
 
   <p>
-    You can run Presenton in two ways:
-    <strong>Docker</strong> for a one-command setup without installing a local dev
-    stack, or the <strong>Electron desktop app</strong> for a native app
-    experience (ideal for development or offline use).
+    Run Presenton with <strong>Docker</strong> for a one-command setup
+    without installing a local dev stack.
   </p>
 
-**Option 1: Electron (Desktop App)**
-
-   <p>
-    Run Presenton as a native desktop application. LLM and image provider
-    (API keys, etc.) can be configured in the app. The same environment variables
-    used for Docker apply when running the bundled backend.
-  </p>
-
+  <blockquote>
   <p>
-    <strong>Prerequisites:</strong> Node.js (LTS), npm, Python 3.11, and
-    <a href="https://docs.astral.sh/uv/">uv</a>
-    (for the Electron FastAPI backend in
-    <code>electron/servers/fastapi</code>).
+    Looking for the desktop app? Pre-built installers are available at
+    <a href="https://presenton.ai/download">presenton.ai/download</a>.
+    The Electron source lives on the <code>electron-desktop</code> branch.
   </p>
+  </blockquote>
 
-- Setup (First Time)
-  <pre><code class="language-bash">cd electron
-  npm run setup:env</code></pre>
-
-  This installs Node dependencies, runs <code>uv sync</code> in the FastAPI
-  server, and installs Next.js dependencies.
-
-- Run in Development
-  <pre><code class="language-bash">npm run dev</code></pre>
-  <p>
-  This compiles TypeScript and starts Electron. The backend and UI run locally
-  inside the desktop window.
-  </p>
-
-- Build Distributable (Optional)
-  To create installers for Windows, macOS, or Linux:
-  <pre><code class="language-bash">npm run build:all
-  npm run dist</code></pre>
-  <p>
-  Output files are written to <code>electron/dist</code>
-  (or as configured in your <code>electron-builder</code> settings).
-  </p>
-
-**Option 2: Docker**
+**Docker**
 
 - Start Presenton
   Linux/MacOS (Bash/Zsh Shell):
@@ -196,7 +164,7 @@ Run Presenton directly in your browser — no installation, no setup required. S
 
 ### ⚙️ Deployment Configurations
 
-These settings apply to both Docker and the Electron app's backend. You may want to directly provide your API KEYS as environment variables and keep them hidden. You can set these environment variables to achieve it.
+These settings apply to the Docker deployment. You may want to directly provide your API KEYS as environment variables and keep them hidden. You can set these environment variables to achieve it.
 
 - CAN_CHANGE_KEYS=[true/false]: Set this to **false** if you want to keep API Keys hidden and make them unmodifiable.
 - LLM=[openai/google/anthropic/ollama/custom]: Select **LLM** of your choice.
@@ -321,7 +289,7 @@ You can disable anonymous telemetry using the following environment variable:
 <td>
 Text tone (default: <code>"default"</code>).  
 Options: <code>default</code>, <code>casual</code>, <code>professional</code>, 
-<code>funny</code>, <code>educational</code>, <code>sales_pitch</code>
+<code>funny</code>, <code>educational</code>, <code>sales_pitch</code>, <code>inspirational</code>, <code>adventurous</code>, <code>luxury</code>
 </td>
 </tr>
 
@@ -360,7 +328,7 @@ Options: <code>concise</code>, <code>standard</code>, <code>text-heavy</code>
 <td><code>template</code></td>
 <td>string</td>
 <td>No</td>
-<td>Template name (default: <code>"general"</code>).</td>
+<td>Template name (default: <code>"general"</code>). Valid values: <code>general</code>, <code>modern</code>, <code>standard</code>, <code>swift</code>, <code>travel</code> (travel-specific layouts), and <code>travel-itinerary</code> (ordered itinerary sequence).</td>
 </tr>
 
 <tr>
@@ -434,6 +402,22 @@ Prepend your server’s root URL to <code>path</code> and
 <code>edit_path</code> to construct valid links.
 </blockquote>
 
+**Edit Slide Field**
+
+<p>
+<strong>Endpoint:</strong> <code>/api/v1/ppt/slide/edit-field</code><br>
+<strong>Method:</strong> <code>PATCH</code><br>
+<strong>Content-Type:</strong> <code>application/json</code>
+</p>
+
+**Request Body**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `id` | string | Yes | The slide ID |
+| `field_path` | string | Yes | Dot-notation path to the field (e.g., "tiers.0.price") |
+| `prompt` | string | Yes | Instruction for how to edit the field |
+
 **Documentation & Tutorials**
 
 <ul>
@@ -468,12 +452,6 @@ Prepend your server’s root URL to <code>path</code> and
 - [x] Implement MCP server
 - [ ] Ability for users to change system prompt
 - [x] Support external SQL database
-
-#
-
-### 🚀 Roadmap
-
-Track the public roadmap on GitHub Projects: [https://github.com/orgs/presenton/projects/2](https://github.com/orgs/presenton/projects/2)
 
 #
 

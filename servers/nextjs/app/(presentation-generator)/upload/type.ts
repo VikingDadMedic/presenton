@@ -138,6 +138,9 @@ export enum ToneType {
   Funny = "funny",
   Educational = "educational",
   Sales_Pitch = "sales_pitch",
+  Inspirational = "inspirational",
+  Adventurous = "adventurous",
+  Luxury = "luxury",
 }
 
 export enum VerbosityType {

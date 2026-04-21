@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { LayoutDashboard, Star, Brain, Settings, Palette, HelpCircle } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { LayoutDashboard, Star, Brain, Settings, Palette, HelpCircle, Plane } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
@@ -28,7 +28,9 @@ const DashboardSidebar = () => {
 
 
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const activeTab = pathname.split("?")[0].split("/").pop();
+    const isTravelActive = pathname === "/upload" && searchParams.get("type") === "travel";
     const router = useRouter();
 
     const { llm_config } = useSelector((state: RootState) => state.userConfig)
@@ -49,7 +51,7 @@ const DashboardSidebar = () => {
                         <img src="/logo-with-bg.png" alt="Presenton logo" className="h-[40px] object-contain w-full" />
                     </div>
                 </Link>
-                <nav className="pt-6 font-syne" aria-label="Dashboard sections">
+                <nav className="pt-6 font-display" aria-label="Dashboard sections">
                     <div className="  space-y-6">
 
                         {/* Dashboard */}
@@ -96,11 +98,26 @@ const DashboardSidebar = () => {
                                 <span className="text-[11px] text-slate-800">Themes</span>
                             </div>
                         </Link>
+                        <Link
+                            prefetch={false}
+                            href="/upload?type=travel"
+                            className={[
+                                "flex flex-col tex-center items-center gap-2  transition-colors",
+                                isTravelActive ? "" : "ring-transparent",
+                            ].join(" ")}
+                            aria-label="Travel"
+                            title="Travel"
+                        >
+                            <div className="flex flex-col cursor-pointer tex-center items-center gap-2  transition-colors">
+                                <Plane className={`h-4 w-4 ${isTravelActive ? "text-[#5146E5]" : "text-slate-600"}`} />
+                                <span className="text-[11px] text-slate-800">Travel</span>
+                            </div>
+                        </Link>
                     </div>
                 </nav>
             </div>
 
-            <div className=" pt-5 border-t border-[#E1E1E5]  font-syne "
+            <div className=" pt-5 border-t border-[#E1E1E5]  font-display "
             >
                 <div className="mb-4">
 

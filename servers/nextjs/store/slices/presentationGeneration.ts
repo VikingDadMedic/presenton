@@ -2,18 +2,65 @@ import { Theme } from "@/app/(presentation-generator)/services/api/types";
 import { Slide } from "@/app/(presentation-generator)/types/slide";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function navigateToParent(obj: any, path: string): { parent: any; finalKey: string } | null {
+  const keys = path.split(/[.\[\]]+/).filter(Boolean);
+  if (keys.length === 0) return null;
+  let current = obj;
+
+  for (let i = 0; i < keys.length - 1; i++) {
+    const key = keys[i];
+    const idx = Number(key);
+    const next = Number.isNaN(idx) ? current[key] : current[idx];
+    if (!next) {
+      const created = {};
+      if (Number.isNaN(idx)) current[key] = created;
+      else current[idx] = created;
+      current = created;
+    } else {
+      current = next;
+    }
+  }
+
+  return { parent: current, finalKey: keys[keys.length - 1] };
+}
+
+function setAtPath(parent: any, finalKey: string, value: any): void {
+  if (Number.isNaN(Number(finalKey))) parent[finalKey] = value;
+  else parent[Number(finalKey)] = value;
+}
+
+function getAtPath(parent: any, finalKey: string): any {
+  return Number.isNaN(Number(finalKey)) ? parent[finalKey] : parent[Number(finalKey)];
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
+export interface LayoutSlideEntry {
+  id: string;
+  name?: string;
+  description?: string;
+  json_schema?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 export interface PresentationData {
   id: string;
   language: string;
   layout: {
     name: string;
     ordered: boolean;
-    slides: any[];
+    slides: LayoutSlideEntry[];
   };
   n_slides: number;
   title: string;
-  slides: any;
+  slides: Slide[];
   theme: Theme | null;
+}
+
+export interface SkeletonSlide {
+  outlineText?: string;
+  layoutName?: string;
+  ready: boolean;
 }
 
 interface PresentationGenerationState {
@@ -23,6 +70,7 @@ interface PresentationGenerationState {
   outlines: { content: string }[];
   error: string | null;
   presentationData: PresentationData | null;
+  skeletonSlides: SkeletonSlide[];
   isSlidesRendered: boolean;
   isLayoutLoading: boolean;
 }
@@ -36,6 +84,7 @@ const initialState: PresentationGenerationState = {
   isStreaming: null,
   error: null,
   presentationData: null,
+  skeletonSlides: [],
 };
 
 const presentationGenerationSlice = createSlice({
@@ -69,6 +118,23 @@ const presentationGenerationSlice = createSlice({
     // Clear presentation data
     clearPresentationData: (state) => {
       state.presentationData = null;
+      state.skeletonSlides = [];
+    },
+    setSkeletonSlides: (state, action: PayloadAction<SkeletonSlide[]>) => {
+      state.skeletonSlides = action.payload;
+    },
+    updateSkeletonLayouts: (state, action: PayloadAction<string[]>) => {
+      action.payload.forEach((layoutName, i) => {
+        if (state.skeletonSlides[i]) {
+          state.skeletonSlides[i].layoutName = layoutName;
+        }
+      });
+    },
+    markSkeletonReady: (state, action: PayloadAction<number>) => {
+      const count = action.payload;
+      for (let i = 0; i < count && i < state.skeletonSlides.length; i++) {
+        state.skeletonSlides[i].ready = true;
+      }
     },
     clearOutlines: (state) => {
       state.outlines = [];
@@ -140,61 +206,19 @@ const presentationGenerationSlice = createSlice({
       }
     },
 
-    // Update slide content at specific data path (for Tiptap text editing)
     updateSlideContent: (
       state,
       action: PayloadAction<{
         slideIndex: number;
         dataPath: string;
-        content: string;
+        content: any;
       }>
     ) => {
-      if (
-        state.presentationData &&
-        state.presentationData.slides &&
-        state.presentationData.slides[action.payload.slideIndex]
-      ) {
-        const slide = state.presentationData.slides[action.payload.slideIndex];
-        const { dataPath, content } = action.payload;
+      const slide = state.presentationData?.slides?.[action.payload.slideIndex];
+      if (!slide?.content || !action.payload.dataPath) return;
 
-        // Helper function to set nested property value
-        const setNestedValue = (obj: any, path: string, value: string) => {
-          const keys = path.split(/[.\[\]]+/).filter(Boolean);
-          let current = obj;
-
-          // Navigate to the parent object
-          for (let i = 0; i < keys.length - 1; i++) {
-            const key = keys[i];
-            if (isNaN(Number(key))) {
-              // String key
-              if (!current[key]) {
-                current[key] = {};
-              }
-              current = current[key];
-            } else {
-              // Array index
-              const index = Number(key);
-              if (!current[index]) {
-                current[index] = {};
-              }
-              current = current[index];
-            }
-          }
-
-          // Set the final value
-          const finalKey = keys[keys.length - 1];
-          if (isNaN(Number(finalKey))) {
-            current[finalKey] = value;
-          } else {
-            current[Number(finalKey)] = value;
-          }
-        };
-
-        // Update the slide content
-        if (dataPath && slide.content) {
-          setNestedValue(slide.content, dataPath, content);
-        }
-      }
+      const nav = navigateToParent(slide.content, action.payload.dataPath);
+      if (nav) setAtPath(nav.parent, nav.finalKey, action.payload.content);
     },
 
     addNewSlide: (state, action: PayloadAction<{ slideData: any; index: number }>) => {
@@ -212,7 +236,6 @@ const presentationGenerationSlice = createSlice({
       }
     },
 
-    // Update slide image at specific data path
     updateSlideImage: (
       state,
       action: PayloadAction<{
@@ -222,66 +245,25 @@ const presentationGenerationSlice = createSlice({
         prompt?: string;
       }>
     ) => {
-      if (
-        state.presentationData &&
-        state.presentationData.slides &&
-        state.presentationData.slides[action.payload.slideIndex]
-      ) {
-        const slide = state.presentationData.slides[action.payload.slideIndex];
-        const { dataPath, imageUrl, prompt } = action.payload;
+      const slide = state.presentationData?.slides?.[action.payload.slideIndex];
+      if (!slide?.content || !action.payload.dataPath) return;
 
-        // Helper function to set nested property value for images
-        const setNestedImageValue = (obj: any, path: string, url: string, promptText?: string) => {
-          const keys = path.split(/[.\[\]]+/).filter(Boolean);
-          let current = obj;
-
-          // Navigate to the parent object
-          for (let i = 0; i < keys.length - 1; i++) {
-            const key = keys[i];
-            if (isNaN(Number(key))) {
-              if (!current[key]) {
-                current[key] = {};
-              }
-              current = current[key];
-            } else {
-              const index = Number(key);
-              if (!current[index]) {
-                current[index] = {};
-              }
-              current = current[index];
-            }
-          }
-
-          // Set the image properties
-          const finalKey = keys[keys.length - 1];
-          const target = isNaN(Number(finalKey)) ? current[finalKey] : current[Number(finalKey)];
-
-          // Preserve existing properties if the target already exists
-          const updatedValue = {
-            ...(target && typeof target === 'object' ? target : {}),
-            __image_url__: url,
-            __image_prompt__: promptText || (target?.__image_prompt__) || ''
-          };
-
-          if (isNaN(Number(finalKey))) {
-            current[finalKey] = updatedValue;
-          } else {
-            current[Number(finalKey)] = updatedValue;
-          }
-
+      const { dataPath, imageUrl, prompt } = action.payload;
+      const nav = navigateToParent(slide.content, dataPath);
+      if (nav) {
+        const target = getAtPath(nav.parent, nav.finalKey);
+        const updatedValue = {
+          ...(target && typeof target === 'object' ? target : {}),
+          __image_url__: imageUrl,
+          __image_prompt__: prompt || (target?.__image_prompt__) || ''
         };
+        setAtPath(nav.parent, nav.finalKey, updatedValue);
+      }
 
-        // Update the slide image
-        if (dataPath && slide.content) {
-          setNestedImageValue(slide.content, dataPath, imageUrl, prompt);
-        }
-
-        // Also update the images array if it exists
-        if (slide.images && Array.isArray(slide.images)) {
-          const imageIndex = parseInt(dataPath.split('[')[1]?.split(']')[0]) || 0;
-          if (slide.images[imageIndex] !== undefined) {
-            slide.images[imageIndex] = imageUrl;
-          }
+      if (slide.images && Array.isArray(slide.images)) {
+        const imageIndex = parseInt(dataPath.split('[')[1]?.split(']')[0]) || 0;
+        if (slide.images[imageIndex] !== undefined) {
+          slide.images[imageIndex] = imageUrl;
         }
       }
     },
@@ -309,7 +291,6 @@ const presentationGenerationSlice = createSlice({
       }
     },
 
-    // Update slide icon at specific data path
     updateSlideIcon: (
       state,
       action: PayloadAction<{
@@ -319,68 +300,25 @@ const presentationGenerationSlice = createSlice({
         query?: string;
       }>
     ) => {
-      if (
-        state.presentationData &&
-        state.presentationData.slides &&
-        state.presentationData.slides[action.payload.slideIndex]
-      ) {
-        const slide = state.presentationData.slides[action.payload.slideIndex];
-        const { dataPath, iconUrl, query } = action.payload;
+      const slide = state.presentationData?.slides?.[action.payload.slideIndex];
+      if (!slide?.content || !action.payload.dataPath) return;
 
-        // Helper function to set nested property value for icons
-        const setNestedIconValue = (obj: any, path: string, url: string, queryText?: string) => {
-          const keys = path.split(/[.\[\]]+/).filter(Boolean);
-          let current = obj;
-
-          // Navigate to the parent object
-          for (let i = 0; i < keys.length - 1; i++) {
-            const key = keys[i];
-            if (isNaN(Number(key))) {
-              if (!current[key]) {
-                current[key] = {};
-              }
-              current = current[key];
-            } else {
-              const index = Number(key);
-              if (!current[index]) {
-                current[index] = {};
-              }
-              current = current[index];
-            }
-          }
-
-          // Set the icon properties
-          const finalKey = keys[keys.length - 1];
-          const target = isNaN(Number(finalKey)) ? current[finalKey] : current[Number(finalKey)];
-
-          // Preserve existing properties if the target already exists
-          const updatedValue = {
-            ...(target && typeof target === 'object' ? target : {}),
-            __icon_url__: url,
-            __icon_query__: queryText || (target?.__icon_query__) || ''
-          };
-
-          if (isNaN(Number(finalKey))) {
-            current[finalKey] = updatedValue;
-          } else {
-            current[Number(finalKey)] = updatedValue;
-          }
-
-          // Add debugging
-          console.log('Redux: Updated slide icon at path:', path, 'with URL:', url);
+      const { dataPath, iconUrl, query } = action.payload;
+      const nav = navigateToParent(slide.content, dataPath);
+      if (nav) {
+        const target = getAtPath(nav.parent, nav.finalKey);
+        const updatedValue = {
+          ...(target && typeof target === 'object' ? target : {}),
+          __icon_url__: iconUrl,
+          __icon_query__: query || (target?.__icon_query__) || ''
         };
+        setAtPath(nav.parent, nav.finalKey, updatedValue);
+      }
 
-        // Update the slide icon
-        if (dataPath && slide.content) {
-          setNestedIconValue(slide.content, dataPath, iconUrl, query);
-        }
-
-        // Also update the icons array if it exists
-        if (slide.icons && Array.isArray(slide.icons)) {
-          const iconIndex = parseInt(dataPath.split('[')[1]?.split(']')[0]) || 0;
-          if (slide.icons[iconIndex] !== undefined) {
-            slide.icons[iconIndex] = iconUrl;
-          }
+      if (slide.icons && Array.isArray(slide.icons)) {
+        const iconIndex = parseInt(dataPath.split('[')[1]?.split(']')[0]) || 0;
+        if (slide.icons[iconIndex] !== undefined) {
+          slide.icons[iconIndex] = iconUrl;
         }
       }
     },
@@ -406,6 +344,9 @@ export const {
   setPresentationData,
   updateTitle,
   setOutlines,
+  setSkeletonSlides,
+  updateSkeletonLayouts,
+  markSkeletonReady,
   // slides operations
   addSlide,
   updateSlide,

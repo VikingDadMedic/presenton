@@ -36,6 +36,7 @@ async def process_slide_and_fetch_assets(
             image_generation_service.generate_image(
                 ImagePrompt(
                     prompt=__image_prompt__parent["__image_prompt__"],
+                    template=slide.layout_group,
                 )
             )
         )
@@ -78,6 +79,7 @@ async def process_old_and_new_slides_and_fetch_assets(
     image_generation_service: ImageGenerationService,
     old_slide_content: dict,
     new_slide_content: dict,
+    template: str | None = None,
 ) -> List[ImageAsset]:
     # Finds all old images
     old_image_dict_paths = get_dict_paths_with_key(
@@ -136,6 +138,7 @@ async def process_old_and_new_slides_and_fetch_assets(
             image_generation_service.generate_image(
                 ImagePrompt(
                     prompt=new_image["__image_prompt__"],
+                    template=template,
                 )
             )
         )

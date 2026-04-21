@@ -121,7 +121,7 @@ const AdvanceSettings = ({ config, onConfigChange }: ConfigurationSelectsProps) 
                         <div className="overflow-hidden rounded-[24px] border border-[#E7E9F2] bg-[#F3F3F6] shadow-[0_24px_80px_rgba(15,23,42,0.20)]">
                             <div className="flex items-start justify-between gap-4 bg-[#F8F8FA] px-6 py-[22px] ">
                                 <div>
-                                    <h2 className="font-syne text-lg font-semibold leading-none text-[#191919]">
+                                    <h2 className="font-display text-lg font-semibold leading-none text-[#191919]">
                                         Advanced Settings
                                     </h2>
                                     <p className="mt-1 text-sm text-[#808080]">Adjust Presentation Behavior</p>
@@ -134,7 +134,7 @@ const AdvanceSettings = ({ config, onConfigChange }: ConfigurationSelectsProps) 
                                         background:
                                             'linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)',
                                     }}
-                                    className=" rounded-full px-[28px]  py-[10px] font-syne text-xs font-semibold text-[#1E1D2B] shadow-none hover:opacity-95"
+                                    className=" rounded-full px-[28px]  py-[10px] font-display text-xs font-semibold text-[#1E1D2B] shadow-none hover:opacity-95"
                                 >
                                     Save
                                 </Button>
@@ -146,7 +146,7 @@ const AdvanceSettings = ({ config, onConfigChange }: ConfigurationSelectsProps) 
                                     <div className="w-full">
                                         <label
                                             htmlFor="advanced-instructions"
-                                            className="block font-syne text-sm font-semibold leading-none text-[#1F1D2A]"
+                                            className="block font-display text-sm font-semibold leading-none text-[#1F1D2A]"
                                         >
                                             Write instructions
                                         </label>
@@ -167,7 +167,7 @@ const AdvanceSettings = ({ config, onConfigChange }: ConfigurationSelectsProps) 
 
                             <div className="space-y-4 px-6 pb-5 pt-3.5 ">
                                 <div className="flex items-center justify-between gap-3">
-                                    <label className="font-syne text-sm font-semibold leading-none text-[#1F1D2A]">Tone</label>
+                                    <label className="font-display text-sm font-semibold leading-none text-[#1F1D2A]">Tone</label>
                                     <Select
                                         value={advancedDraft.tone}
                                         onValueChange={(value) =>
@@ -175,10 +175,10 @@ const AdvanceSettings = ({ config, onConfigChange }: ConfigurationSelectsProps) 
                                         }
 
                                     >
-                                        <SelectTrigger className="p-2.5 w-[120px] rounded-xl border-[#DBDBE1] bg-white font-syne text-sm font-medium capitalize text-[#2C2B37] shadow-none focus:ring-0 focus-visible:ring-0">
+                                        <SelectTrigger className="p-2.5 w-[120px] rounded-xl border-[#DBDBE1] bg-white font-display text-sm font-medium capitalize text-[#2C2B37] shadow-none focus:ring-0 focus-visible:ring-0">
                                             <SelectValue placeholder="Select tone" />
                                         </SelectTrigger>
-                                        <SelectContent className="z-[120] font-syne">
+                                        <SelectContent className="z-[120] font-display">
                                             {Object.values(ToneType).map((tone) => (
                                                 <SelectItem key={tone} value={tone} className="text-sm font-medium capitalize">
                                                     {tone}
@@ -189,17 +189,17 @@ const AdvanceSettings = ({ config, onConfigChange }: ConfigurationSelectsProps) 
                                 </div>
 
                                 <div className="flex items-center justify-between gap-3">
-                                    <label className="font-syne text-sm font-semibold leading-none text-[#1F1D2A]">Verbosity</label>
+                                    <label className="font-display text-sm font-semibold leading-none text-[#1F1D2A]">Verbosity</label>
                                     <Select
                                         value={advancedDraft.verbosity}
                                         onValueChange={(value) =>
                                             setAdvancedDraft((prev) => ({ ...prev, verbosity: value as VerbosityType }))
                                         }
                                     >
-                                        <SelectTrigger className="p-2.5 w-[120px] rounded-xl border-[#DBDBE1] bg-white font-syne text-sm font-medium capitalize text-[#2C2B37] shadow-none focus:ring-0 focus-visible:ring-0">
+                                        <SelectTrigger className="p-2.5 w-[120px] rounded-xl border-[#DBDBE1] bg-white font-display text-sm font-medium capitalize text-[#2C2B37] shadow-none focus:ring-0 focus-visible:ring-0">
                                             <SelectValue placeholder="Select verbosity" />
                                         </SelectTrigger>
-                                        <SelectContent className="z-[120] font-syne">
+                                        <SelectContent className="z-[120] font-display">
                                             {Object.values(VerbosityType).map((verbosity) => (
                                                 <SelectItem key={verbosity} value={verbosity} className="text-sm font-medium capitalize">
                                                     {verbosity}
@@ -210,7 +210,7 @@ const AdvanceSettings = ({ config, onConfigChange }: ConfigurationSelectsProps) 
                                 </div>
 
                                 <div className="flex items-center justify-between gap-3">
-                                    <label className="font-syne text-sm font-semibold leading-none text-[#1F1D2A]">
+                                    <label className="font-display text-sm font-semibold leading-none text-[#1F1D2A]">
                                         Include Table of Content
                                     </label>
                                     <Switch
@@ -223,7 +223,7 @@ const AdvanceSettings = ({ config, onConfigChange }: ConfigurationSelectsProps) 
                                 </div>
 
                                 <div className="flex items-center justify-between gap-3">
-                                    <label className="font-syne text-sm font-semibold leading-none text-[#1F1D2A]">Title Slide</label>
+                                    <label className="font-display text-sm font-semibold leading-none text-[#1F1D2A]">Title Slide</label>
                                     <Switch
                                         checked={advancedDraft.includeTitleSlide}
                                         onCheckedChange={(checked) =>
@@ -234,7 +234,7 @@ const AdvanceSettings = ({ config, onConfigChange }: ConfigurationSelectsProps) 
                                 </div>
 
                                 <div className="flex items-center justify-between gap-3">
-                                    <label className="font-syne text-sm font-semibold leading-none text-[#1F1D2A]">Web Search</label>
+                                    <label className="font-display text-sm font-semibold leading-none text-[#1F1D2A]">Web Search</label>
                                     <Switch
                                         checked={advancedDraft.webSearch}
                                         onCheckedChange={(checked) =>

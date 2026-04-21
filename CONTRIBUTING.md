@@ -13,21 +13,6 @@ Thanks for helping improve **Presenton — the open-source AI presentation gener
 
 ---
 
-# Current Contribution Scope
-
-⚠️ **We are currently accepting Pull Requests only inside the `electron/` directory.**
-
-The Electron application contains:
-
-- Desktop application
-- FastAPI backend
-- Next.js frontend
-- Local runtime integrations
-
-Contributions outside `electron/` may not be accepted at this time.
-
----
-
 # How to Contribute
 
 ### Bugs
@@ -53,66 +38,103 @@ Start a **GitHub Issue** or **Discussion** explaining:
 Example branch names:
 
 ```
-
 feature/add-template-support
 fix/export-pptx-error
 docs/update-readme
-
 ```
 
 ---
 
-# Development Setup (Electron)
+# Development Setup
 
 ### Prerequisites
 
-- Node.js (LTS)
-- npm
-- Python
-- `uv` (Python package manager)
+- Python 3.12
+- Node.js 22 (LTS)
+- [`uv`](https://docs.astral.sh/uv/) (Python package manager)
+- Docker (optional, for production builds)
 
-# Setup Environment
+### Backend (FastAPI)
 
-From the `electron` directory:
-
-```
-cd electron
-npm run setup:env
+```bash
+cd servers/fastapi
+uv sync
 ```
 
-This installs:
+### Frontend (Next.js)
 
-- Node dependencies
-- FastAPI dependencies
-- Next.js dependencies
+```bash
+cd servers/nextjs
+npm install --legacy-peer-deps
+```
 
 ---
 
-# Run the Electron App (Development)
+# Running Locally
 
+**Option A — Run services individually**
+
+Start the FastAPI backend:
+
+```bash
+cd servers/fastapi
+uvicorn server:app --host 0.0.0.0 --port 8000
 ```
 
+Start the Next.js frontend (in a separate terminal):
+
+```bash
+cd servers/nextjs
 npm run dev
-
 ```
 
-This will:
+**Option B — Docker Compose**
 
-- compile TypeScript
-- start the Electron app
-- run the backend and UI locally
+```bash
+docker compose up development
+```
 
 ---
 
-# Build the Electron App
+# Running Tests
 
-To build all components:
+### Backend (FastAPI)
 
+```bash
+cd servers/fastapi
+uv run python -m pytest tests/ -v --tb=short
 ```
 
-npm run build:all
+Or without `uv`:
 
+```bash
+cd servers/fastapi
+export PYTHONPATH=$(pwd)
+export APP_DATA_DIRECTORY=/tmp/app_data
+export TEMP_DIRECTORY=/tmp/presenton
+export DATABASE_URL=sqlite+aiosqlite:///./test.db
+export DISABLE_ANONYMOUS_TRACKING=true
+export DISABLE_IMAGE_GENERATION=true
+python -m pytest tests/ -v --tb=short
 ```
+
+### Frontend (Next.js)
+
+```bash
+cd servers/nextjs
+npm run lint
+npm run build
+```
+
+### Full Local Test Suite
+
+Run everything at once (mimics the CI workflow):
+
+```bash
+./test-local.sh
+```
+
+> **Note:** Frontend `npm install` requires `--legacy-peer-deps` due to peer dependency conflicts.
 
 ---
 
@@ -120,8 +142,8 @@ npm run build:all
 
 Please ensure:
 
-- Changes are **inside `electron/`**
-- Code runs locally on development as well as build environment both
+- **Tests pass** — run the backend tests and frontend lint/build (see above)
+- Code runs locally in development and in a Docker build
 - PRs are **small and focused**
 - You explain **what and why**
 
@@ -176,4 +198,3 @@ CODE_OF_CONDUCT.md
 ---
 
 Thanks for helping make **Presenton better for everyone.**
-```

@@ -202,6 +202,7 @@ const PresentationHeader = ({
       // Save the presentation data before exporting
       await PresentationGenerationApi.updatePresentationContent(presentationData);
 
+      trackEvent(MixpanelEvent.Header_GetPptxModel_API_Call);
       const pptx_model = await get_presentation_pptx_model(presentation_id);
       if (!pptx_model) {
         throw new Error("Failed to get presentation PPTX model");
@@ -246,6 +247,7 @@ const PresentationHeader = ({
       setIsExporting(true);
       // Save the presentation data before exporting
       await PresentationGenerationApi.updatePresentationContent(presentationData);
+      trackEvent(MixpanelEvent.Header_ExportAsPDF_API_Call);
       const safePdfFileName = buildSafeExportFileName(
         presentationData?.title,
         "pdf"
@@ -358,7 +360,7 @@ const PresentationHeader = ({
               }
             }}
             placeholder="Presentation title"
-            className="min-w-0 flex-1 bg-transparent py-2 pr-2 font-unbounded text-base leading-tight text-[#101323] placeholder:text-[#101323]/35 outline-none border-0 focus:ring-0"
+            className="min-w-0 flex-1 bg-transparent py-2 pr-2 font-display text-base leading-tight text-[#101323] placeholder:text-[#101323]/35 outline-none border-0 focus:ring-0"
             aria-label="Presentation title"
           />
           <div className="flex shrink-0 items-center gap-0.5 border-l border-[#EDECEC] pl-1 ml-0.5">
@@ -397,7 +399,7 @@ const PresentationHeader = ({
             "disabled:pointer-events-none disabled:opacity-100 disabled:hover:bg-transparent"
           )}
         >
-          <h2 className="min-w-0 flex-1 font-unbounded text-lg w-[450px] leading-snug text-[#101323]">
+          <h2 className="min-w-0 flex-1 font-display text-lg w-[450px] leading-snug text-[#101323]">
             <MarkdownRenderer
               content={presentationData?.title || "Presentation"}
               className="mb-0 min-w-0 overflow-hidden text-ellipsis line-clamp-1 text-sm text-[#101323] prose-p:my-0 prose-headings:my-0"
@@ -416,7 +418,7 @@ const PresentationHeader = ({
 
   return (
     <>
-      <div className="py-7 sticky top-0 bg-white z-50 mb-[17px] font-syne flex justify-between items-center gap-4">
+      <div className="py-7 sticky top-0 bg-white z-50 mb-[17px] font-display flex justify-between items-center gap-4">
         {presentationData && !isStreaming && !isEditingTitle ? (
           <ToolTip content="Rename presentation">{titleBlock}</ToolTip>
         ) : (

@@ -1,0 +1,194 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": "1",
+        "title": "Create TravelContext data model",
+        "description": "Create the TravelContext dataclass and DateRange type that all enrichers consume",
+        "details": "Create servers/fastapi/enrichers/__init__.py (empty package init) and servers/fastapi/enrichers/context.py with: DateRange dataclass (start: str, end: str), TravelContext dataclass (destination: str, origin: str|None, dates: DateRange|None, budget: str|None, trip_type: str|None, travelers: int=2, interests: list[str]=field(default_factory=list), language: str='English', currency: str='USD'). Use Python dataclasses, not Pydantic.",
+        "testStrategy": "Import TravelContext, create instance with minimal args (just destination), verify defaults. Create with all args, verify all fields.",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T18:42:22.751Z"
+      },
+      {
+        "id": "2",
+        "title": "Create BaseEnricher abstract class",
+        "description": "Create the abstract base class that all enrichers implement",
+        "details": "Create servers/fastapi/enrichers/base.py with BaseEnricher ABC: name (str class attr), required_context (list[str]), optional_context (list[str]), required_api_keys (list[str]), abstract async enrich(context: TravelContext) -> dict, abstract to_markdown(data: dict) -> str, to_slide_data(data: dict, layout_id: str) -> dict|None (returns None by default), is_available() -> bool (checks all required_api_keys in os.environ), has_required_context(context: TravelContext) -> bool (checks required fields are non-None via getattr). Use logging.getLogger(__name__) for all logging.",
+        "testStrategy": "Create a concrete test enricher subclass, verify is_available() returns False with missing keys, True with keys set. Verify has_required_context works.",
+        "status": "done",
+        "dependencies": [
+          "1"
+        ],
+        "priority": "high",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T18:42:45.507Z"
+      },
+      {
+        "id": "3",
+        "title": "Create EnricherRegistry",
+        "description": "Create the registry that discovers and manages enricher instances",
+        "details": "Create servers/fastapi/enrichers/registry.py with EnricherRegistry class: _enrichers list, register(enricher: BaseEnricher), get_all() -> list[BaseEnricher], get_available(context: TravelContext) -> list[BaseEnricher] (filters by is_available() AND has_required_context()). Create a module-level singleton 'registry = EnricherRegistry()'. In enrichers/__init__.py, import the registry and auto-import all enricher modules (scan for .py files in the enrichers/ directory that aren't __init__, base, context, registry, or runner).",
+        "testStrategy": "Register a test enricher, verify get_all() returns it. Verify get_available() filters correctly based on API keys and context.",
+        "status": "done",
+        "dependencies": [
+          "1",
+          "2"
+        ],
+        "priority": "high",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T18:43:25.984Z"
+      },
+      {
+        "id": "4",
+        "title": "Create EnricherRunner parallel orchestrator",
+        "description": "Create the runner that executes available enrichers in parallel and merges results",
+        "details": "Create servers/fastapi/enrichers/runner.py with: EnrichedContext dataclass (results: dict[str, dict], enricher_instances: dict[str, BaseEnricher]) with to_markdown() method that calls each enricher's to_markdown() and concatenates under '## Real Data for This Destination' header, and get_images() method. Create async run_enrichers(context: TravelContext) -> EnrichedContext function that: gets available enrichers from registry, creates async tasks for each, runs via asyncio.gather(return_exceptions=True), logs errors per-enricher, returns EnrichedContext with successful results only.",
+        "testStrategy": "Mock two enrichers (one succeeds, one raises). Verify run_enrichers returns the successful result and logs the failure. Verify to_markdown() output format.",
+        "status": "done",
+        "dependencies": [
+          "3"
+        ],
+        "priority": "high",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T18:43:49.082Z"
+      },
+      {
+        "id": "5",
+        "title": "Create stub destination_intel enricher",
+        "description": "Create the first enricher as a stub to validate the full pipeline end-to-end",
+        "details": "Create servers/fastapi/enrichers/destination_intel.py implementing BaseEnricher: name='destination_intel', required_api_keys=['TAVILY_API_KEY'], required_context=['destination'], optional_context=['language']. The enrich() method returns hardcoded stub data: {overview: 'Stub destination overview for {destination}', highlights: ['Highlight 1', 'Highlight 2', 'Highlight 3'], best_time_to_visit: 'Year-round'}. The to_markdown() formats as '## Destination Overview\\n{overview}\\n\\n### Highlights\\n- {highlights joined}\\n\\n### Best Time to Visit\\n{best_time}'. Register with the registry at module level.",
+        "testStrategy": "Verify is_available() depends on TAVILY_API_KEY env var. Verify enrich() returns stub data. Verify to_markdown() produces valid markdown.",
+        "status": "done",
+        "dependencies": [
+          "2",
+          "3"
+        ],
+        "priority": "medium",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T18:44:11.236Z"
+      },
+      {
+        "id": "6",
+        "title": "Extend GeneratePresentationRequest with origin and currency",
+        "description": "Add origin and currency fields to the backend request model",
+        "details": "In servers/fastapi/models/generate_presentation_request.py, add two new optional fields to GeneratePresentationRequest: origin: Optional[str] = Field(default=None, description='Departure city for flight searches') and currency: str = Field(default='USD', description='Currency for price formatting'). These are optional with sensible defaults so existing callers are unaffected.",
+        "testStrategy": "Verify model accepts request without origin/currency (defaults apply). Verify model accepts request with both fields set.",
+        "status": "done",
+        "dependencies": [
+          "1"
+        ],
+        "priority": "medium",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T18:43:26.333Z"
+      },
+      {
+        "id": "7",
+        "title": "Wire enricher pipeline into presentation handler",
+        "description": "Integrate the enricher runner into the existing generation pipeline",
+        "details": "In servers/fastapi/api/v1/ppt/endpoints/presentation.py, in generate_presentation_handler after additional_context is populated from documents (after line 543): if request.template starts with 'travel', construct a TravelContext from request fields (destination parsed from request.content, origin=request.origin, budget/trip_type/interests parsed from request.content or request.instructions, travelers=2, currency=request.currency), call await run_enrichers(context), append enriched_context.to_markdown() to additional_context. Use lazy import: 'from enrichers.runner import run_enrichers' inside the if-block. Log the number of enrichers that ran and total markdown length. Must NOT affect non-travel templates.",
+        "testStrategy": "Generate a travel presentation with TAVILY_API_KEY set -- verify stub data appears in logs. Generate without key -- verify graceful degradation. Generate a general template -- verify no enricher code runs.",
+        "status": "done",
+        "dependencies": [
+          "4",
+          "5",
+          "6"
+        ],
+        "priority": "high",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T18:46:32.305Z"
+      },
+      {
+        "id": "8",
+        "title": "Create enricher status API endpoint",
+        "description": "Create GET /api/v1/ppt/enrichers/status endpoint",
+        "details": "Create servers/fastapi/api/v1/ppt/endpoints/enrichers.py with a FastAPI router ENRICHERS_ROUTER. GET /status endpoint that imports the registry, iterates all enrichers, checks is_available(), returns JSON {available: [names], unavailable: [{name, missing_keys}]}. Register ENRICHERS_ROUTER in the FastAPI app (find where other routers are registered -- likely in servers/fastapi/api/v1/ppt/__init__.py or server.py) under prefix '/api/v1/ppt/enrichers'.",
+        "testStrategy": "Call GET /api/v1/ppt/enrichers/status -- verify it returns the stub destination_intel enricher as available (with TAVILY_API_KEY) or unavailable (without).",
+        "status": "done",
+        "dependencies": [
+          "3",
+          "5"
+        ],
+        "priority": "medium",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T18:46:33.157Z"
+      },
+      {
+        "id": "9",
+        "title": "Extend TravelUploadPage with origin and currency fields",
+        "description": "Add departure city and currency inputs to the travel form",
+        "details": "In servers/nextjs/app/(presentation-generator)/upload/components/TravelUploadPage.tsx: Add state: const [origin, setOrigin] = useState(''), const [currency, setCurrency] = useState('USD'). Add Origin text input after the Destination field (label 'Departure City', placeholder 'e.g., New York, NY', optional). Add Currency select dropdown after the Travelers section (options: USD, EUR, GBP, AUD, CAD, JPY, CHF, INR). Include origin and currency in the prompt composition. Pass origin and currency to createPresentation call.",
+        "testStrategy": "Verify the form renders with the new fields. Verify origin and currency are included in the API request body.",
+        "status": "done",
+        "dependencies": [
+          "6"
+        ],
+        "priority": "medium",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T18:46:33.949Z"
+      },
+      {
+        "id": "10",
+        "title": "Extend frontend API client with origin and currency",
+        "description": "Add origin and currency params to the createPresentation API call",
+        "details": "In servers/nextjs/app/(presentation-generator)/services/api/presentation-generation.ts: Add origin?: string and currency?: string to the createPresentation method's parameter type. Include them in the JSON body of the POST request to /api/v1/ppt/presentation/create.",
+        "testStrategy": "Verify the POST body includes origin and currency when provided, and omits them when not provided (backward compatible).",
+        "status": "done",
+        "dependencies": [
+          "6"
+        ],
+        "priority": "medium",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T18:46:34.546Z"
+      },
+      {
+        "id": "11",
+        "title": "[DONE] Phase B: Tier 1 Enrichers",
+        "description": "All 5 Tier 1 enrichers implemented with real API calls: destination_intel (Tavily), weather (Visual Crossing), hotels (SerpAPI Google Hotels + Tripadvisor), flights (SerpAPI Google Flights), images (Unsplash + Pexels). SERPAPI_API_KEY renamed from SERPER_API_KEY. Enricher API keys added to docker-compose.yml.",
+        "details": "",
+        "testStrategy": "",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T18:56:54.472Z"
+      },
+      {
+        "id": "12",
+        "title": "[DONE] Phase C: Critical bug fixes + Tier 2+3 Enrichers",
+        "description": "Fixed enricher pipeline never running in web UI (wired into /prepare), added origin/currency/enriched_context to DB model, created prompt parser, fixed weather bug. Created 6 enrichers: activities, dining, events, reviews, videos, maps.",
+        "details": "",
+        "testStrategy": "",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T19:07:47.215Z"
+      },
+      {
+        "id": "13",
+        "title": "[DONE] Phase D: Pricing + Deals enrichers + bug fixes",
+        "description": "Created pricing (derived) and deals (Tavily) enrichers. Added derived enricher support to BaseEnricher and runner. Fixed 5 bugs: /generate not passing enriched instructions, /generate not persisting origin/currency/enriched_context, missing DB migration, prompt_parser in auto-discovery, rigid prompt parser regexes.",
+        "details": "",
+        "testStrategy": "",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T19:17:09.242Z"
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "lastModified": "2026-04-19T19:17:09.242Z",
+      "taskCount": 13,
+      "completedCount": 13,
+      "tags": [
+        "master"
+      ]
+    }
+  }
+}

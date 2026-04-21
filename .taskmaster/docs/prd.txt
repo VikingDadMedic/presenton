@@ -1,0 +1,121 @@
+# PRD: Enrichment Pipeline -- Phase A Foundation
+
+## Overview
+Build the foundational enricher framework for the Presenton travel presentation platform. This creates the plumbing that allows modular data enrichers to fetch real-world data (hotels, flights, weather, images, reviews) from external APIs and inject it into the LLM generation pipeline as structured context.
+
+## Guiding Principle
+Every enricher is independent, testable, and optional. If an API key is missing, that enricher returns empty data and the LLM falls back to its existing behavior. No enricher breaks the pipeline; they only make it better. The pipeline must produce valid presentations with zero enrichers enabled.
+
+## Architecture Context
+- Backend: FastAPI (Python 3.12) at `servers/fastapi/`
+- Frontend: Next.js 16 at `servers/nextjs/`
+- The existing generation pipeline has a `generate_presentation_handler` function in `servers/fastapi/api/v1/ppt/endpoints/presentation.py` (line 515)
+- At line 529, `additional_context = ""` is initialized
+- At lines 538-543, documents from uploaded files populate `additional_context`
+- At line 561, `generate_ppt_outline()` is called with `additional_context` as the 4th argument
+- In `servers/fastapi/utils/llm_calls/generate_presentation_outlines.py` line 65, the context is injected into the LLM prompt as `- Additional Information: {additional_context or ""}`
+- The `GeneratePresentationRequest` model in `servers/fastapi/models/generate_presentation_request.py` has no `additional_context` field -- it's derived server-side
+
+## Requirements
+
+### 1. TravelContext Data Model
+Create a `TravelContext` dataclass in `servers/fastapi/enrichers/context.py`:
+- `destination: str` (required -- e.g., "Santorini, Greece")
+- `origin: str | None` (departure city for flights)
+- `dates: DateRange | None` (start/end date strings)
+- `budget: str | None` ("budget" | "mid-range" | "luxury")
+- `trip_type: str | None` ("beach" | "adventure" | "cultural" | "city" | "cruise" | "safari")
+- `travelers: int` (default 2)
+- `interests: list[str]` (default empty)
+- `language: str` (default "English")
+- `currency: str` (default "USD")
+
+Include a `DateRange` dataclass with `start: str` and `end: str`.
+
+### 2. BaseEnricher Abstract Class
+Create `servers/fastapi/enrichers/base.py` with:
+- `name: str` class attribute
+- `required_context: list[str]` -- context fields this enricher needs
+- `optional_context: list[str]` -- context fields it can use but doesn't require
+- `required_api_keys: list[str]` -- env var names needed
+- `async def enrich(self, context: TravelContext) -> dict` -- abstract, returns empty dict on failure
+- `def to_markdown(self, data: dict) -> str` -- abstract, converts output to markdown for LLM prompt
+- `def to_slide_data(self, data: dict, layout_id: str) -> dict | None` -- optional, returns None by default
+- `def is_available(self) -> bool` -- checks all required_api_keys are in os.environ
+- `def has_required_context(self, context: TravelContext) -> bool` -- checks required fields are non-None
+
+### 3. EnricherRegistry
+Create `servers/fastapi/enrichers/registry.py`:
+- Maintains a list of all registered enricher instances
+- `get_available_enrichers(context: TravelContext) -> list[BaseEnricher]` -- returns enrichers that have both API keys AND required context
+- `register(enricher: BaseEnricher)` -- adds to registry
+- Auto-registration: import all enricher modules from the `enrichers/` package
+
+### 4. EnricherRunner (Parallel Orchestrator)
+Create `servers/fastapi/enrichers/runner.py`:
+- `async def run_enrichers(context: TravelContext) -> EnrichedContext`
+- Gets available enrichers from registry
+- Runs all available enrichers in parallel via `asyncio.gather(*tasks, return_exceptions=True)`
+- Catches exceptions per-enricher (logs error, continues with others)
+- Collects results into an `EnrichedContext` object
+- `EnrichedContext` has:
+  - `results: dict[str, dict]` -- enricher name -> output data
+  - `def to_markdown(self) -> str` -- calls each enricher's `to_markdown()`, concatenates with headers
+  - `def get_images(self) -> dict` -- extracts image URLs from image enricher results
+
+### 5. Pipeline Integration
+Modify `servers/fastapi/api/v1/ppt/endpoints/presentation.py`:
+- After `additional_context = ""` (line 529) and after document loading (line 543)
+- If the template is "travel" or "travel-itinerary":
+  - Construct a `TravelContext` from the request fields
+  - Run `await run_enrichers(context)`
+  - Append the `enriched_context.to_markdown()` to `additional_context`
+- This must NOT break the existing flow for non-travel templates
+- Import the enricher runner only when needed (lazy import)
+
+### 6. Backend Request Model Extension
+Add to `GeneratePresentationRequest` in `servers/fastapi/models/generate_presentation_request.py`:
+- `origin: Optional[str] = None` -- departure city
+- `currency: str = "USD"` -- price display currency
+These are optional and have no impact on existing non-travel flows.
+
+### 7. Frontend Form Extension
+Modify `servers/nextjs/app/(presentation-generator)/upload/components/TravelUploadPage.tsx`:
+- Add an "Origin / Departure City" text input (optional, placeholder "e.g., New York, NY")
+- Add a "Currency" dropdown (USD, EUR, GBP, AUD, CAD, JPY, CHF, INR, default USD)
+- Pass `origin` and `currency` to the `createPresentation` API call
+
+### 8. Frontend API Client Extension
+Modify `servers/nextjs/app/(presentation-generator)/services/api/presentation-generation.ts`:
+- Add `origin?: string` and `currency?: string` to the `createPresentation` params
+- Include them in the POST body
+
+### 9. Enricher Status Endpoint
+Create a new endpoint in `servers/fastapi/api/v1/ppt/endpoints/enrichers.py`:
+- `GET /api/v1/ppt/enrichers/status`
+- Returns JSON: `{ available: string[], unavailable: [{ name: string, missing_keys: string[] }] }`
+- Register this router in the FastAPI app
+
+### 10. Stub Enricher for Testing
+Create `servers/fastapi/enrichers/destination_intel.py` as the first real enricher stub:
+- Implements BaseEnricher
+- `required_api_keys = ["TAVILY_API_KEY"]`
+- `required_context = ["destination"]`
+- `enrich()` returns a minimal hardcoded response for now (to validate the full pipeline works end-to-end)
+- `to_markdown()` formats it as a "## Destination Overview" section
+- This will be fully implemented in Phase B
+
+## Success Criteria
+1. `GET /api/v1/ppt/enrichers/status` returns the correct available/unavailable enrichers based on configured env vars
+2. Generating a travel presentation with `TAVILY_API_KEY` set in `.env` shows the stub destination intel data appearing in the LLM's outline generation (visible in server logs or the generated content)
+3. Generating a travel presentation WITHOUT any enricher API keys produces the same result as before (graceful degradation)
+4. Generating a non-travel presentation (template="general") is completely unaffected
+5. The TravelUploadPage shows origin and currency fields
+6. The enricher framework is ready for Phase B enricher implementations
+
+## Technical Notes
+- All enricher code goes in `servers/fastapi/enrichers/` (new package)
+- Use `logging.getLogger(__name__)` for enricher logging, not print statements
+- Use `aiohttp` (already in dependencies) for HTTP calls to external APIs
+- The `.env` file already has TAVILY_API_KEY, SERPER_API_KEY, VISUAL_CROSSING_API_KEY, GOOGLE_MAPS_API_KEY, PEXELS_API_KEY, UNSPLASH_ACCESS_KEY, and FIRECRAWL_API_KEY
+- Docker env vars in `docker-compose.yml` will need new entries for enricher API keys (Phase B concern, not Phase A)

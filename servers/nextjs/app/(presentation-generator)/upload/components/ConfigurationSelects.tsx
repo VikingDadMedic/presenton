@@ -82,7 +82,7 @@ const SlideCountSelect: React.FC<{
                     name="slides"
                     data-testid="slides-select"
                     aria-expanded={open}
-                    className=" overflow-hidden font-syne font-medium  text-[#191919]  focus-visible:ring-[#5146E5]/30 flex justify-between items-center gap-2 h-[34px] rounded-full px-3.5 ring-1 ring-inset ring-slate-200 shadow-sm"
+                    className=" overflow-hidden font-display font-medium  text-[#191919]  focus-visible:ring-[#5146E5]/30 flex justify-between items-center gap-2 h-[34px] rounded-full px-3.5 ring-1 ring-inset ring-slate-200 shadow-sm"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
                         <path d="M4.0835 12.25H9.91683" stroke="black" strokeLinecap="round" strokeLinejoin="round" />
@@ -94,7 +94,7 @@ const SlideCountSelect: React.FC<{
                     <ChevronUp className="ml-2 h-4 w-4 shrink-0" />
                 </button>
             </PopoverTrigger>
-            <PopoverContent className="w-[140px] p-0 font-syne" align="end">
+            <PopoverContent className="w-[140px] p-0 font-display" align="end">
                 <div
                     className="sticky top-0 z-10 bg-white p-2 border-b"
                     onMouseDown={(e) => e.stopPropagation()}
@@ -139,7 +139,7 @@ const SlideCountSelect: React.FC<{
                                         setCustomInput("");
                                         onOpenChange(false);
                                     }}
-                                    className="font-syne text-sm font-medium"
+                                    className="font-display text-sm font-medium"
                                 >
                                     <Check
                                         className={cn(
@@ -174,7 +174,7 @@ const LanguageSelect: React.FC<{
                 name="language"
                 data-testid="language-select"
                 aria-expanded={open}
-                className="w-[125px] flex items-center gap-2 overflow-hidden  font-syne font-semibold  text-[#191919] h-10 rounded-full px-3.5 ring-1 ring-inset ring-slate-200 shadow-sm"
+                className="w-[125px] flex items-center gap-2 overflow-hidden  font-display font-semibold  text-[#191919] h-10 rounded-full px-3.5 ring-1 ring-inset ring-slate-200 shadow-sm"
             >
                 <Languages className="w-3.5 h-3.5" />
                 <span className="w-[40px] text-left">

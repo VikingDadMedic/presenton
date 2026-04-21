@@ -83,6 +83,13 @@ class ImageGenerationService:
         image_prompt = prompt.get_image_prompt(
             with_theme=not self.is_stock_provider_selected()
         )
+
+        if prompt.template == "travel":
+            if self.is_stock_provider_selected():
+                image_prompt = f"travel destination {image_prompt}"
+            else:
+                image_prompt = f"Professional travel photography, scenic destination shot: {image_prompt}"
+
         print(f"Request - Generating Image for {image_prompt}")
 
         try:

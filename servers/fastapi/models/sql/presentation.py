@@ -42,6 +42,10 @@ class PresentationModel(SQLModel, table=True):
     include_title_slide: bool = Field(sa_column=Column(Boolean), default=True)
     web_search: bool = Field(sa_column=Column(Boolean), default=False)
     theme: Optional[dict] = Field(sa_column=Column(JSON), default=None)
+    origin: Optional[str] = Field(sa_column=Column(String), default=None)
+    currency: str = Field(sa_column=Column(String), default="USD")
+    enriched_context: Optional[str] = Field(sa_column=Column(String), default=None)
+    enriched_data: Optional[dict] = Field(sa_column=Column(JSON), default=None)
 
     def get_new_presentation(self):
         return PresentationModel(
@@ -59,6 +63,10 @@ class PresentationModel(SQLModel, table=True):
             verbosity=self.verbosity,
             include_table_of_contents=self.include_table_of_contents,
             include_title_slide=self.include_title_slide,
+            origin=self.origin,
+            currency=self.currency,
+            enriched_context=self.enriched_context,
+            enriched_data=self.enriched_data,
         )
 
     def get_presentation_outline(self):

@@ -2,8 +2,11 @@ import { useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import {
   clearPresentationData,
+  markSkeletonReady,
   setPresentationData,
+  setSkeletonSlides,
   setStreaming,
+  updateSkeletonLayouts,
 } from "@/store/slices/presentationGeneration";
 import { jsonrepair } from "jsonrepair";
 import { toast } from "sonner";
@@ -33,6 +36,14 @@ const normalizePresentationAssets = <T,>(input: T): T => {
   return input;
 };
 
+const STREAM_FALLBACK_TIMEOUT_MS = 2 * 60 * 1000;
+
+function removeStreamParam() {
+  const newUrl = new URL(window.location.href);
+  newUrl.searchParams.delete("stream");
+  window.history.replaceState({}, "", newUrl.toString());
+}
+
 export const usePresentationStreaming = (
   presentationId: string,
   stream: string | null,
@@ -42,6 +53,7 @@ export const usePresentationStreaming = (
 ) => {
   const dispatch = useDispatch();
   const previousSlidesLength = useRef(0);
+  const slidesReceivedRef = useRef(false);
 
   useEffect(() => {
     if (!stream) {
@@ -54,6 +66,7 @@ export const usePresentationStreaming = (
     let retryCount = 0;
     let isClosed = false;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
     const closeEventSource = () => {
       if (eventSource) {
@@ -105,6 +118,20 @@ export const usePresentationStreaming = (
 
     const openStream = () => {
       closeEventSource();
+      slidesReceivedRef.current = false;
+
+      fallbackTimer = setTimeout(() => {
+        if (!slidesReceivedRef.current) {
+          console.warn("Stream fallback: no slides received after timeout, fetching from DB");
+          closeEventSource();
+          clearRetryTimer();
+          setLoading(false);
+          dispatch(setStreaming(false));
+          removeStreamParam();
+          fetchUserSlides();
+        }
+      }, STREAM_FALLBACK_TIMEOUT_MS);
+
       eventSource = new EventSource(
         `${getFastAPIUrl()}/api/v1/ppt/presentation/stream/${presentationId}`
       );
@@ -121,6 +148,22 @@ export const usePresentationStreaming = (
         }
 
         switch (data.type) {
+          case "outlines":
+            dispatch(
+              setSkeletonSlides(
+                (data.outlines as { content: string }[]).map((o) => ({
+                  outlineText: o.content,
+                  ready: false,
+                }))
+              )
+            );
+            setLoading(false);
+            break;
+
+          case "structure":
+            dispatch(updateSkeletonLayouts(data.layouts as string[]));
+            break;
+
           case "chunk":
             accumulatedChunks += data.chunk;
             try {
@@ -133,6 +176,7 @@ export const usePresentationStreaming = (
                   normalizedPartialData.slides.length !== previousSlidesLength.current &&
                   normalizedPartialData.slides.length > 0
                 ) {
+                  dispatch(markSkeletonReady(partialData.slides.length));
                   dispatch(
                     setPresentationData({
                       ...normalizedPartialData,
@@ -140,10 +184,11 @@ export const usePresentationStreaming = (
                     })
                   );
                   previousSlidesLength.current = normalizedPartialData.slides.length;
+                  slidesReceivedRef.current = true;
                   setLoading(false);
                 }
               }
-            } catch (error) {
+            } catch {
               // JSON isn't complete yet, continue accumulating
             }
             break;
@@ -151,17 +196,15 @@ export const usePresentationStreaming = (
           case "complete":
             try {
               dispatch(setPresentationData(normalizePresentationAssets(data.presentation)));
+              slidesReceivedRef.current = true;
               dispatch(setStreaming(false));
               setLoading(false);
               isClosed = true;
               closeEventSource();
               clearRetryTimer();
+              if (fallbackTimer) clearTimeout(fallbackTimer);
               retryCount = 0;
-
-              // Remove stream parameter from URL
-              const newUrl = new URL(window.location.href);
-              newUrl.searchParams.delete("stream");
-              window.history.replaceState({}, "", newUrl.toString());
+              removeStreamParam();
             } catch (error) {
               if (!scheduleRetry("failed to parse complete payload")) {
                 finalizeFailure("Failed to parse final presentation payload.");
@@ -172,19 +215,19 @@ export const usePresentationStreaming = (
 
           case "closing":
             dispatch(setPresentationData(normalizePresentationAssets(data.presentation)));
+            slidesReceivedRef.current = true;
             setLoading(false);
             dispatch(setStreaming(false));
             isClosed = true;
             closeEventSource();
             clearRetryTimer();
+            if (fallbackTimer) clearTimeout(fallbackTimer);
             retryCount = 0;
-
-            // Remove stream parameter from URL
-            const newUrl = new URL(window.location.href);
-            newUrl.searchParams.delete("stream");
-            window.history.replaceState({}, "", newUrl.toString());
+            removeStreamParam();
             break;
+
           case "error":
+            if (fallbackTimer) clearTimeout(fallbackTimer);
             if (
               !scheduleRetry(
                 data.detail || "server returned stream error response"
@@ -201,8 +244,15 @@ export const usePresentationStreaming = (
 
       eventSource.onerror = (error) => {
         console.error("EventSource failed:", error);
+        if (fallbackTimer) clearTimeout(fallbackTimer);
         if (!scheduleRetry("connection lost")) {
-          finalizeFailure("Failed to connect to the server. Please try again.");
+          console.warn("Max retries exceeded, attempting to load from database...");
+          closeEventSource();
+          clearRetryTimer();
+          setLoading(false);
+          dispatch(setStreaming(false));
+          removeStreamParam();
+          fetchUserSlides();
         }
       };
     };
@@ -216,6 +266,7 @@ export const usePresentationStreaming = (
       isClosed = true;
       closeEventSource();
       clearRetryTimer();
+      if (fallbackTimer) clearTimeout(fallbackTimer);
     };
   }, [presentationId, stream, dispatch, setLoading, setError, fetchUserSlides]);
 };

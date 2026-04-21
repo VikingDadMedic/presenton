@@ -28,11 +28,14 @@ export interface Slide {
   type: number;
   design_index: number | null;
   images: string[] | null;
-  properties: null | any;
+  properties: null | Record<string, unknown>;
   icons: string[] | null;
   graph_id: string | null;
   presentation?: string;
   speaker_note?: string;
+  layout?: string;
+  layout_group?: string;
+  html_content?: string | null;
 
   content: SlideContent;
 }

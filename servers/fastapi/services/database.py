@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     AsyncSession,
 )
+from sqlalchemy import text
 from sqlmodel import SQLModel
 
 from models.sql.async_presentation_generation_status import (
@@ -79,6 +80,34 @@ async def create_db_and_tables():
                     ],
                 )
             )
+
+            # Lightweight schema migration for existing DBs: ensure new columns exist.
+            if database_url.startswith("sqlite"):
+                result = await conn.execute(text("PRAGMA table_info(presentations)"))
+                column_names = {row[1] for row in result.fetchall()}
+            else:
+                result = await conn.execute(text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_name = 'presentations'"
+                ))
+                column_names = {row[0] for row in result.fetchall()}
+
+            if "theme" not in column_names:
+                col_type = "JSON" if database_url.startswith("sqlite") else "JSONB"
+                await conn.execute(text(f"ALTER TABLE presentations ADD COLUMN theme {col_type}"))
+
+            migration_columns = [
+                ("origin", "VARCHAR", None),
+                ("currency", "VARCHAR", "'USD'"),
+                ("enriched_context", "TEXT", None),
+                ("enriched_data", "JSON" if database_url.startswith("sqlite") else "JSONB", None),
+            ]
+            for col_name, col_type, default_val in migration_columns:
+                if col_name not in column_names:
+                    default_clause = f" DEFAULT {default_val}" if default_val else ""
+                    await conn.execute(text(
+                        f"ALTER TABLE presentations ADD COLUMN {col_name} {col_type}{default_clause}"
+                    ))
 
     async with container_db_engine.begin() as conn:
         await conn.run_sync(

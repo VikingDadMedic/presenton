@@ -136,8 +136,8 @@ export interface TemplateCreationProgressProps {
 }
 
 export interface DrawingCanvasProps {
-  canvasRef: React.RefObject<HTMLCanvasElement>;
-  slideDisplayRef: React.RefObject<HTMLDivElement>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  slideDisplayRef: React.RefObject<HTMLDivElement | null>;
   strokeWidth: number;
   strokeColor: string;
   eraserMode: boolean;
@@ -150,3 +150,43 @@ export interface DrawingCanvasProps {
 }
 
 
+export interface SlideActionsProps {
+  slide: ProcessedSlide;
+  index: number;
+  isProcessing: boolean;
+  isEditMode: boolean;
+  isHtmlEditMode: boolean;
+  onEditClick: () => void;
+  onHtmlEditClick: () => void;
+  onRetry: () => void;
+  onDelete: () => void;
+}
+
+export interface SlideContentDisplayProps {
+  slide: ProcessedSlide;
+  isEditMode: boolean;
+  isHtmlEditMode: boolean;
+  slideContentRef: React.RefObject<HTMLDivElement | null>;
+  slideDisplayRef: React.RefObject<HTMLDivElement | null>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  canvasDimensions: { width: number; height: number };
+  strokeWidth: number;
+  strokeColor: string;
+  eraserMode: boolean;
+  isDrawing: boolean;
+  didYourDraw: boolean;
+  onMouseDown: (e: React.MouseEvent<HTMLCanvasElement>) => void;
+  onMouseMove: (e: React.MouseEvent<HTMLCanvasElement>) => void;
+  onMouseUp: (e: React.MouseEvent<HTMLCanvasElement>) => void;
+  onTouchStart: (e: React.TouchEvent<HTMLCanvasElement>) => void;
+  onTouchMove: (e: React.TouchEvent<HTMLCanvasElement>) => void;
+  onTouchEnd: (e: React.TouchEvent<HTMLCanvasElement>) => void;
+  retrySlide: (slideNumber: number) => void;
+}
+
+export interface HtmlEditorProps {
+  slide: ProcessedSlide;
+  isHtmlEditMode: boolean;
+  onSave: (html: string) => void;
+  onCancel: () => void;
+}

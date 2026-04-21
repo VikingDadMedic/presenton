@@ -127,7 +127,7 @@ class LLMClient:
                 status_code=400,
                 detail="OpenAI API Key is not set",
             )
-        return AsyncOpenAI()
+        return AsyncOpenAI(timeout=120.0)
 
     def _get_google_client(self):
         if not get_google_api_key_env():
@@ -160,6 +160,7 @@ class LLMClient:
         return AsyncOpenAI(
             base_url=get_custom_llm_url_env(),
             api_key=get_custom_llm_api_key_env() or "null",
+            timeout=120.0,
         )
 
     def _get_codex_headers(self) -> dict:

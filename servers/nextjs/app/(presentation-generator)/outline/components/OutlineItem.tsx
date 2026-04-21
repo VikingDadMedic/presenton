@@ -122,7 +122,7 @@ export function OutlineItem({
         <div
             ref={setNodeRef}
             style={style}
-            className={`mb-4 bg-white rounded-[12px] group shadow-sm p-10 relative font-syne transition-all duration-500 hover:shadow-[0_6.6px_13.2px_0_rgba(0,0,0,0.10)] ${isDragging ? "opacity-50" : ""}`}
+            className={`mb-4 bg-white rounded-[12px] group shadow-sm p-10 relative font-display transition-all duration-500 hover:shadow-[0_6.6px_13.2px_0_rgba(0,0,0,0.10)] ${isDragging ? "opacity-50" : ""}`}
         >
 
             <div

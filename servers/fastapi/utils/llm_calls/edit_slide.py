@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 from models.llm_message import LLMSystemMessage, LLMUserMessage
 from models.presentation_layout import SlideLayoutModel
 from models.sql.slide import SlideModel
@@ -55,6 +55,8 @@ def get_system_prompt(
     - Make sure to follow language guidelines.
     - Speaker note should be normal text, not markdown.
     - Speaker note should be simple, clear, concise and to the point.
+    - When editing travel slides, maintain consistent pricing format, date format, and destination naming.
+    - Preserve travel-specific data accuracy (flight times, distances, ratings) unless explicitly asked to change.
     {memory_block}
 
     **Go through all notes and steps and make sure they are followed, including mentioned constraints**
@@ -146,5 +148,45 @@ async def get_edited_slide_content(
         )
         return response
 
+    except Exception as e:
+        raise handle_llm_client_exceptions(e)
+
+
+async def get_edited_field_value(
+    prompt: str,
+    current_value: Any,
+    language: str = "English",
+) -> str:
+    model = get_model()
+    type_name = type(current_value).__name__
+
+    messages = [
+        LLMSystemMessage(
+            content=(
+                "You are a precise data editor. Edit the given field value based on "
+                "the user's instruction. Return ONLY the new value as plain text. "
+                "Do not add any explanation, formatting, quotes, or markdown. "
+                "If the value is a number, return only the number. "
+                "If it's text, return only the text."
+            ),
+        ),
+        LLMUserMessage(
+            content=(
+                f"Current value: {current_value}\n"
+                f"Type: {type_name}\n"
+                f"Language: {language}\n"
+                f"Instruction: {prompt}"
+            ),
+        ),
+    ]
+
+    client = LLMClient()
+    try:
+        response = await client.generate(
+            model=model,
+            messages=messages,
+            max_tokens=500,
+        )
+        return response.strip()
     except Exception as e:
         raise handle_llm_client_exceptions(e)

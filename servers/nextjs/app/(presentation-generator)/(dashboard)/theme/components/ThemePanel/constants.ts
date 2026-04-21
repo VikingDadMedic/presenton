@@ -23,41 +23,43 @@ export const FONT_OPTIONS: any[] = [
   { name: 'Lato', displayName: 'Lato', cssUrl: 'https://fonts.googleapis.com/css2?family=Lato:wght@100..900&display=swap' },
   { name: 'Source Sans Pro', displayName: 'Source Sans Pro', cssUrl: 'https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@200..900&display=swap' },
   { name: 'Playfair Display', displayName: 'Playfair Display', cssUrl: 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400..900&display=swap' },
-  { name: 'Roboto', displayName: 'Roboto', cssUrl: 'https://fonts.googleapis.com/css2?family=Roboto:wght@100..900&display=swap' }
+  { name: 'Roboto', displayName: 'Roboto', cssUrl: 'https://fonts.googleapis.com/css2?family=Roboto:wght@100..900&display=swap' },
+  { name: 'Cormorant Garamond', displayName: 'Cormorant Garamond', cssUrl: 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..600;1,300..600&display=swap' },
+  { name: 'DM Mono', displayName: 'DM Mono', cssUrl: 'https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap' }
 ]
 
 export const DEFAULT_THEMES: any[] = [
   {
-    id: "edge-yellow",
-    name: "Edge Yellow",
-    description: "Yellow and dark theme for professionalish and edge.",
+    id: "velara-gold",
+    name: "Velara Gold",
+    description: "Warm dark with gold accent, luxury-editorial feel",
     logo: null,
     logo_url: null,
     company_name: null,
 
     data: {
       colors: {
-        primary: "#f5f547",
-        background: "#1f1f1f",
-        card: "#424242",
-        stroke: "#585858",
-        primary_text: "#161616",
-        background_text: "#f5f547",
-        graph_0: "#ffff54",
-        graph_1: "#f1f142",
-        graph_2: "#dada15",
-        graph_3: "#c1bf00",
-        graph_4: "#a8a600",
-        graph_5: "#908c00",
-        graph_6: "#797400",
-        graph_7: "#625c00",
-        graph_8: "#4d4500",
-        graph_9: "#382f00"
+        primary: "#c9a84c",
+        background: "#13151c",
+        card: "#1a1d26",
+        stroke: "rgba(255,255,255,0.16)",
+        primary_text: "#13151c",
+        background_text: "#f4f0e8",
+        graph_0: "#2dd4bf",
+        graph_1: "#f59e0b",
+        graph_2: "#5b8cff",
+        graph_3: "#a78bfa",
+        graph_4: "#fb7185",
+        graph_5: "#4ade80",
+        graph_6: "#e8c87a",
+        graph_7: "#fbbf24",
+        graph_8: "#c9a84c",
+        graph_9: "#2dd4bf"
       },
       fonts: {
         textFont: {
-          name: "Playfair Display",
-          url: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400..900&display=swap"
+          name: "Cormorant Garamond",
+          url: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500;1,600&display=swap"
         }
       }
     }
@@ -198,6 +200,181 @@ export const DEFAULT_THEMES: any[] = [
         textFont: {
           name: "Instrument Sans",
           url: "https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap"
+        }
+      }
+    }
+  },
+  {
+    id: "tropical-paradise",
+    name: "Tropical Paradise",
+    description: "Warm, vibrant island vibes with coral accents",
+    user: "system",
+    logo: null,
+    logo_url: null,
+    company_name: null,
+    data: {
+      colors: {
+        primary: "#ff6b35",
+        background: "#fff8f0",
+        card: "#fff0e0",
+        stroke: "#ffd4b8",
+        primary_text: "#ffffff",
+        background_text: "#3d2c1e",
+        graph_0: "#ff6b35",
+        graph_1: "#ff8c5a",
+        graph_2: "#ffad80",
+        graph_3: "#e85d26",
+        graph_4: "#d14f1a",
+        graph_5: "#ba410e",
+        graph_6: "#f7943e",
+        graph_7: "#f0b86e",
+        graph_8: "#c96a2c",
+        graph_9: "#a34e18"
+      },
+      fonts: {
+        textFont: {
+          name: "Nunito",
+          url: "https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap"
+        }
+      }
+    }
+  },
+  {
+    id: "luxury-escape",
+    name: "Luxury Escape",
+    description: "Dark, sophisticated theme with gold accents",
+    user: "system",
+    logo: null,
+    logo_url: null,
+    company_name: null,
+    data: {
+      colors: {
+        primary: "#c9a96e",
+        background: "#1a1a2e",
+        card: "#2a2a3e",
+        stroke: "#3a3a4e",
+        primary_text: "#1a1a2e",
+        background_text: "#f0e6d3",
+        graph_0: "#c9a96e",
+        graph_1: "#d4b97e",
+        graph_2: "#dfca8e",
+        graph_3: "#b8985d",
+        graph_4: "#a7874c",
+        graph_5: "#96763b",
+        graph_6: "#e0d4a8",
+        graph_7: "#8b6c30",
+        graph_8: "#7a5b25",
+        graph_9: "#694a1a"
+      },
+      fonts: {
+        textFont: {
+          name: "Playfair Display",
+          url: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap"
+        }
+      }
+    }
+  },
+  {
+    id: "adventure-trail",
+    name: "Adventure Trail",
+    description: "Earthy, rugged tones for outdoor adventures",
+    user: "system",
+    logo: null,
+    logo_url: null,
+    company_name: null,
+    data: {
+      colors: {
+        primary: "#2d5016",
+        background: "#f5f0e8",
+        card: "#eae4d8",
+        stroke: "#d5cfc3",
+        primary_text: "#ffffff",
+        background_text: "#2d3a1e",
+        graph_0: "#2d5016",
+        graph_1: "#3d6a20",
+        graph_2: "#4d842a",
+        graph_3: "#5d9e34",
+        graph_4: "#6db83e",
+        graph_5: "#84c65a",
+        graph_6: "#9bd476",
+        graph_7: "#1e3a0e",
+        graph_8: "#7aaa4a",
+        graph_9: "#a8d48c"
+      },
+      fonts: {
+        textFont: {
+          name: "Barlow",
+          url: "https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,100..900;1,100..900&display=swap"
+        }
+      }
+    }
+  },
+  {
+    id: "ocean-breeze",
+    name: "Ocean Breeze",
+    description: "Cool, calm seaside tones with ocean blue",
+    user: "system",
+    logo: null,
+    logo_url: null,
+    company_name: null,
+    data: {
+      colors: {
+        primary: "#0077b6",
+        background: "#f0f7ff",
+        card: "#e0efff",
+        stroke: "#b8d4f0",
+        primary_text: "#ffffff",
+        background_text: "#1a3a52",
+        graph_0: "#0077b6",
+        graph_1: "#0088cc",
+        graph_2: "#0099e2",
+        graph_3: "#00aaf8",
+        graph_4: "#33bbff",
+        graph_5: "#66ccff",
+        graph_6: "#005f8f",
+        graph_7: "#004768",
+        graph_8: "#99ddff",
+        graph_9: "#003049"
+      },
+      fonts: {
+        textFont: {
+          name: "DM Sans",
+          url: "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+        }
+      }
+    }
+  },
+  {
+    id: "cultural-journey",
+    name: "Cultural Journey",
+    description: "Rich, warm heritage tones with terracotta",
+    user: "system",
+    logo: null,
+    logo_url: null,
+    company_name: null,
+    data: {
+      colors: {
+        primary: "#8b4513",
+        background: "#faf3e8",
+        card: "#f0e6d3",
+        stroke: "#ddd0be",
+        primary_text: "#ffffff",
+        background_text: "#3d2c1e",
+        graph_0: "#8b4513",
+        graph_1: "#a0561e",
+        graph_2: "#b56729",
+        graph_3: "#ca7834",
+        graph_4: "#df893f",
+        graph_5: "#e89f5f",
+        graph_6: "#f0b57f",
+        graph_7: "#763a0e",
+        graph_8: "#612f09",
+        graph_9: "#4c2404"
+      },
+      fonts: {
+        textFont: {
+          name: "Lora",
+          url: "https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&display=swap"
         }
       }
     }

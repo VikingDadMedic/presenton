@@ -14,6 +14,14 @@ from utils.path_helpers import get_resource_path
 
 app = FastAPI(lifespan=app_lifespan)
 
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
+
+
 # Routers
 app.include_router(API_V1_PPT_ROUTER)
 app.include_router(API_V1_WEBHOOK_ROUTER)

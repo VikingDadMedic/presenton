@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useCallback, memo } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { TemplateLayoutsWithSettings } from "@/app/presentation-templates/utils";
 import { templates } from "@/app/presentation-templates";
@@ -43,10 +44,10 @@ const BuiltInTemplateCard = memo(function BuiltInTemplateCard({
       </TemplatePreviewStage>
       <div className="flex items-center justify-between px-6 py-5 bg-white border-t border-[#EDEEEF] relative z-40">
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-bold text-gray-900 capitalize font-syne">
+          <h3 className="text-sm font-bold text-gray-900 capitalize font-display">
             {template.name}
           </h3>
-          <p className="text-xs text-gray-600 line-clamp-2 font-syne">
+          <p className="text-xs text-gray-600 line-clamp-2 font-display">
             {template.description}
           </p>
         </div>
@@ -64,6 +65,8 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(function Templa
   selectedTemplate,
   onSelectTemplate,
 }) {
+  const searchParams = useSearchParams();
+
   useEffect(() => {
     const existingScript = document.querySelector(
       'script[src*="tailwindcss.com"]'
@@ -75,6 +78,16 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(function Templa
       document.head.appendChild(script);
     }
   }, []);
+
+  useEffect(() => {
+    const templateParam = searchParams.get("template");
+    if (templateParam && !selectedTemplate) {
+      const match = templates.find((t) => t.id === templateParam);
+      if (match) {
+        onSelectTemplate(match);
+      }
+    }
+  }, [searchParams, selectedTemplate, onSelectTemplate]);
 
   const { templates: customTemplates, loading: customLoading } = useCustomTemplateSummaries();
 
@@ -101,7 +114,7 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(function Templa
   const customTemplateCards = useMemo(() => {
     if (customLoading) {
       return (
-        <div className="flex items-center justify-center py-12 font-syne">
+        <div className="flex items-center justify-center py-12 font-display">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
           <span className="ml-3 text-gray-600">Loading custom templates...</span>
         </div>
@@ -145,12 +158,12 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(function Templa
     <div className="space-y-[30px] mb-4">
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-semibold text-gray-900 font-syne">Custom</h3>
+          <h3 className="text-base font-semibold text-gray-900 font-display">Custom</h3>
         </div>
         {customTemplateCards}
       </div>
       <div>
-        <h3 className="text-base font-semibold text-gray-900 mb-3 font-syne">In Built</h3>
+        <h3 className="text-base font-semibold text-gray-900 mb-3 font-display">In Built</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {builtInTemplateCards}
         </div>

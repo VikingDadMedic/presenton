@@ -164,7 +164,7 @@ const SidePanel = ({
                   <div
                     key={`${slide.id}-${index}`}
                     onClick={() => onSlideClick(index)}
-                    className={` cursor-pointer ring-2   rounded-[12px] transition-all duration-200 ${selectedSlide === index ? ' ring-[#5141e5]' : 'ring-gray-200'
+                    className={` cursor-pointer ring-2   rounded-[12px] transition-all duration-200 ${selectedSlide === index ? ' ring-primary' : 'ring-gray-200'
                       }`}
                   >
                     <div className=" bg-white pointer-events-none  relative overflow-hidden aspect-video">

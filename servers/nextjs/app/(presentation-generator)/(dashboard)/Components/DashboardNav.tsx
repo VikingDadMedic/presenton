@@ -33,7 +33,7 @@ const DashboardNav = () => {
                             aria-label="Create travel presentation"
                             style={{
                                 borderRadius: "48px",
-                                background: "linear-gradient(270deg, #93E4C1 2.4%, #A8D8EA 27.88%, #C3AED6 69.23%, #D5CAFC 100%)",
+                                background: "linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)",
                             }}
                         >
                             <Plane className="w-4 h-4" />
@@ -47,7 +47,7 @@ const DashboardNav = () => {
                             aria-label="Create new presentation"
                             style={{
                                 borderRadius: "48px",
-                                background: "linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)",
+                                background: "linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)",
                             }}
                         >
                             <span className="hidden md:inline">New presentation</span>
@@ -62,7 +62,7 @@ const DashboardNav = () => {
                             aria-label="Create new themes"
                             style={{
                                 borderRadius: "48px",
-                                background: "linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)",
+                                background: "linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)",
                             }}
                         >
                             <span className="hidden md:inline">New Themes</span>

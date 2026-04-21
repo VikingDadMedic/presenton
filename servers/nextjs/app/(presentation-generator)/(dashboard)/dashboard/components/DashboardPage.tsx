@@ -75,7 +75,7 @@ const DashboardPage: React.FC = () => {
               aria-label="Create travel presentation"
               style={{
                 borderRadius: "48px",
-                background: "linear-gradient(270deg, #93E4C1 2.4%, #A8D8EA 27.88%, #C3AED6 69.23%, #D5CAFC 100%)",
+                background: "linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)",
               }}
             >
               <Plane className="w-4 h-4" />
@@ -90,7 +90,7 @@ const DashboardPage: React.FC = () => {
               aria-label="Create new presentation"
               style={{
                 borderRadius: "48px",
-                background: "linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)",
+                background: "linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)",
               }}
             >
 
@@ -114,7 +114,7 @@ const DashboardPage: React.FC = () => {
         style={{
           height: "341px",
           borderRadius: '1440px',
-          background: 'radial-gradient(5.92% 104.69% at 50% 100%, rgba(122, 90, 248, 0.00) 0%, rgba(255, 255, 255, 0.00) 100%), radial-gradient(50% 50% at 50% 50%, rgba(122, 90, 248, 0.80) 0%, rgba(122, 90, 248, 0.00) 100%)',
+          background: 'radial-gradient(5.92% 104.69% at 50% 100%, rgba(201, 168, 76, 0.00) 0%, rgba(255, 255, 255, 0.00) 100%), radial-gradient(50% 50% at 50% 50%, rgba(201, 168, 76, 0.80) 0%, rgba(201, 168, 76, 0.00) 100%)',
         }}
       />
     </div>

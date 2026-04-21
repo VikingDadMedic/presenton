@@ -342,7 +342,7 @@ const PresentationHeader = ({
       )}
     >
       {isEditingTitle ? (
-        <div className="flex items-stretch w-[450px]  gap-0.5 rounded-[14px] border border-[#E4E2EB] bg-white pl-3.5 pr-1 py-1 shadow-[0_2px_12px_rgba(17,3,31,0.06)] ring-2 ring-[#5141e5]/15">
+        <div className="flex items-stretch w-[450px]  gap-0.5 rounded-[14px] border border-[#E4E2EB] bg-white pl-3.5 pr-1 py-1 shadow-[0_2px_12px_rgba(17,3,31,0.06)] ring-2 ring-primary/15">
           <input
             ref={titleInputRef}
             value={draftTitle}
@@ -369,7 +369,7 @@ const PresentationHeader = ({
                 type="button"
                 onMouseDown={onTitleSaveMouseDown}
                 onClick={commitTitleEdit}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#5141e5] hover:bg-[#5141e5]/10 transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors"
                 aria-label="Save title"
               >
                 <Check className="h-4 w-4" strokeWidth={2.25} />
@@ -395,7 +395,7 @@ const PresentationHeader = ({
           disabled={isStreaming || !presentationData}
           className={cn(
             "group/title flex w-full min-w-0 items-center gap-2.5 rounded-[14px] px-3 py-2 text-left -mx-3 transition-colors",
-            "hover:bg-[#F6F6F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5141e5] focus-visible:ring-offset-2",
+            "hover:bg-[#F6F6F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
             "disabled:pointer-events-none disabled:opacity-100 disabled:hover:bg-transparent"
           )}
         >
@@ -407,7 +407,7 @@ const PresentationHeader = ({
           </h2>
           {presentationData && !isStreaming && (
             <Pencil
-              className="h-3.5 w-3.5 shrink-0 text-[#101323]/40 transition-all duration-200 group-hover/title:text-[#5141e5] opacity-80 sm:opacity-0 sm:group-hover/title:opacity-100 group-hover/title:opacity-100"
+              className="h-3.5 w-3.5 shrink-0 text-[#101323]/40 transition-all duration-200 group-hover/title:text-primary opacity-80 sm:opacity-0 sm:group-hover/title:opacity-100 group-hover/title:opacity-100"
               aria-hidden
             />
           )}
@@ -436,7 +436,7 @@ const PresentationHeader = ({
 
             <ToolTip content="Regenerate Presentation">
               <button onClick={handleReGenerate} className="group">
-                <RotateCcw className="w-3.5 h-3.5 text-[#101323] group-hover:text-[#5141e5] duration-300" />
+                <RotateCcw className="w-3.5 h-3.5 text-[#101323] group-hover:text-primary duration-300" />
               </button>
             </ToolTip>
             <Separator orientation="vertical" className="h-4" />
@@ -445,7 +445,7 @@ const PresentationHeader = ({
                 onUndo();
               }}>
 
-                <Undo2 className="w-3.5 h-3.5 text-[#101323] group-hover:text-[#5141e5] duration-300" />
+                <Undo2 className="w-3.5 h-3.5 text-[#101323] group-hover:text-primary duration-300" />
 
               </button>
             </ToolTip>
@@ -456,7 +456,7 @@ const PresentationHeader = ({
 
                 onRedo();
               }}>
-                <Redo2 className="w-3.5 h-3.5 text-[#101323] group-hover:text-[#5141e5] duration-300" />
+                <Redo2 className="w-3.5 h-3.5 text-[#101323] group-hover:text-primary duration-300" />
 
               </button>
             </ToolTip>
@@ -475,7 +475,7 @@ const PresentationHeader = ({
                   router.push(to);
                 }}
                 disabled={isStreaming || !presentationData?.slides || presentationData?.slides.length === 0} className="cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group">
-                <Play className="w-3.5 h-3.5 text-[#101323] group-hover:text-[#5141e5] duration-300" />
+                <Play className="w-3.5 h-3.5 text-[#101323] group-hover:text-primary duration-300" />
               </button>
             </ToolTip>
           </div>
@@ -484,7 +484,7 @@ const PresentationHeader = ({
             <PopoverTrigger asChild>
               <button className="flex  items-center gap-[7px] px-[18px] py-[11px] rounded-[53px] text-sm font-semibold text-[#101323]"
                 style={{
-                  background: "linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)",
+                  background: "linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)",
                 }}
                 disabled={isExporting || isStreaming === true}
               >

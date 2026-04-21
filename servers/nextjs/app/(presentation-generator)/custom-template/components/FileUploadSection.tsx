@@ -64,7 +64,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
           style={{
             height: "341px",
             borderRadius: '1440px',
-            background: 'radial-gradient(5.92% 104.69% at 50% 100%, rgba(122, 90, 248, 0.00) 0%, rgba(255, 255, 255, 0.00) 100%), radial-gradient(50% 50% at 50% 50%, rgba(122, 90, 248, 0.80) 0%, rgba(122, 90, 248, 0.00) 100%)',
+            background: 'radial-gradient(5.92% 104.69% at 50% 100%, rgba(201, 168, 76, 0.00) 0%, rgba(255, 255, 255, 0.00) 100%), radial-gradient(50% 50% at 50% 50%, rgba(201, 168, 76, 0.80) 0%, rgba(201, 168, 76, 0.00) 100%)',
           }}
         />
 
@@ -104,8 +104,8 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                     className={`opacity-0 w-full h-full ${!isAllowed ? 'cursor-not-allowed' : 'cursor-pointer'} absolute top-0 left-0 z-10`}
                   />
                   <div className='absolute inset-0 flex flex-col items-center justify-center'>
-                    <div className='w-[42px] h-[42px] flex justify-center items-center rounded-full bg-[#EBE9FE]' >
-                      <div className='w-[22px] h-[22px] rounded-full bg-[#7A5AF8] flex items-center justify-center text-white'>
+                    <div className='w-[42px] h-[42px] flex justify-center items-center rounded-full bg-primary/10' >
+                      <div className='w-[22px] h-[22px] rounded-full bg-primary flex items-center justify-center text-white'>
                         <Plus className='w-3 h-3' />
                       </div>
                     </div>
@@ -171,10 +171,10 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                       .processing-stripes {
                         background: repeating-linear-gradient(
                           135deg,
-                          rgba(122, 90, 248, 0.9) 0px,
-                          rgba(122, 90, 248, 0.9) 9px,
-                          rgba(122, 90, 248, 0.18) 9px,
-                          rgba(122, 90, 248, 0.18) 18px
+                          rgba(201, 168, 76, 0.9) 0px,
+                          rgba(201, 168, 76, 0.9) 9px,
+                          rgba(201, 168, 76, 0.18) 9px,
+                          rgba(201, 168, 76, 0.18) 18px
                         );
                         filter: saturate(1.05);
                         background-size: 24px 24px;
@@ -189,7 +189,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                       <button className="px-4 py-2.5 text-xs font-semibold text-[#101323] font-display tracking-[-0.12px] flex gap-1"
                         style={{
                           borderRadius: '48px',
-                          background: 'linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)',
+                          background: 'linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)',
                           cursor: !isAllowed ? 'not-allowed' : 'pointer',
                         }}
                         onClick={handleCheckFonts}
@@ -215,27 +215,27 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
         <ul className="flex items-center max-w-[85%] md:max-w-[70%] mx-auto  mt-5 justify-between gap-2.5">
           <li className="flex items-center gap-1">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <circle cx="8.5" cy="8.17041" r="4.5" fill="#EBE9FE" />
+              <circle cx="8.5" cy="8.17041" r="4.5" fill="currentColor" className="text-primary/10" />
             </svg>
             <p className="md:text-sm text-[10px] font-normal text-[#3A3A3A] ">PPTX. Only</p>
           </li>
           <li className="flex items-center gap-1">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <circle cx="8.5" cy="8.17041" r="4.5" fill="#EBE9FE" />
+              <circle cx="8.5" cy="8.17041" r="4.5" fill="currentColor" className="text-primary/10" />
             </svg>
             <p className="md:text-sm text-[10px] font-normal text-[#3A3A3A] ">Max 100MB</p>
           </li>
           <li className="flex items-center gap-1">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <circle cx="8.5" cy="8.17041" r="4.5" fill="#EBE9FE" />
+              <circle cx="8.5" cy="8.17041" r="4.5" fill="currentColor" className="text-primary/10" />
             </svg>
             <p className="md:text-sm text-[10px] font-normal text-[#3A3A3A] ">5min Generation</p>
           </li>
         </ul>
 
-        <div className="mt-4 px-4 py-3 rounded-lg border border-[#EBE9FE]  flex items-start gap-2 shadow-md">
+        <div className="mt-4 px-4 py-3 rounded-lg border border-primary/10  flex items-start gap-2 shadow-md">
           <svg className="mt-0.5 shrink-0" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 20 20" fill="none">
-            <circle cx="10" cy="10" r="10" fill="#EBE9FE" />
+            <circle cx="10" cy="10" r="10" fill="currentColor" className="text-primary/10" />
             <path d="M10 6V10M10 14H10.0088" stroke="#5B49A1" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
           <p className="text-sm md:text-base font-medium text-[#20165C] tracking-[-0.13px]">

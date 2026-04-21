@@ -17,8 +17,8 @@ const SettingSideBar = ({ mode, setMode, selectedProvider, setSelectedProvider }
                     <button className='px-3 font-display h-[26px] text-[10px] font-medium text-[#3A3A3A] rounded-[70px]'
                         onClick={() => setMode('presenton')}
                         style={{
-                            background: mode === 'presenton' ? '#F4F3FF' : 'transparent',
-                            color: mode === 'presenton' ? '#5146E5' : '#3A3A3A'
+                            background: mode === 'presenton' ? 'var(--primary-5, rgba(154,106,26,0.05))' : 'transparent',
+                            color: mode === 'presenton' ? 'var(--primary)' : '#3A3A3A'
                         }}
                     >Template Based
                     </button>
@@ -35,7 +35,7 @@ const SettingSideBar = ({ mode, setMode, selectedProvider, setSelectedProvider }
                         >
                             Image Based
                         </button>
-                        <span className='absolute -top-2 -right-5 text-[7px] uppercase tracking-wide bg-[#F4F3FF] text-[#5146E5] border border-[#D9D6FE] rounded-full px-1.5 py-0.5 whitespace-nowrap'>
+                        <span className='absolute -top-2 -right-5 text-[7px] uppercase tracking-wide bg-primary/5 text-primary border border-primary/20 rounded-full px-1.5 py-0.5 whitespace-nowrap'>
                             Coming soon
                         </span>
                     </div>
@@ -44,14 +44,14 @@ const SettingSideBar = ({ mode, setMode, selectedProvider, setSelectedProvider }
                 </div>
                 <p className='text-[#3A3A3A] text-xs font-medium pb-2.5'>Select Provider</p>
                 {mode === 'presenton' && <div className='space-y-2.5'>
-                    <button className={` w-full rounded-[6px] px-3 py-4 flex items-center gap-1.5 border  ${selectedProvider === 'text-provider' ? 'bg-[#F4F3FF] border-[#D9D6FE]' : 'bg-white border-[#EDEEEF]'}`} onClick={() => setSelectedProvider('text-provider')}>
+                    <button className={` w-full rounded-[6px] px-3 py-4 flex items-center gap-1.5 border  ${selectedProvider === 'text-provider' ? 'bg-primary/5 border-primary/20' : 'bg-white border-[#EDEEEF]'}`} onClick={() => setSelectedProvider('text-provider')}>
                         <div className='relative w-[18px] h-[18px] rounded-full overflow-hidden border border-[#EDEEEF]'>
 
                             <img src={textProviderIcon} className=' object-cover w-full h-full overflow-hidden' alt='google' />
                         </div>
                         <p className='text-[#191919] text-xs  font-medium' >Text Provider</p>
                     </button>
-                    <button className={` w-full rounded-[6px] px-3 py-4 flex items-center gap-1.5 border  ${selectedProvider === 'image-provider' ? 'bg-[#F4F3FF] border-[#D9D6FE]' : 'bg-white border-[#EDEEEF]'}`} onClick={() => setSelectedProvider('image-provider')}>
+                    <button className={` w-full rounded-[6px] px-3 py-4 flex items-center gap-1.5 border  ${selectedProvider === 'image-provider' ? 'bg-primary/5 border-primary/20' : 'bg-white border-[#EDEEEF]'}`} onClick={() => setSelectedProvider('image-provider')}>
                         <div className='relative w-[18px] h-[18px] rounded-full overflow-hidden border border-[#EDEEEF]'>
                             <img src={imageProviderIcon} className=' object-cover w-full h-full overflow-hidden' alt='google' />
                         </div>
@@ -60,7 +60,7 @@ const SettingSideBar = ({ mode, setMode, selectedProvider, setSelectedProvider }
                 </div>}
                 {
                     mode === 'nanobanana' && <div>
-                        <button className={` w-full rounded-[6px] px-3 py-4 flex items-center gap-1.5 border  bg-[#F4F3FF] border-[#D9D6FE]`}>
+                        <button className={` w-full rounded-[6px] px-3 py-4 flex items-center gap-1.5 border  bg-primary/5 border-primary/20`}>
                             <div className='relative w-[18px] h-[18px] rounded-full overflow-hidden border border-[#EDEEEF]'>
 
                                 <img src='/providers/openai.png' className=' object-cover w-full h-full overflow-hidden' alt='google' />
@@ -74,11 +74,11 @@ const SettingSideBar = ({ mode, setMode, selectedProvider, setSelectedProvider }
             <div className='border-t border-[#E1E1E5] py-5 relative z-50'>
                 <p className='text-[#3A3A3A] text-xs font-medium pb-2.5'>Other</p>
                 <button
-                    className={`w-full rounded-[6px]  p-3 py-4 flex items-center gap-1.5 border ${selectedProvider === 'privacy' ? 'bg-[#F4F3FF] border-[#D9D6FE]' : 'bg-white border-[#EDEEEF]'}`}
+                    className={`w-full rounded-[6px]  p-3 py-4 flex items-center gap-1.5 border ${selectedProvider === 'privacy' ? 'bg-primary/5 border-primary/20' : 'bg-white border-[#EDEEEF]'}`}
                     onClick={() => setSelectedProvider('privacy')}
                 >
                     <div className='relative w-6 h-6 rounded-full overflow-hidden border border-[#EDEEEF] flex items-center justify-center bg-white'>
-                        <Shield className='w-3.5 h-3.5 text-[#5146E5]' />
+                        <Shield className='w-3.5 h-3.5 text-primary' />
                     </div>
                     <p className='text-[#191919] text-xs font-medium'>Usage Analytics</p>
                 </button>

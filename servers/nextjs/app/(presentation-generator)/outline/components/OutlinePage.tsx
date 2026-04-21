@@ -66,14 +66,14 @@ const OutlinePage: React.FC = () => {
                 <TabsList className="my-4 h-auto w-fit rounded-full border border-[#EDEEEF] bg-white p-1.5">
                   <TabsTrigger
                     value={TABS.OUTLINE}
-                    className="rounded-full px-5 py-2  text-xs font-medium text-[#2D2D2D] shadow-none data-[state=active]:bg-[#F4F3FF] data-[state=active]:text-[#7E3AF2] data-[state=active]:shadow-none"
+                    className="rounded-full px-5 py-2  text-xs font-medium text-[#2D2D2D] shadow-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:shadow-none"
                   >
                     Outline & Content
                   </TabsTrigger>
                   <Separator orientation="vertical" className="h-6 mx-1" />
                   <TabsTrigger
                     value={TABS.LAYOUTS}
-                    className="relative rounded-full px-5  py-2 text-xs font-medium text-[#2D2D2D] shadow-none  data-[state=active]:bg-[#F4F3FF] data-[state=active]:text-[#7E3AF2] data-[state=active]:shadow-none"
+                    className="relative rounded-full px-5  py-2 text-xs font-medium text-[#2D2D2D] shadow-none  data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:shadow-none"
                   >
                     Select Template
                   </TabsTrigger>

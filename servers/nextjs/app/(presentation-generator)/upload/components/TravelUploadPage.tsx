@@ -198,7 +198,7 @@ const TravelUploadPage = () => {
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
             placeholder="e.g. Kyoto, Japan"
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-instrument_sans text-slate-900 placeholder:text-slate-400 ring-1 ring-inset ring-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5141e5]/40"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-instrument_sans text-slate-900 placeholder:text-slate-400 ring-1 ring-inset ring-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
         </div>
 
@@ -218,7 +218,7 @@ const TravelUploadPage = () => {
             value={origin}
             onChange={(e) => setOrigin(e.target.value)}
             placeholder="e.g., New York, NY"
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-instrument_sans text-slate-900 placeholder:text-slate-400 ring-1 ring-inset ring-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5141e5]/40"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-instrument_sans text-slate-900 placeholder:text-slate-400 ring-1 ring-inset ring-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
         </div>
 
@@ -240,7 +240,7 @@ const TravelUploadPage = () => {
                 onChange={(e) =>
                   setTripDays(Math.max(1, Math.min(60, Number(e.target.value) || 1)))
                 }
-                className="w-20 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-center text-sm font-instrument_sans text-slate-900 ring-1 ring-inset ring-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5141e5]/40"
+                className="w-20 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-center text-sm font-instrument_sans text-slate-900 ring-1 ring-inset ring-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
               <span className="text-sm font-instrument_sans text-slate-500">days</span>
             </div>
@@ -279,7 +279,7 @@ const TravelUploadPage = () => {
               id="travel-currency"
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-instrument_sans text-slate-900 ring-1 ring-inset ring-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5141e5]/40"
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-instrument_sans text-slate-900 ring-1 ring-inset ring-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
             >
               {["USD", "EUR", "GBP", "AUD", "CAD", "JPY", "CHF", "INR"].map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -304,14 +304,14 @@ const TravelUploadPage = () => {
                 className={cn(
                   "flex flex-col items-center gap-1 rounded-xl border px-3 py-4 text-center transition-all",
                   budget === tier.value
-                    ? "border-[#5141e5] bg-[#5141e5]/5 ring-2 ring-[#5141e5]/30"
+                    ? "border-primary bg-primary/5 ring-2 ring-primary/30"
                     : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
                 )}
               >
                 <span
                   className={cn(
                     "text-sm font-instrument_sans font-semibold",
-                    budget === tier.value ? "text-[#5141e5]" : "text-slate-900"
+                    budget === tier.value ? "text-primary" : "text-slate-900"
                   )}
                 >
                   {tier.label}
@@ -342,7 +342,7 @@ const TravelUploadPage = () => {
                   className={cn(
                     "flex flex-col items-center gap-2 rounded-xl border px-2 py-4 transition-all",
                     tripType === type.value
-                      ? "border-[#5141e5] bg-[#5141e5]/5 ring-2 ring-[#5141e5]/30"
+                      ? "border-primary bg-primary/5 ring-2 ring-primary/30"
                       : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
                   )}
                 >
@@ -350,7 +350,7 @@ const TravelUploadPage = () => {
                     className={cn(
                       "h-5 w-5",
                       tripType === type.value
-                        ? "text-[#5141e5]"
+                        ? "text-primary"
                         : "text-slate-500"
                     )}
                   />
@@ -358,7 +358,7 @@ const TravelUploadPage = () => {
                     className={cn(
                       "text-xs font-instrument_sans font-medium",
                       tripType === type.value
-                        ? "text-[#5141e5]"
+                        ? "text-primary"
                         : "text-slate-700"
                     )}
                   >
@@ -386,7 +386,7 @@ const TravelUploadPage = () => {
                 className={cn(
                   "rounded-full border px-4 py-2 text-sm font-instrument_sans font-medium transition-all",
                   interests.includes(interest)
-                    ? "border-[#5141e5] bg-[#5141e5] text-white"
+                    ? "border-primary bg-primary text-white"
                     : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
                 )}
               >
@@ -412,7 +412,7 @@ const TravelUploadPage = () => {
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             placeholder="e.g. We're celebrating an anniversary, prefer off-the-beaten-path spots..."
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-instrument_sans text-slate-900 placeholder:text-slate-400 ring-1 ring-inset ring-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5141e5]/40 min-h-[80px] max-h-[200px] resize-y"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-instrument_sans text-slate-900 placeholder:text-slate-400 ring-1 ring-inset ring-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 min-h-[80px] max-h-[200px] resize-y"
           />
         </div>
 
@@ -422,7 +422,7 @@ const TravelUploadPage = () => {
         <div className="p-4 md:p-6">
           <Button
             onClick={handleSubmit}
-            className="w-full rounded-[28px] flex items-center justify-center py-5 bg-[#5141e5] text-white font-display font-semibold text-lg hover:bg-[#5141e5]/85 focus-visible:ring-2 focus-visible:ring-[#5141e5]/40"
+            className="w-full rounded-lg flex items-center justify-center py-5 bg-primary text-white font-display font-semibold text-lg hover:bg-primary/85 focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             <span>Generate Travel Presentation</span>
             <ChevronRight className="!w-5 !h-5 ml-1.5" />

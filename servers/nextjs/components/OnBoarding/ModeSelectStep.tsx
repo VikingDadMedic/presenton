@@ -15,14 +15,14 @@ const ModeSelectStep = ({ selectedMode, setStep, setSelectedMode }: { selectedMo
 
                 }} className={`border font-display  rounded-[11px] p-3  flex items-center  justify-between gap-6 cursor-pointer ${selectedMode === "presenton" ? "border-[#a49cfc]" : "border-[#EDEEEF]"}`}>
                     <div className='flex items-center gap-6'>
-                        <div className='rounded-[4px] bg-[#F4F3FF]  pt-[16.8px] pl-[16.8px] pb-[15.8px] pr-[17.1px]  w-[74px] h-[74px] flex items-center justify-center'>
+                        <div className='rounded-[4px] bg-primary/5  pt-[16.8px] pl-[16.8px] pb-[15.8px] pr-[17.1px]  w-[74px] h-[74px] flex items-center justify-center'>
                             <img src='/logo-with-bg.png' alt='presenton' className='w-[40px] h-[41.4px] object-contain' />
                         </div>
                         <div className=''>
                             <div className='flex items-start gap-2 relative '>
 
                                 <h3 className='text-black text-[18px] font-medium font-display'>Template Presentation Mode</h3>
-                                <p className='bg-[#F4F3FF] px-3 py-1.5 rounded-[30px] text-[#7A5AF8] text-[9px] absolute left-[260px] top-[-10px]'>PPTX Export </p>
+                                <p className='bg-primary/5 px-3 py-1.5 rounded-[30px] text-primary text-[9px] absolute left-[260px] top-[-10px]'>PPTX Export </p>
                             </div>
                             <p className='text-[#999999] text-[14px] font-normal font-display'>Best for structured decks, editing, and PPTX export. Requires text and image providers.</p>
                         </div>
@@ -31,7 +31,7 @@ const ModeSelectStep = ({ selectedMode, setStep, setSelectedMode }: { selectedMo
                 </div>
                 <div
                     className='border font-display border-[#EDEEEF]  cursor-not-allowed rounded-[11px] p-3  flex items-center  justify-between gap-6  relative'>
-                    <p className='text-black absolute top-[20px] right-14 flex items-center justify-center text-[14px] font-normal bg-[#F4F3FF] px-3 py-1.5 rounded-[30px]'>Coming soon</p>
+                    <p className='text-black absolute top-[20px] right-14 flex items-center justify-center text-[14px] font-normal bg-primary/5 px-3 py-1.5 rounded-[30px]'>Coming soon</p>
 
                     <div className='flex items-center gap-6'>
                         <div className='rounded-[4px] bg-[#FFF6ED]  p-[12px] w-[74px] h-[74px] flex items-center justify-center'>
@@ -41,7 +41,7 @@ const ModeSelectStep = ({ selectedMode, setStep, setSelectedMode }: { selectedMo
                             <div className='flex items-start gap-2 relative '>
 
                                 <h3 className='text-black text-[18px] font-medium font-display'>Image Slides Mode</h3>
-                                <p className='bg-[#F4F3FF] px-3 py-1.5 rounded-[30px] text-[#7A5AF8] text-[9px] absolute left-[180px] top-[-10px]'>No PPTX Export </p>
+                                <p className='bg-primary/5 px-3 py-1.5 rounded-[30px] text-primary text-[9px] absolute left-[180px] top-[-10px]'>No PPTX Export </p>
                             </div>
                             <p className='text-[#999999] text-[14px] font-normal font-display'> Best for visual slide generation from image models. No PPTX export.</p>
                         </div>

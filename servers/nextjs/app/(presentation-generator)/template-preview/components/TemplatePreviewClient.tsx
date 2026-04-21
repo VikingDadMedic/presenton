@@ -155,7 +155,7 @@ const GroupLayoutPreview = () => {
             <div className="flex items-center justify-center gap-2 mb-2">
               <h1 className="text-[64px] font-bold text-gray-900">{templateName}</h1>
               {isCustom && (
-                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-sm">
+                <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-sm">
                   Custom
                 </span>
               )}
@@ -172,7 +172,7 @@ const GroupLayoutPreview = () => {
         {!isCustom && (
           <div className="space-y-3   w-[1305px] p-2.5 bg-[#FFFFFF1A] rounded-[20px]  border border-[#EDECEC]  mx-auto"
             style={{
-              boxShadow: "0 0 20px 0 rgba(122, 90, 248, 0.16) inset",
+              boxShadow: "0 0 20px 0 rgba(201, 168, 76, 0.16) inset",
 
             }}
           >
@@ -188,7 +188,7 @@ const GroupLayoutPreview = () => {
                   <div className=" px-4 py-6 bg-white border-b border-[#EDEEEF] ">
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="px-3 py-1 bg-[#7A5AF8] text-white  font-display  rounded-full text-sm font-medium">
+                        <span className="px-3 py-1 bg-primary text-white  font-display  rounded-full text-sm font-medium">
                           {index + 1 < 10 ? `0${index + 1}` : index + 1}
                         </span>
                         <h3 className="text-xl font-semibold text-gray-900 mt-3">

@@ -82,7 +82,7 @@ const SlideCountSelect: React.FC<{
                     name="slides"
                     data-testid="slides-select"
                     aria-expanded={open}
-                    className=" overflow-hidden font-display font-medium  text-[#191919]  focus-visible:ring-[#5146E5]/30 flex justify-between items-center gap-2 h-[34px] rounded-full px-3.5 ring-1 ring-inset ring-slate-200 shadow-sm"
+                    className=" overflow-hidden font-display font-medium  text-[#191919]  focus-visible:ring-primary/30 flex justify-between items-center gap-2 h-[34px] rounded-full px-3.5 ring-1 ring-inset ring-slate-200 shadow-sm"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
                         <path d="M4.0835 12.25H9.91683" stroke="black" strokeLinecap="round" strokeLinejoin="round" />

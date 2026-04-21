@@ -13,7 +13,7 @@ interface ConfigurationSelectsProps {
 }
 
 const toggleClassName =
-    'h-[22px] w-[36px] border-0 bg-[#D8D8DD] data-[state=checked]:bg-[#7A5AF8] ';
+    'h-[22px] w-[36px] border-0 bg-[#D8D8DD] data-[state=checked]:bg-primary ';
 
 const AdvanceSettings = ({ config, onConfigChange }: ConfigurationSelectsProps) => {
     const [openAdvanced, setOpenAdvanced] = useState(false);
@@ -88,7 +88,7 @@ const AdvanceSettings = ({ config, onConfigChange }: ConfigurationSelectsProps) 
                         title="Advanced settings"
                         type="button"
                         onClick={handleOpenAdvanced}
-                        className="flex h-10 w-10 items-center justify-center rounded-full border border-[#E4E5E8] bg-white text-[#1C1C27] shadow-sm transition hover:bg-[#F7F7FA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5141E5]/25"
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-[#E4E5E8] bg-white text-[#1C1C27] shadow-sm transition hover:bg-[#F7F7FA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
                         data-testid="advanced-settings-button"
                     >
                         <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
@@ -132,7 +132,7 @@ const AdvanceSettings = ({ config, onConfigChange }: ConfigurationSelectsProps) 
                                     onClick={handleSaveAdvanced}
                                     style={{
                                         background:
-                                            'linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)',
+                                            'linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)',
                                     }}
                                     className=" rounded-full px-[28px]  py-[10px] font-display text-xs font-semibold text-[#1E1D2B] shadow-none hover:opacity-95"
                                 >

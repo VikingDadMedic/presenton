@@ -167,7 +167,7 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
                     onClick={() => {
                       setShowNewSlideSelection(true);
                     }}
-                    className="  bg-white shadow-md w-[80px] py-2 border hover:border-[#5141e5] duration-300  flex items-center justify-center rounded-lg cursor-pointer mx-auto"
+                    className="  bg-white shadow-md w-[80px] py-2 border hover:border-primary duration-300  flex items-center justify-center rounded-lg cursor-pointer mx-auto"
                   >
                     <PlusIcon className="text-gray-500 text-base cursor-pointer" />
                   </div>
@@ -228,7 +228,7 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
                       id={`slide-${slide.index}-prompt`}
                       value={editPrompt}
                       placeholder="Enter your prompt here..."
-                      className="min-h-[110px] max-h-[180px] w-full resize-none rounded-xl border border-gray-200 p-3 text-sm focus-visible:ring-1 focus-visible:ring-[#5141e5]"
+                      className="min-h-[110px] max-h-[180px] w-full resize-none rounded-xl border border-gray-200 p-3 text-sm focus-visible:ring-1 focus-visible:ring-primary"
                       disabled={isUpdating}
                       onChange={(e) => setEditPrompt(e.target.value)}
                       onKeyDown={(e) => {
@@ -242,7 +242,7 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
                     <button
                       disabled={isUpdating}
                       type="submit"
-                      className={`ml-auto flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#9034EA] to-[#5146E5] px-4 py-2 text-sm font-medium text-white transition-opacity ${isUpdating ? "cursor-not-allowed opacity-70" : "hover:opacity-90"}`}
+                      className={`ml-auto flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-primary to-primary/70 px-4 py-2 text-sm font-medium text-white transition-opacity ${isUpdating ? "cursor-not-allowed opacity-70" : "hover:opacity-90"}`}
                     >
                       {isUpdating ? "Updating..." : "Update"}
                       <SendHorizontal className="h-4 w-4" />
@@ -256,11 +256,11 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
                   <button
                     type="button"
                     style={{
-                      background: "linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)",
+                      background: "linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)",
 
                     }}
                     className={`flex px-4 py-2.5 items-center justify-center rounded-full border font-display ${slide?.speaker_note
-                      ? "border-violet-200 bg-violet-50 text-violet-700"
+                      ? "border-primary/20 bg-primary/5 text-primary"
                       : "border-gray-200 bg-white text-gray-600"
                       }`}
                   >

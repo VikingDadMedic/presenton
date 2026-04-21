@@ -375,7 +375,7 @@ const SettingsPage = () => {
           height: "341px",
           borderRadius: "1440px",
           background:
-            "radial-gradient(5.92% 104.69% at 50% 100%, rgba(122, 90, 248, 0.00) 0%, rgba(255, 255, 255, 0.00) 100%), radial-gradient(50% 50% at 50% 50%, rgba(122, 90, 248, 0.80) 0%, rgba(122, 90, 248, 0.00) 100%)",
+            "radial-gradient(5.92% 104.69% at 50% 100%, rgba(201, 168, 76, 0.00) 0%, rgba(255, 255, 255, 0.00) 100%), radial-gradient(50% 50% at 50% 50%, rgba(201, 168, 76, 0.80) 0%, rgba(201, 168, 76, 0.00) 100%)",
         }}
       />
 
@@ -392,7 +392,7 @@ const SettingsPage = () => {
               <h3 className=" text-[28px] tracking-[-0.84px] font-display font-normal text-black flex items-center gap-2">
                 Settings
               </h3>
-              <p className="text-[10px] px-2.5 py-0.5 rounded-[50px] text-[#7A5AF8] border border-[#EDEEEF]  font-medium ">
+              <p className="text-[10px] px-2.5 py-0.5 rounded-md text-primary border border-[#EDEEEF]  font-medium ">
                 {textSummary} · {imageSummary}
               </p>
             </div>
@@ -425,12 +425,12 @@ const SettingsPage = () => {
           disabled={buttonState.isDisabled}
           style={{
             background:
-              "linear-gradient(270deg, #D5CAFC 2.4%, #E3D2EB 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)",
+              "linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)",
             color: "#101323",
           }}
           className={`w-full font-display font-semibold flex items-center justify-center gap-2 py-3 px-5 rounded-[58px] transition-all duration-500 ${buttonState.isDisabled
             ? "bg-gray-400 cursor-not-allowed"
-            : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-200"
+            : "bg-primary hover:bg-primary/90 focus:ring-2 focus:ring-primary/30 text-primary-foreground"
             } text-white`}
         >
           {buttonState.isLoading ? (

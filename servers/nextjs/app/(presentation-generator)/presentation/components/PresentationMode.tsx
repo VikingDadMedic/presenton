@@ -264,7 +264,7 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
         aria-hidden
       >
         <div
-          className="h-full bg-[#5141e5] transition-[width] duration-300 ease-out"
+          className="h-full bg-primary transition-[width] duration-300 ease-out"
           style={{ width: `${progress}%` }}
         />
       </div>

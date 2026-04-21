@@ -375,7 +375,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
 
     return (
         <div className='w-full max-w-[660px] font-display pb-10'>
-            <p className='px-2.5 py-0.5 w-fit text-[#7A5AF8] rounded-[50px]  border border-[#EDEEEF] text-[10px] font-medium mb-5 font-display'>PRESENTON</p>
+            <p className='px-2.5 py-0.5 w-fit text-primary rounded-md  border border-[#EDEEEF] text-[10px] font-medium mb-5 font-display'>PRESENTON</p>
             <div className=''>
 
                 <h2 className='mb-4 text-black text-[26px] font-normal font-display '>Choose your content providers</h2>
@@ -784,7 +784,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                 </ToolTip>
                 <div className={` flex items-center gap-6 ${llmConfig.DISABLE_IMAGE_GENERATION ? "" : "mb-[42px]"}`}>
                     <div className='w-[74px] h-[74px] px-[13.5px] py-[14.2px] rounded-[4px] flex items-center justify-center'
-                        style={{ backgroundColor: '#F4F3FF' }}
+                        style={{ backgroundColor: 'var(--muted)' }}
                     >
                         <img src="/image-markup.svg" className='w-full h-full object-cover' alt='image-markup' />
                     </div>

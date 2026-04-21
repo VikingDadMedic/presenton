@@ -68,7 +68,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
           }}
         />
 
-        <div className=' w-max ml-9  rounded-tl-[28px] rounded-tr-[28px] flex items-center bg-[#FAFAFF]  px-2.5 pt-2.5 pb-1'
+        <div className=' w-max ml-9  rounded-tl-[28px] rounded-tr-[28px] flex items-center bg-card  px-2.5 pt-2.5 pb-1'
           style={{
             boxShadow: '0 0 16px 0 rgba(80, 71, 230, 0.12)',
 
@@ -85,7 +85,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
             <p className='text-xs font-medium text-black'>Upload PPTX File</p>
           </div>
         </div>
-        <div className=" w-full bg-[#FAFAFF] rounded-[28px] p-2.5 "
+        <div className=" w-full bg-card rounded-[28px] p-2.5 "
           style={{
             boxShadow: '0 0 16px 0 rgba(80, 71, 230, 0.12)',
             clipPath: 'inset(0px -28px -28px -28px)',
@@ -236,10 +236,10 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
         <div className="mt-4 px-4 py-3 rounded-lg border border-primary/10  flex items-start gap-2 shadow-md">
           <svg className="mt-0.5 shrink-0" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 20 20" fill="none">
             <circle cx="10" cy="10" r="10" fill="currentColor" className="text-primary/10" />
-            <path d="M10 6V10M10 14H10.0088" stroke="#5B49A1" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M10 6V10M10 14H10.0088" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
-          <p className="text-sm md:text-base font-medium text-[#20165C] tracking-[-0.13px]">
-            <span className="font-bold text-[#5B49A1]">Note:</span> Template generation relies on <span className="font-semibold">vision-capable models</span> and is currently supported only by providers: <span className="font-medium text-[#5246C3]">Google</span>, <span className="font-medium text-[#5246C3]">OpenAI</span>, and <span className="font-medium text-[#5246C3]">Anthropic</span>.
+          <p className="text-sm md:text-base font-medium text-[var(--primary)] tracking-[-0.13px]">
+            <span className="font-bold text-[var(--primary)]">Note:</span> Template generation relies on <span className="font-semibold">vision-capable models</span> and is currently supported only by providers: <span className="font-medium text-[var(--primary)]">Google</span>, <span className="font-medium text-[var(--primary)]">OpenAI</span>, and <span className="font-medium text-[var(--primary)]">Anthropic</span>.
             For optimal results, use state-of-the-art models from these providers, as performance may degrade with smaller models.
           </p>
         </div>

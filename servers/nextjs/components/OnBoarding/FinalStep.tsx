@@ -86,12 +86,12 @@ const FinalStep = () => {
                         <Switch
                             checked={trackingEnabled}
                             onCheckedChange={handleTrackingToggle}
-                            className='data-[state=checked]:bg-[#7C51F8]'
+                            className='data-[state=checked]:bg-primary'
                         />
                     </div>
                 )}
 
-                <button onClick={handleGoToUpload} className='bg-[#7C51F8] px-[23px] mt-8 py-[15px]  rounded-[70px] text-white text-lg font-display font-semibold'>My First Presentation 🚀</button>
+                <button onClick={handleGoToUpload} className='bg-primary px-[23px] mt-8 py-[15px]  rounded-[70px] text-white text-lg font-display font-semibold'>My First Presentation 🚀</button>
                 <button onClick={fireRealisticConfetti} className='mt-3 flex items-center gap-1.5 text-sm text-primary font-display font-medium hover:underline'>
                     <PartyPopper className='w-4 h-4' /> Celebrate again!
                 </button>

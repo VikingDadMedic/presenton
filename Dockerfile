@@ -42,7 +42,7 @@ RUN curl -fsSL https://ollama.com/install.sh | sh
 
 COPY servers/fastapi /app/servers/fastapi
 WORKDIR /app/servers/fastapi
-RUN uv export --frozen --no-dev --no-emit-project -o /tmp/requirements.txt \
+RUN uv export --frozen --no-dev --no-emit-project --no-hashes -o /tmp/requirements.txt \
     && uv pip install --system --extra-index-url https://download.pytorch.org/whl/cpu -r /tmp/requirements.txt \
     && uv pip install --system --no-deps .
 

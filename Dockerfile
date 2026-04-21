@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.4
 FROM python:3.11-slim-trixie
 
 WORKDIR /app
@@ -43,8 +42,7 @@ RUN curl -fsSL https://ollama.com/install.sh | sh
 
 COPY servers/fastapi /app/servers/fastapi
 WORKDIR /app/servers/fastapi
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv export --frozen --no-dev --no-emit-project -o /tmp/requirements.txt \
+RUN uv export --frozen --no-dev --no-emit-project -o /tmp/requirements.txt \
     && uv pip install --system -r /tmp/requirements.txt \
     && uv pip install --system --no-deps .
 

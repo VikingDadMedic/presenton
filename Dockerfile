@@ -16,7 +16,7 @@ ENV APP_DATA_DIRECTORY=/app_data \
     PRESENTON_APP_ROOT=/app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      ca-certificates curl unzip \
+      ca-certificates curl unzip build-essential \
       nginx libreoffice fontconfig chromium imagemagick zstd \
       tesseract-ocr tesseract-ocr-eng \
     && curl -LsSf https://astral.sh/uv/install.sh | sh \

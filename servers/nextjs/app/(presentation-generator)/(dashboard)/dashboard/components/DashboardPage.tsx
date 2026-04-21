@@ -71,12 +71,8 @@ const DashboardPage: React.FC = () => {
 
             <Link
               href="/upload?type=travel"
-              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-black text-sm font-semibold font-display shadow-sm hover:shadow-md"
+              className="inline-flex items-center gap-2 rounded-md px-4 py-2.5 bg-primary text-primary-foreground text-sm font-semibold font-display shadow-sm hover:bg-primary/90 transition-colors"
               aria-label="Create travel presentation"
-              style={{
-                borderRadius: "48px",
-                background: "linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)",
-              }}
             >
               <Plane className="w-4 h-4" />
               <span className="hidden md:inline">Travel Presentation</span>
@@ -86,14 +82,9 @@ const DashboardPage: React.FC = () => {
             <Link
               href="/upload"
               onClick={() => trackEvent(MixpanelEvent.Dashboard_New_Presentation_Clicked, { pathname, source: "dashboard_header" })}
-              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-black text-sm font-semibold font-display shadow-sm hover:shadow-md"
+              className="inline-flex items-center gap-2 rounded-md px-4 py-2.5 border border-border bg-card text-foreground text-sm font-semibold font-display shadow-sm hover:bg-accent transition-colors"
               aria-label="Create new presentation"
-              style={{
-                borderRadius: "48px",
-                background: "linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)",
-              }}
             >
-
               <span className="hidden md:inline">New presentation</span>
               <span className="md:hidden">New</span>
               <ChevronRight className="w-4 h-4" />

@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.4
 FROM python:3.11-slim-trixie
 
 WORKDIR /app
@@ -43,7 +42,7 @@ RUN node /app/scripts/sync-presentation-export.cjs --force \
 # system site-packages (same interpreter `start.js` uses as `python`).
 COPY servers/fastapi /app/servers/fastapi
 WORKDIR /app/servers/fastapi
-RUN --mount=type=cache,target=/root/.cache/uv \
+RUN \
     uv export --frozen --no-dev --no-emit-project -o /tmp/requirements.txt \
     && uv pip install --system -r /tmp/requirements.txt \
     && uv pip install --system --no-deps .

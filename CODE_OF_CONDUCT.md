@@ -1,8 +1,8 @@
-# Presenton Code of Conduct
+# TripStory Code of Conduct
 
 ## Our Community
 
-The **Presenton** community is made up of contributors, developers, designers, researchers, and users from all around the world. Together we are building an open-source platform for **AI-powered presentation generation**.
+The **TripStory** community is made up of contributors, developers, designers, researchers, and users from all around the world. Together we are building an open-source platform for **AI-powered presentation generation**.
 
 We welcome contributions and participation from people of all backgrounds and experience levels. Whether you're fixing a typo, contributing code, reporting a bug, or proposing a new feature — you are a valued part of the community.
 
@@ -12,15 +12,15 @@ To ensure a positive and inclusive environment for everyone, we ask all communit
 
 ## Where This Applies
 
-This Code of Conduct applies to all spaces managed by the **Presenton project**, including but not limited to:
+This Code of Conduct applies to all spaces managed by the **TripStory project**, including but not limited to:
 
 - GitHub repositories (issues, pull requests, discussions)
 - Official documentation
 - Discord community
 - Social media interactions
-- Events, meetups, or presentations related to Presenton
+- Events, meetups, or presentations related to TripStory
 
-Violations of this code outside these spaces may also affect a person’s ability to participate in the Presenton community.
+Violations of this code outside these spaces may also affect a person’s ability to participate in the TripStory community.
 
 ---
 
@@ -50,13 +50,13 @@ This includes, but is not limited to:
 - Education level
 - Socioeconomic background
 
-Everyone should feel safe and respected when participating in the Presenton community.
+Everyone should feel safe and respected when participating in the TripStory community.
 
 ---
 
 ### 🧠 Be Considerate
 
-Your work and decisions may impact others who rely on Presenton. Think about how your contributions affect:
+Your work and decisions may impact others who rely on TripStory. Think about how your contributions affect:
 
 - users
 - contributors
@@ -140,7 +140,7 @@ Our goal is to maintain a safe and productive environment for everyone.
 
 ## Acknowledgements
 
-This Code of Conduct is inspired by guidelines from open-source communities and the **Speak Up! project**, adapted for the Presenton community.
+This Code of Conduct is inspired by guidelines from open-source communities and the **Speak Up! project**, adapted for the TripStory community.
 
 ---
 
@@ -150,4 +150,4 @@ If you have questions about this Code of Conduct, feel free to contact us:
 
 📧 **suraj@presenton.ai**
 
-Thank you for helping make **Presenton a welcoming and collaborative open-source project.**
+Thank you for helping make **TripStory a welcoming and collaborative open-source project.**

@@ -13,7 +13,7 @@
 
 ## Learned Workspace Facts
 
-- Presenton: open-source AI presentation generator (Apache 2.0) pivoting to a travel-specialized platform for travel agents and BDMs. Travel pivot in REFACTOR-PIVOT.MD (Phases 0-10 done); enricher expansion in FEAT-EXPANSION.md.
+- TripStory: open-source AI presentation generator (Apache 2.0) pivoting to a travel-specialized platform for travel agents and BDMs. Travel pivot in REFACTOR-PIVOT.MD (Phases 0-10 done); enricher expansion in FEAT-EXPANSION.md.
 - Dual-server architecture: FastAPI (Python, port 8000) + Next.js (port 3000) behind Nginx reverse proxy.
 - Schema-driven pipeline: Zod schemas define slide data contracts, 3-call LLM pipeline (Outlines -> Structure -> Content), React renders slides, Puppeteer exports to PPTX/PDF.
 - Electron desktop app extracted to separate `electron-desktop` branch. This repo is web-only (Docker/cloud). All Electron references fully cleaned.

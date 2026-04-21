@@ -1,4 +1,4 @@
-# Presenton Azure Deployment Reference
+# TripStory Azure Deployment Reference
 
 This document describes the current Azure deployment, how resources are connected, and how to redeploy after code changes.
 

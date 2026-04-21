@@ -1,6 +1,6 @@
-# Presenton Generation Pipeline -- Technical Workflow Reference
+# TripStory Generation Pipeline -- Technical Workflow Reference
 
-This document is the definitive reference for how Presenton generates a presentation from user input to rendered slides. It traces every stage of the pipeline, identifies where parallelism exists, and flags known issues and refactoring opportunities.
+This document is the definitive reference for how TripStory generates a presentation from user input to rendered slides. It traces every stage of the pipeline, identifies where parallelism exists, and flags known issues and refactoring opportunities.
 
 ---
 

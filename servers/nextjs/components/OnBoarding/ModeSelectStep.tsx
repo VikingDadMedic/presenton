@@ -13,7 +13,7 @@ const ModeSelectStep = ({ selectedMode, setStep, setSelectedMode }: { selectedMo
                 <div onClick={() => {
                     setSelectedMode("presenton")
 
-                }} className={`border font-display  rounded-[11px] p-3  flex items-center  justify-between gap-6 cursor-pointer ${selectedMode === "presenton" ? "border-[#a49cfc]" : "border-[#EDEEEF]"}`}>
+                }} className={`border font-display  rounded-[11px] p-3  flex items-center  justify-between gap-6 cursor-pointer ${selectedMode === "presenton" ? "border-primary" : "border-[#EDEEEF]"}`}>
                     <div className='flex items-center gap-6'>
                         <div className='rounded-[4px] bg-primary/5  pt-[16.8px] pl-[16.8px] pb-[15.8px] pr-[17.1px]  w-[74px] h-[74px] flex items-center justify-center'>
                             <img src='/logo-with-bg.png' alt='TripStory' className='w-[40px] h-[41.4px] object-contain' />
@@ -55,7 +55,7 @@ const ModeSelectStep = ({ selectedMode, setStep, setSelectedMode }: { selectedMo
                     onClick={() => {
                         setStep(2);
                     }}
-                    className='border font-display border-[#EDEEEF] bg-[#7C51F8]  rounded-[58px] px-5 py-2.5 text-white text-xs  font-semibold'>
+                    className='border font-display border-[#EDEEEF] bg-primary  rounded-[58px] px-5 py-2.5 text-white text-xs  font-semibold'>
                     Continue to providers
                 </button>
             </div>

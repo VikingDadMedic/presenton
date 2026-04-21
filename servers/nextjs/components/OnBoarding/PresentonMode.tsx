@@ -1001,7 +1001,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
 
                     disabled={savingConfig}
                     onClick={handleSaveConfig}
-                    className='border font-display border-[#EDEEEF] bg-[#7C51F8]  rounded-[58px] px-5 py-2.5 text-white text-xs  font-semibold'>
+                    className='border font-display border-[#EDEEEF] bg-primary  rounded-[58px] px-5 py-2.5 text-white text-xs  font-semibold'>
                     Continue to Finish
                 </button>
             </div>

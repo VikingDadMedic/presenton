@@ -30,7 +30,7 @@ export const SlideContentDisplay: React.FC<SlideContentDisplayProps> = ({
       <div className="relative flex-1">
         {/* Preview Mode Banner */}
         {previewData && (
-          <div className="mb-4 flex items-center justify-between bg-[#EDE9FE] border border-[#C4B5FD] rounded-xl px-4 py-3">
+          <div className="mb-4 flex items-center justify-between bg-primary/10 border border-primary/20 rounded-xl px-4 py-3">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
                 <span className="text-white text-xs">✨</span>

@@ -22,11 +22,11 @@
 | Color Picker | react-colorful | ^5.6.1 | Presentation theme editor |
 | Toast | Sonner | ^2.0.6 | Heavily customized wrapper with dark-mode styles |
 | State | Redux Toolkit | ^2.2.8 | 4 slices; theme data lives in `presentationGeneration` |
-| Dark Mode | next-themes | ^0.4.6 | **Installed but dormant** -- no `ThemeProvider` wraps the app |
+| Dark Mode | next-themes | ^0.4.6 | **Active** -- ThemeProvider wraps app, attribute="data-theme", defaultTheme="light" |
 | Animations | tailwindcss-animate | ^1.0.7 | Plugin + 5 custom keyframes in `globals.css` |
 | Typography | @tailwindcss/typography | ^0.5.16 | `.prose` classes for markdown content |
 
-**Key architectural distinction**: the codebase maintains **two completely separate CSS variable namespaces** -- one for the app UI (shadcn, HSL-based) and one for presentation slide themes (hex-based, imperatively injected). See [Section 4](#4-color--theme-architecture).
+**Key architectural distinction**: the codebase maintains **two completely separate CSS variable namespaces** -- one for the app UI (shadcn, hex/rgba-based) and one for presentation slide themes (hex-based, imperatively injected). See [Section 4](#4-color--theme-architecture).
 
 ---
 
@@ -52,8 +52,8 @@
 
 | File | Purpose |
 |---|---|
-| [`servers/nextjs/app/layout.tsx`](servers/nextjs/app/layout.tsx) | Loads 3 fonts via `next/font`: Inter (local), Syne (Google), Unbounded (Google). Sets CSS variables `--font-inter`, `--font-syne`, `--font-unbounded` on `<body>`. |
-| [`servers/nextjs/app/fonts/Inter.ttf`](servers/nextjs/app/fonts/Inter.ttf) | Local Inter font file (weight 400). |
+| [`servers/nextjs/app/layout.tsx`](servers/nextjs/app/layout.tsx) | Loads 3 fonts via `next/font`: DM Sans (Google), Cormorant Garamond (Google), DM Mono (Google). Sets CSS variables `--font-sans`, `--font-display`, `--font-mono` on `<body>`. |
+| ~~`servers/nextjs/app/fonts/Inter.ttf`~~ | No longer used; DM Sans is loaded via Google Fonts. |
 | [`servers/nextjs/app/presentation-templates/travel/TravelFonts.tsx`](servers/nextjs/app/presentation-templates/travel/TravelFonts.tsx) | Memoized `<link>` for Poppins (travel templates only). |
 
 ### Presentation Theme System
@@ -135,25 +135,25 @@ The `@theme` block registers design tokens that become Tailwind utility classes:
 **Semantic Colors** (13 pairs):
 
 ```css
---color-background: hsl(var(--background));
---color-foreground: hsl(var(--foreground));
---color-card: hsl(var(--card));
---color-card-foreground: hsl(var(--card-foreground));
---color-popover: hsl(var(--popover));
---color-popover-foreground: hsl(var(--popover-foreground));
---color-primary: hsl(var(--primary));
---color-primary-foreground: hsl(var(--primary-foreground));
---color-secondary: hsl(var(--secondary));
---color-secondary-foreground: hsl(var(--secondary-foreground));
---color-muted: hsl(var(--muted));
---color-muted-foreground: hsl(var(--muted-foreground));
---color-accent: hsl(var(--accent));
---color-accent-foreground: hsl(var(--accent-foreground));
---color-destructive: hsl(var(--destructive));
---color-destructive-foreground: hsl(var(--destructive-foreground));
---color-border: hsl(var(--border));
---color-input: hsl(var(--input));
---color-ring: hsl(var(--ring));
+--color-background: var(--background);
+--color-foreground: var(--foreground);
+--color-card: var(--card);
+--color-card-foreground: var(--card-foreground);
+--color-popover: var(--popover);
+--color-popover-foreground: var(--popover-foreground);
+--color-primary: var(--primary);
+--color-primary-foreground: var(--primary-foreground);
+--color-secondary: var(--secondary);
+--color-secondary-foreground: var(--secondary-foreground);
+--color-muted: var(--muted);
+--color-muted-foreground: var(--muted-foreground);
+--color-accent: var(--accent);
+--color-accent-foreground: var(--accent-foreground);
+--color-destructive: var(--destructive);
+--color-destructive-foreground: var(--destructive-foreground);
+--color-border: var(--border);
+--color-input: var(--input);
+--color-ring: var(--ring);
 ```
 
 **Chart Colors** (5): `--color-chart-1` through `--color-chart-5`.
@@ -166,7 +166,7 @@ The `@theme` block registers design tokens that become Tailwind utility classes:
 --radius-sm: calc(var(--radius) - 4px); /* 4px */
 ```
 
-**Font Families** (3): `--font-syne`, `--font-unbounded`, `--font-inter` -- enabling `font-syne`, `font-unbounded`, `font-inter` utilities.
+**Font Families** (3): `--font-sans`, `--font-display`, `--font-mono` -- enabling `font-sans`, `font-display`, `font-mono` utilities.
 
 **Animations** (2): `--animate-accordion-down`, `--animate-accordion-up` with keyframes using `--radix-accordion-content-height`.
 
@@ -189,8 +189,8 @@ This is the most nuanced part of the codebase. Two independent CSS variable syst
 ```mermaid
 flowchart TD
     subgraph appUI ["Namespace A: App UI (shadcn)"]
-        rootVars[":root CSS vars\nHSL channel values\ne.g. --primary: 240 5.9% 10%"]
-        themeBlock["@theme mapping\nhsl wrapper\n--color-primary: hsl(var(--primary))"]
+        rootVars[":root CSS vars\nhex/rgba values\ne.g. --primary: #9a6a1a"]
+        themeBlock["@theme mapping\ndirect passthrough\n--color-primary: var(--primary)"]
         twClasses["Tailwind classes\nbg-primary, text-muted-foreground"]
         rootVars --> themeBlock --> twClasses
     end
@@ -203,27 +203,27 @@ flowchart TD
     end
 ```
 
-### Namespace A -- App UI (HSL-based, CSS cascade)
+### Namespace A -- App UI (hex/rgba-based, CSS cascade)
 
-Defined in `globals.css` `:root` (light) and `.dark` (dark). Raw HSL channel values (no `hsl()` wrapper) in `:root`, wrapped by the `@theme` block to produce Tailwind-ready colors.
+Defined in `globals.css` `:root` (dark-first, Velara charcoal) and `[data-theme="light"]` (light overrides). Values are hex/rgba tokens, mapped directly in the `@theme` block to produce Tailwind-ready colors.
 
-**Light mode palette:**
+**Light mode palette** (applied via `[data-theme="light"]`):
 
-| Token | HSL Value | Approximate |
+| Token | Value | Approximate |
 |---|---|---|
-| `--background` | `0 0% 100%` | White |
-| `--foreground` | `240 10% 3.9%` | Near-black |
-| `--primary` | `240 5.9% 10%` | Dark blue-gray |
-| `--primary-foreground` | `0 0% 98%` | Near-white |
-| `--secondary` | `240 4.8% 95.9%` | Light gray |
-| `--muted` | `240 4.8% 95.9%` | Light gray |
-| `--muted-foreground` | `240 3.8% 46.1%` | Mid-gray |
-| `--accent` | `240 4.8% 95.9%` | Light gray |
-| `--destructive` | `0 84.2% 60.2%` | Bright red |
-| `--border` | `240 5.9% 90%` | Light gray |
-| `--ring` | `240 10% 3.9%` | Near-black |
+| `--background` | `#f5f1e8` | Warm parchment |
+| `--foreground` | `#1a1a2e` | Deep navy |
+| `--primary` | `#9a6a1a` | Gold |
+| `--primary-foreground` | `#faf8f5` | Off-white |
+| `--secondary` | `#e8e2d6` | Warm gray |
+| `--muted` | `#e8e2d6` | Warm gray |
+| `--muted-foreground` | `#6b6459` | Warm mid-gray |
+| `--accent` | `#e8e2d6` | Warm gray |
+| `--destructive` | `#dc2626` | Red |
+| `--border` | `#d4cdc1` | Sand |
+| `--ring` | `#9a6a1a` | Gold |
 
-**Dark mode** (`.dark` class): fully inverted -- background becomes near-black, foreground becomes near-white, all 13 color pairs are overridden. Chart colors are remapped to a different palette. However, **dark mode is dormant in practice**: no `<ThemeProvider>` from `next-themes` wraps the app, so the `.dark` class is never applied to `<html>`. The infrastructure is ready but not activated.
+**Dark mode** (`:root`): dark-first design with Velara charcoal tones. All 13 color pairs are defined directly in `:root`. Chart colors use a complementary warm palette. **ThemeProvider is active** with `attribute="data-theme"`, `defaultTheme="light"`. Dark mode tokens live in `:root`, light overrides in `[data-theme="light"]`.
 
 ### Namespace B -- Presentation Themes (hex-based, imperative injection)
 
@@ -270,19 +270,21 @@ Loaded in [`layout.tsx`](servers/nextjs/app/layout.tsx) via `next/font`:
 
 | Font | Source | Weight(s) | CSS Variable | Role |
 |---|---|---|---|---|
-| Inter | Local TTF | 400 | `--font-inter` | Body default |
-| Syne | Google Fonts | 400-800 | `--font-syne` | Display/brand |
-| Unbounded | Google Fonts | 400-800 | `--font-unbounded` | Display/brand |
+| DM Sans | Google Fonts | 400-700 | `--font-sans` | Body default |
+| Cormorant Garamond | Google Fonts | 400-700 | `--font-display` | Display/headings |
+| DM Mono | Google Fonts | 400 | `--font-mono` | Monospace/code |
 
 Applied to `<body>` as CSS variable classes. The body font stack (in `globals.css`):
 
 ```css
 body {
-  font-family: var(--font-inter), var(--font-unbounded), var(--font-syne), sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 ```
 
-Registered in the `@theme` block as `--font-syne`, `--font-unbounded`, `--font-inter`, enabling Tailwind utilities `font-syne`, `font-unbounded`, `font-inter`.
+Registered in the `@theme` block as `--font-sans`, `--font-display`, `--font-mono`, enabling Tailwind utilities `font-sans`, `font-display`, `font-mono`.
+
+Heading treatment: `h1`–`h4` use `font-family: var(--font-display); letter-spacing: 0.02em; font-weight: 400;`.
 
 ### Layer 2: Presentation Theme Fonts
 
@@ -357,9 +359,9 @@ All live in [`servers/nextjs/components/ui/`](servers/nextjs/components/ui/).
 
 | Component | What It Does | Styling Concern |
 |---|---|---|
-| `loader.tsx` | Spinner | Hardcoded `border-purple-200 border-t-purple-600` |
-| `overlay-loader.tsx` | Full-screen overlay + spinner | Hardcoded `bg-[#030303]`, `border-white/10` |
-| `progress-bar.tsx` | Animated gradient progress | Hardcoded `#9034EA`, `#5146E5` via `<style jsx>` |
+| `loader.tsx` | Spinner | Theme-aware: uses `border-primary`, `border-muted` tokens |
+| `overlay-loader.tsx` | Full-screen overlay + spinner | Theme-aware: uses `bg-card`, `border-border` tokens |
+| `progress-bar.tsx` | Animated gradient progress | Theme-aware: uses `from-primary`, `to-accent` gradient tokens |
 
 ### CVA Pattern
 
@@ -386,7 +388,7 @@ The `sonner.tsx` wrapper is heavily customized beyond standard shadcn:
 
 - Custom `notify` helper with typed `error`, `success`, `info` methods.
 - Extensive `<style jsx global>` with color-coded left border accents (green/red/blue/amber/violet) for 5 toast types.
-- Full `.dark [data-sonner-toast]` overrides (dark mode toast styles are ready despite app dark mode being dormant).
+- Full `[data-theme] [data-sonner-toast]` overrides for theme-aware toast rendering.
 - `useTheme()` from `next-themes` for theme-aware rendering.
 
 ### cmdk Usage
@@ -554,20 +556,22 @@ The composite layout ID format is `"templateGroupName:layoutId"` (e.g., `"genera
 
 ```html
 <html lang="en">
-  <body className="${inter.variable} ${unbounded.variable} ${syne.variable} antialiased">
-    <Providers>                              <!-- Redux Provider -->
-      <MixpanelInitializer>                  <!-- Analytics (passthrough) -->
-        <ConfigurationInitializer>           <!-- LLM config + route guard (presentation routes only) -->
-          {page content}
-        </ConfigurationInitializer>
-      </MixpanelInitializer>
-    </Providers>
+  <body className="${dmSans.variable} ${cormorant.variable} ${dmMono.variable} antialiased">
+    <ThemeProvider attribute="data-theme" defaultTheme="light">
+      <Providers>                              <!-- Redux Provider -->
+        <MixpanelInitializer>                  <!-- Analytics (passthrough) -->
+          <ConfigurationInitializer>           <!-- LLM config + route guard (presentation routes only) -->
+            {page content}
+          </ConfigurationInitializer>
+        </MixpanelInitializer>
+      </Providers>
+    </ThemeProvider>
     <Toaster position="top-center" />        <!-- Sonner toast (root level) -->
   </body>
 </html>
 ```
 
-No `ThemeProvider` from `next-themes` is present. If dark mode activation is desired, add `<ThemeProvider attribute="class">` wrapping `<Providers>`.
+ThemeProvider IS present with `attribute="data-theme"`, `defaultTheme="light"`. Dark mode tokens are in `:root`, light overrides in `[data-theme="light"]`.
 
 ---
 

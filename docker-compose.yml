@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      # You can replace 5000 with any other port number of your choice to run Presenton on a different port number.
+      # You can replace 5000 with any other port number of your choice to run TripStory on a different port number.
       - "5000:80"
       # Required for Codex OAuth callback (OpenAI redirects browser directly to localhost:1455)
       - "1455:1455"
@@ -67,7 +67,7 @@ services:
               count: 1
               capabilities: [gpu]
     ports:
-      # You can replace 5000 with any other port number of your choice to run Presenton on a different port number.
+      # You can replace 5000 with any other port number of your choice to run TripStory on a different port number.
       - "5000:80"
       # Required for Codex OAuth callback (OpenAI redirects browser directly to localhost:1455)
       - "1455:1455"

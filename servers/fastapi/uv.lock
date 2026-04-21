@@ -1718,63 +1718,6 @@ wheels = [
 ]
 
 [[package]]
-name = "presenton-backend"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "aiohttp" },
-    { name = "aiomysql" },
-    { name = "aiosqlite" },
-    { name = "alembic" },
-    { name = "anthropic" },
-    { name = "asyncpg" },
-    { name = "chromadb" },
-    { name = "dirtyjson" },
-    { name = "fastapi", extra = ["standard"] },
-    { name = "fastembed-vectorstore" },
-    { name = "fastmcp" },
-    { name = "google-genai" },
-    { name = "greenlet" },
-    { name = "mem0ai", extra = ["nlp"] },
-    { name = "nltk" },
-    { name = "openai" },
-    { name = "pathvalidate" },
-    { name = "pdfplumber" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "python-pptx" },
-    { name = "redis" },
-    { name = "sqlmodel" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aiohttp", specifier = ">=3.12.15" },
-    { name = "aiomysql", specifier = ">=0.2.0" },
-    { name = "aiosqlite", specifier = ">=0.21.0" },
-    { name = "alembic", specifier = ">=1.14.0" },
-    { name = "anthropic", specifier = ">=0.60.0" },
-    { name = "asyncpg", specifier = ">=0.30.0" },
-    { name = "chromadb", specifier = ">=1.0.15" },
-    { name = "dirtyjson", specifier = ">=1.0.8" },
-    { name = "fastapi", extras = ["standard"], specifier = ">=0.116.1" },
-    { name = "fastembed-vectorstore", specifier = ">=0.5.2" },
-    { name = "fastmcp", specifier = ">=2.11.0" },
-    { name = "google-genai", specifier = ">=1.28.0" },
-    { name = "greenlet", specifier = ">=3.2.3" },
-    { name = "mem0ai", extras = ["nlp"], specifier = ">=0.1.115" },
-    { name = "nltk", specifier = ">=3.9.1" },
-    { name = "openai", specifier = ">=1.98.0" },
-    { name = "pathvalidate", specifier = ">=3.3.1" },
-    { name = "pdfplumber", specifier = ">=0.11.7" },
-    { name = "pytest", specifier = ">=8.4.1" },
-    { name = "pytest-asyncio", specifier = ">=0.24.0" },
-    { name = "python-pptx", specifier = ">=1.0.2" },
-    { name = "redis", specifier = ">=6.2.0" },
-    { name = "sqlmodel", specifier = ">=0.0.24" },
-]
-
-[[package]]
 name = "preshed"
 version = "3.0.13"
 source = { registry = "https://pypi.org/simple" }
@@ -2623,6 +2566,63 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a8/4b/29b4ef32e036bb34e4ab51796dd745cdba7ed47ad142a9f4a1eb8e0c744d/tqdm-4.67.1.tar.gz", hash = "sha256:f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2", size = 169737, upload-time = "2024-11-24T20:12:22.481Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d0/30/dc54f88dd4a2b5dc8a0279bdd7270e735851848b762aeb1c1184ed1f6b14/tqdm-4.67.1-py3-none-any.whl", hash = "sha256:26445eca388f82e72884e0d580d5464cd801a3ea01e63e5601bdff9ba6a48de2", size = 78540, upload-time = "2024-11-24T20:12:19.698Z" },
+]
+
+[[package]]
+name = "tripstory-backend"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "aiomysql" },
+    { name = "aiosqlite" },
+    { name = "alembic" },
+    { name = "anthropic" },
+    { name = "asyncpg" },
+    { name = "chromadb" },
+    { name = "dirtyjson" },
+    { name = "fastapi", extra = ["standard"] },
+    { name = "fastembed-vectorstore" },
+    { name = "fastmcp" },
+    { name = "google-genai" },
+    { name = "greenlet" },
+    { name = "mem0ai", extra = ["nlp"] },
+    { name = "nltk" },
+    { name = "openai" },
+    { name = "pathvalidate" },
+    { name = "pdfplumber" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "python-pptx" },
+    { name = "redis" },
+    { name = "sqlmodel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiohttp", specifier = ">=3.12.15" },
+    { name = "aiomysql", specifier = ">=0.2.0" },
+    { name = "aiosqlite", specifier = ">=0.21.0" },
+    { name = "alembic", specifier = ">=1.14.0" },
+    { name = "anthropic", specifier = ">=0.60.0" },
+    { name = "asyncpg", specifier = ">=0.30.0" },
+    { name = "chromadb", specifier = ">=1.0.15" },
+    { name = "dirtyjson", specifier = ">=1.0.8" },
+    { name = "fastapi", extras = ["standard"], specifier = ">=0.116.1" },
+    { name = "fastembed-vectorstore", specifier = ">=0.5.2" },
+    { name = "fastmcp", specifier = ">=2.11.0" },
+    { name = "google-genai", specifier = ">=1.28.0" },
+    { name = "greenlet", specifier = ">=3.2.3" },
+    { name = "mem0ai", extras = ["nlp"], specifier = ">=0.1.115" },
+    { name = "nltk", specifier = ">=3.9.1" },
+    { name = "openai", specifier = ">=1.98.0" },
+    { name = "pathvalidate", specifier = ">=3.3.1" },
+    { name = "pdfplumber", specifier = ">=0.11.7" },
+    { name = "pytest", specifier = ">=8.4.1" },
+    { name = "pytest-asyncio", specifier = ">=0.24.0" },
+    { name = "python-pptx", specifier = ">=1.0.2" },
+    { name = "redis", specifier = ">=6.2.0" },
+    { name = "sqlmodel", specifier = ">=0.0.24" },
 ]
 
 [[package]]

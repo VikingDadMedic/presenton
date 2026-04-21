@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./readme_assets/images/logo.png" alt="Presenton" />
+  <img src="./readme_assets/images/logo.png" alt="TripStory" />
 </p>
 
 <p align="center">
@@ -17,11 +17,11 @@
 
 # Open-Source AI Presentation Generator and API (Gamma, Beautiful AI, Decktopus Alternative)
 
-### ✨ Why Presenton
+### ✨ Why TripStory
 
 No SaaS lock-in · No forced subscriptions · Full control over models and data
 
-What makes Presenton different?
+What makes TripStory different?
 
 - Fully **self-hosted**; Web (Docker) with optional Desktop app via [presenton.ai](https://presenton.ai/download)
 - Works with OpenAI, Gemini, Anthropic, Ollama, or custom models
@@ -33,7 +33,7 @@ What makes Presenton different?
 > **Star us!** A ⭐ shows your support and encourages us to keep building! 😇
 
 <p align="center">
-  <img src="./readme_assets/images/banner_bg.gif" alt="Presenton" />
+  <img src="./readme_assets/images/banner_bg.gif" alt="TripStory" />
 </p>
 
 #
@@ -41,12 +41,12 @@ What makes Presenton different?
 ### 🎛 Features
 
 <p align="center">
-  <img src="./readme_assets/images/features-1.png" alt="Presenton Features" />
+  <img src="./readme_assets/images/features-1.png" alt="TripStory Features" />
 </p>
 
 #
 
-### 💻 Presenton Desktop
+### 💻 TripStory Desktop
 
 Create AI-powered presentations using your own model provider (BYOK) or run everything locally on your own machine for full control and data privacy.
 
@@ -89,7 +89,7 @@ Create AI-powered presentations using your own model provider (BYOK) or run ever
 
 </table>
 
-Presenton gives you complete control over your AI presentation workflow. Choose your models, customize your experience, and keep your data private.
+TripStory gives you complete control over your AI presentation workflow. Choose your models, customize your experience, and keep your data private.
 
 - Custom Templates & Themes — Create unlimited presentation designs with HTML and Tailwind CSS
 - AI Template Generation — Create presentation templates from existing Powerpoint documents.
@@ -111,22 +111,22 @@ Presenton gives you complete control over your AI presentation workflow. Choose 
 
 #
 
-### ☁️ Presenton Cloud
+### ☁️ TripStory Cloud
 
-Run Presenton directly in your browser — no installation, no setup required. Start creating presentations instantly from anywhere.
+Run TripStory directly in your browser — no installation, no setup required. Start creating presentations instantly from anywhere.
 
 <p align="center">
   <a href="https://presenton.ai">
-    <img src="./readme_assets/images/cloud-banner.png" alt="Presenton Cloud" />
+    <img src="./readme_assets/images/cloud-banner.png" alt="TripStory Cloud" />
   </a>
 </p>
 
 #
 
-### ⚡ Running Presenton
+### ⚡ Running TripStory
 
   <p>
-    Run Presenton with <strong>Docker</strong> for a one-command setup
+    Run TripStory with <strong>Docker</strong> for a one-command setup
     without installing a local dev stack.
   </p>
 
@@ -140,23 +140,23 @@ Run Presenton directly in your browser — no installation, no setup required. S
 
 **Docker**
 
-- Start Presenton
+- Start TripStory
   Linux/MacOS (Bash/Zsh Shell):
   <pre><code class="language-bash">docker run -it --name presenton -p 5000:80 -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
 
   Windows (PowerShell):
   <pre><code class="language-bash">docker run -it --name presenton -p 5000:80 -v "${PWD}\app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
 
-- Open Presenton
+- Open TripStory
   <p>
   Open <a href="http://localhost:5000">http://localhost:5000</a> in the browser
-  of your choice to use Presenton.
+  of your choice to use TripStory.
   </p>
 
   <blockquote>
   <p>
     <strong>Note:</strong> You can replace <code>5000</code> with any other port
-    number of your choice to run Presenton on a different port number.
+    number of your choice to run TripStory on a different port number.
   </p>
   </blockquote>
 
@@ -231,9 +231,9 @@ You can disable anonymous telemetry using the following environment variable:
 - Using OpenAI Compatible API
     <pre><code class="language-bash">docker run -it -p 5000:80 -e CAN_CHANGE_KEYS="false"  -e LLM="custom" -e CUSTOM_LLM_URL="http://*****" -e CUSTOM_LLM_API_KEY="*****" -e CUSTOM_MODEL="llama3.2:3b" -e IMAGE_PROVIDER="pexels" -e  PEXELS_API_KEY="********" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
 
-- Running Presenton with GPU Support
+- Running TripStory with GPU Support
   To use GPU acceleration with Ollama models, you need to install and configure the NVIDIA Container Toolkit. This allows Docker containers to access your NVIDIA GPU.
-  Once the NVIDIA Container Toolkit is installed and configured, you can run Presenton with GPU support by adding the `--gpus=all` flag:
+  Once the NVIDIA Container Toolkit is installed and configured, you can run TripStory with GPU support by adding the `--gpus=all` flag:
     <pre><code class="language-bash">docker run -it --name presenton --gpus=all -p 5000:80 -e LLM="ollama" -e OLLAMA_MODEL="llama3.2:3b" -e IMAGE_PROVIDER="pexels" -e PEXELS_API_KEY="*******" -e CAN_CHANGE_KEYS="false" -v "./app_data:/app_data" ghcr.io/presenton/presenton:latest</code></pre>
 
 #

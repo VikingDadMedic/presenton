@@ -2,13 +2,13 @@
 
 ## Status: Phase 0-10 Implemented
 
-This document is the source of truth for the Presenton travel pivot. It describes what was built, what architecture decisions were made, and what remains for future phases.
+This document is the source of truth for the TripStory travel pivot. It describes what was built, what architecture decisions were made, and what remains for future phases.
 
 ---
 
 ## Vision
 
-Presenton has been pivoted from a generic AI presentation builder into a **travel-specialized AI presentation platform** targeting travel agents, BDMs, destination marketing organizations, and tour operators. The platform creates polished destination showcases, itineraries, deal packages, and travel proposals using AI.
+TripStory has been pivoted from a generic AI presentation builder into a **travel-specialized AI presentation platform** targeting travel agents, BDMs, destination marketing organizations, and tour operators. The platform creates polished destination showcases, itineraries, deal packages, and travel proposals using AI.
 
 ## Architecture Principle
 

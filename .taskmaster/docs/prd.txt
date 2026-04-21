@@ -1,7 +1,7 @@
 # PRD: Enrichment Pipeline -- Phase A Foundation
 
 ## Overview
-Build the foundational enricher framework for the Presenton travel presentation platform. This creates the plumbing that allows modular data enrichers to fetch real-world data (hotels, flights, weather, images, reviews) from external APIs and inject it into the LLM generation pipeline as structured context.
+Build the foundational enricher framework for the TripStory travel presentation platform. This creates the plumbing that allows modular data enrichers to fetch real-world data (hotels, flights, weather, images, reviews) from external APIs and inject it into the LLM generation pipeline as structured context.
 
 ## Guiding Principle
 Every enricher is independent, testable, and optional. If an API key is missing, that enricher returns empty data and the LLM falls back to its existing behavior. No enricher breaks the pipeline; they only make it better. The pipeline must produce valid presentations with zero enrichers enabled.

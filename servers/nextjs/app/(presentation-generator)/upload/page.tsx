@@ -4,9 +4,9 @@ import Header from "@/app/(presentation-generator)/(dashboard)/dashboard/compone
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Presenton | Open Source AI presentation generator",
+  title: "TripStory | Travel experience builder",
   description:
-    "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, Ollama), and PDF/PPTX export. A free Gamma alternative.",
+    "TripStory is a visual travel experience builder that helps travel advisors and agents craft immersive destination presentations for their clients. Upload your content, choose a template, and let AI build a stunning visual story that sells trips.",
   alternates: {
     canonical: "https://presenton.ai/create",
   },
@@ -23,18 +23,18 @@ export const metadata: Metadata = {
     "business presentations",
   ],
   openGraph: {
-    title: "Create Data Presentation | PresentOn",
+    title: "Create Data Presentation | TripStory",
     description:
-      "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, Ollama), and PDF/PPTX export. A free Gamma alternative.",
+      "TripStory is a visual travel experience builder that helps travel advisors and agents craft immersive destination presentations for their clients. Upload your content, choose a template, and let AI build a stunning visual story that sells trips.",
     type: "website",
     url: "https://presenton.ai/create",
-    siteName: "PresentOn",
+    siteName: "TripStory",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Create Data Presentation | PresentOn",
+    title: "Create Data Presentation | TripStory",
     description:
-      "Open-source AI presentation generator with custom layouts, multi-model support (OpenAI, Gemini, Ollama), and PDF/PPTX export. A free Gamma alternative.",
+      "TripStory is a visual travel experience builder that helps travel advisors and agents craft immersive destination presentations for their clients. Upload your content, choose a template, and let AI build a stunning visual story that sells trips.",
     site: "@presenton_ai",
     creator: "@presenton_ai",
   },

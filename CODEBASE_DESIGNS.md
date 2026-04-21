@@ -1,4 +1,4 @@
-# Presenton -- Styling & UI Architecture Reference
+# TripStory -- Styling & UI Architecture Reference
 
 > **Audience**: AI agents and human developers seeking styling-related answers.
 > **Companion docs**: [`AGENTS.md`](AGENTS.md) (workspace facts & preferences), [`main-workflow.md`](main-workflow.md) (generation pipeline).

@@ -1,7 +1,7 @@
-# Contributing to Presenton
+# Contributing to TripStory
 
 Welcome! 🚀  
-Thanks for helping improve **Presenton — the open-source AI presentation generator.**
+Thanks for helping improve **TripStory — the open-source AI presentation generator.**
 
 ## Quick Links
 
@@ -197,4 +197,4 @@ CODE_OF_CONDUCT.md
 
 ---
 
-Thanks for helping make **Presenton better for everyone.**
+Thanks for helping make **TripStory better for everyone.**

@@ -25,7 +25,7 @@ const TemplateCardSkeleton = () => (
 
 const Loading = () => {
     return (
-        <div className="min-h-screen relative font-syne">
+        <div className="min-h-screen relative font-display">
             <div
                 className="fixed z-0 -bottom-[16.5rem] left-0 w-full h-full"
                 style={{

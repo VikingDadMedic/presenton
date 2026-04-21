@@ -33,7 +33,7 @@ const PresentationPage = ({ presentation_id }: { presentation_id: string }) => {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (presentationData?.slides[0].layout.includes("custom")) {
+    if (presentationData?.slides?.[0]?.layout?.includes("custom")) {
       const existingScript = document.querySelector(
         'script[src*="tailwindcss.com"]'
       );

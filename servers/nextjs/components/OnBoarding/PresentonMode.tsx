@@ -374,12 +374,12 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
     }, [llmConfig.LLM, modelsChecked, modelsLoading]);
 
     return (
-        <div className='w-full max-w-[660px] font-syne pb-10'>
-            <p className='px-2.5 py-0.5 w-fit text-[#7A5AF8] rounded-[50px]  border border-[#EDEEEF] text-[10px] font-medium mb-5 font-syne'>PRESENTON</p>
+        <div className='w-full max-w-[660px] font-display pb-10'>
+            <p className='px-2.5 py-0.5 w-fit text-[#7A5AF8] rounded-[50px]  border border-[#EDEEEF] text-[10px] font-medium mb-5 font-display'>PRESENTON</p>
             <div className=''>
 
-                <h2 className='mb-4 text-black text-[26px] font-normal font-unbounded '>Choose your content providers</h2>
-                <p className='text-[#000000CC] text-xl font-normal font-syne'>Select the AI engines that will generate your slide text and visuals.</p>
+                <h2 className='mb-4 text-black text-[26px] font-normal font-display '>Choose your content providers</h2>
+                <p className='text-[#000000CC] text-xl font-normal font-display'>Select the AI engines that will generate your slide text and visuals.</p>
             </div>
             <div className='flex items-center gap-2 bg-[#F0F3F9B2] rounded-[8px]  px-6 py-2.5 my-[54px]'>
                 <Info className='w-4 h-4 fill-[#003399] stroke-white' />
@@ -1001,7 +1001,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
 
                     disabled={savingConfig}
                     onClick={handleSaveConfig}
-                    className='border font-syne border-[#EDEEEF] bg-[#7C51F8]  rounded-[58px] px-5 py-2.5 text-white text-xs  font-semibold'>
+                    className='border font-display border-[#EDEEEF] bg-[#7C51F8]  rounded-[58px] px-5 py-2.5 text-white text-xs  font-semibold'>
                     Continue to Finish
                 </button>
             </div>

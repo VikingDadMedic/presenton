@@ -61,8 +61,8 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
         [data-sonner-toast][data-styled="true"] {
           border-radius: 10px !important;
 
-          border: 1px solid var(--Base-Gray-700, #e1e1e5) !important;
-          background: rgba(255, 255, 255, 0.6) !important;
+          border: 1px solid var(--border) !important;
+          background: var(--card) !important;
           box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.06) !important;
           padding: clamp(9px, 0.5rem + 0.35vw, 12px) clamp(11px, 0.65rem + 0.5vw, 14px) !important;
           gap: clamp(8px, 0.5rem + 0.35vw, 11px) !important;
@@ -74,26 +74,26 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
 
         /* Typography — slight scale-up from original 12px, capped modestly */
         [data-sonner-toast][data-styled="true"] [data-title] {
-          font-family: var(--font-syne), ui-sans-serif, system-ui, -apple-system,
+          font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
             BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
             "Noto Sans", sans-serif !important;
           font-size: clamp(0.8125rem, 0.8rem + 0.12vw, 0.9375rem) !important;
           font-weight: 500 !important;
           line-height: 1.35 !important;
           letter-spacing: 0.03em !important;
-          color: rgb(15 23 42) !important; /* slate-900 */
+          color: var(--foreground) !important;
           text-transform: none !important;
         }
 
         [data-sonner-toast][data-styled="true"] [data-description] {
-          font-family: var(--font-syne), ui-sans-serif, system-ui, -apple-system,
+          font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
             BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
             "Noto Sans", sans-serif !important;
           font-size: clamp(0.6875rem, 0.67rem + 0.1vw, 0.8125rem) !important;
           font-weight: 400 !important;
           line-height: 1.4 !important;
           letter-spacing: 0.03em !important;
-          color: rgb(100 116 139) !important; /* slate-500 */
+          color: var(--muted-foreground) !important;
         }
 
         [data-sonner-toast][data-styled="true"] [data-content] {
@@ -111,7 +111,7 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
           align-items: center !important;
           justify-content: center !important;
           margin: 0 !important;
-          color: rgb(51 65 85) !important; /* slate-700 */
+          color: var(--muted-foreground) !important;
         }
 
         [data-sonner-toast][data-styled="true"] [data-icon] svg {
@@ -146,14 +146,14 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
           padding: clamp(4px, 0.3rem + 0.2vw, 7px)
             clamp(7px, 0.5rem + 0.25vw, 10px) !important;
           border-radius: 6px !important;
-          font-family: var(--font-syne), ui-sans-serif, system-ui, -apple-system,
+          font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
             BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
             "Noto Sans", sans-serif !important;
           font-size: clamp(0.625rem, 0.62rem + 0.08vw, 0.75rem) !important;
           font-weight: 400 !important;
-          background: rgb(255 255 255) !important;
-          color: #3F3F3F !important;
-          border: 1px solid #EDEEEF !important;
+          background: var(--card) !important;
+          color: var(--foreground) !important;
+          border: 1px solid var(--border) !important;
           box-shadow: none !important;
         }
 
@@ -174,11 +174,11 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
           margin-left: auto !important;
           margin-right: 0 !important;
           align-self: center !important;
-          background: rgb(255 255 255) !important;
-          color: #3f3f3f !important;
-          border: 1px solid #edeeef !important;
+          background: var(--card) !important;
+          color: var(--foreground) !important;
+          border: 1px solid var(--border) !important;
           box-shadow: none !important;
-          font-family: var(--font-syne), ui-sans-serif, system-ui, -apple-system,
+          font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
             BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
             "Noto Sans", sans-serif !important;
           font-size: clamp(0.625rem, 0.62rem + 0.08vw, 0.75rem) !important;
@@ -188,11 +188,11 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
         }
 
         [data-sonner-toast][data-styled="true"] [data-close-button]:hover {
-          background: rgb(248 250 252) !important; /* slate-50 */
+          background: var(--popover) !important;
         }
 
         [data-sonner-toast][data-styled="true"] [data-button]:hover {
-          background: rgb(248 250 252) !important; /* slate-50 */
+          background: var(--popover) !important;
         }
 
         /* Dark mode — same radius, border weight, shadow; frosted dark surface */

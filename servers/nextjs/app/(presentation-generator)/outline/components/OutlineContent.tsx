@@ -44,7 +44,7 @@ const OutlineContent: React.FC<OutlineContentProps> = ({
     );
 
     return (
-        <div className="space-y-6 font-syne ">
+        <div className="space-y-6 font-display ">
             {isLoading && (!outlines || outlines.length === 0) && (
                 <div className="flex items-center justify-center">
                     <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 text-blue-600 px-2 py-0.5 text-xs">

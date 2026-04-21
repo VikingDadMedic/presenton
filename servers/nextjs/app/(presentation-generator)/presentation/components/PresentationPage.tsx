@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import PresentationMode from "./PresentationMode";
 import SidePanel from "./SidePanel";
 import SlideContent from "./SlideContent";
+import SlideSkeleton from "./SlideSkeleton";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
@@ -37,7 +38,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
 
 
 
-  const { presentationData, isStreaming } = useSelector(
+  const { presentationData, isStreaming, skeletonSlides } = useSelector(
     (state: RootState) => state.presentationGeneration
   );
 
@@ -120,7 +121,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-gray-100 font-syne">
+      <div className="flex flex-col items-center justify-center h-screen bg-gray-100 font-display">
         <div
           className="bg-white border border-red-300 text-red-700 px-6 py-8 rounded-lg shadow-lg flex flex-col items-center"
           role="alert"
@@ -141,7 +142,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   }
 
   return (
-    <div className="h-screen overflow-hidden font-syne ">
+    <div className="h-screen overflow-hidden font-display ">
       <div
         style={{
           background: "#ffffff",
@@ -165,7 +166,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
               background: "rgba(255, 255, 255, 0.10)",
               boxShadow: "0 0 20.01px 0 rgba(122, 90, 248, 0.16) inset",
             }}
-            className="p-6 rounded-[20px] font-inter flex flex-col items-center overflow-hidden justify-center  border border-[#EDECEC] "
+            className="p-6 rounded-[20px] font-sans flex flex-col items-center overflow-hidden justify-center  border border-[#EDECEC] "
           >
             <div className="w-full max-w-[1280px] h-full">
 
@@ -173,28 +174,45 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
                 loading ||
                 !presentationData?.slides ||
                 presentationData?.slides.length === 0 ? (
-                <div className="relative w-full h-[calc(100vh-120px)]   mx-auto">
-                  <div className="">
-                    {Array.from({ length: 2 }).map((_, index) => (
-                      <Skeleton
-                        key={index}
-                        className="aspect-video bg-gray-400 my-4 w-full mx-auto "
+                skeletonSlides.length > 0 ? (
+                  <div className="flex flex-col gap-4">
+                    {skeletonSlides.map((sk, i) => (
+                      <SlideSkeleton
+                        key={`skeleton-${i}`}
+                        outlineText={sk.outlineText}
+                        layoutName={sk.layoutName}
                       />
                     ))}
                   </div>
-                  {stream && <LoadingState />}
-                </div>
+                ) : (
+                  <div className="relative w-full h-[calc(100vh-120px)] mx-auto">
+                    <div className="">
+                      {Array.from({ length: 2 }).map((_, index) => (
+                        <Skeleton
+                          key={index}
+                          className="aspect-video bg-gray-400 my-4 w-full mx-auto "
+                        />
+                      ))}
+                    </div>
+                    {stream && <LoadingState />}
+                  </div>
+                )
               ) : (
                 <>
-                  {presentationData &&
-                    presentationData.slides &&
-                    presentationData.slides.length > 0 &&
-                    presentationData.slides.map((slide: any, index: number) => (
-                      <SlideContent
-                        key={`${slide.type}-${index}-${slide.index}`}
-                        slide={slide}
-                        index={index}
-                        presentationId={presentation_id}
+                  {presentationData.slides.map((slide: any, index: number) => (
+                    <SlideContent
+                      key={`${slide.type}-${index}-${slide.index}`}
+                      slide={slide}
+                      index={index}
+                      presentationId={presentation_id}
+                    />
+                  ))}
+                  {isStreaming &&
+                    skeletonSlides.slice(presentationData.slides.length).map((sk, i) => (
+                      <SlideSkeleton
+                        key={`skeleton-pending-${presentationData.slides.length + i}`}
+                        outlineText={sk.outlineText}
+                        layoutName={sk.layoutName}
                       />
                     ))}
                 </>

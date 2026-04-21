@@ -236,6 +236,25 @@ import codeSettings from "./Code/settings.json";
 import educationSettings from "./Education/settings.json";
 import productOverviewSettings from "./ProductOverview/settings.json";
 import reportSettings from "./Report/settings.json";
+import travelSettings from "./travel/settings.json";
+import travelItinerarySettings from "./travel-itinerary/settings.json";
+
+// Travel templates
+import DestinationHeroLayout, { Schema as DestinationHeroSchema, layoutId as DestinationHeroId, layoutName as DestinationHeroName, layoutDescription as DestinationHeroDesc } from "./travel/DestinationHeroLayout";
+import DestinationHighlightsLayout, { Schema as DestinationHighlightsSchema, layoutId as DestinationHighlightsId, layoutName as DestinationHighlightsName, layoutDescription as DestinationHighlightsDesc } from "./travel/DestinationHighlightsLayout";
+import ItineraryDayLayout, { Schema as ItineraryDaySchema, layoutId as ItineraryDayId, layoutName as ItineraryDayName, layoutDescription as ItineraryDayDesc } from "./travel/ItineraryDayLayout";
+import ItineraryTimelineLayout, { Schema as ItineraryTimelineSchema, layoutId as ItineraryTimelineId, layoutName as ItineraryTimelineName, layoutDescription as ItineraryTimelineDesc } from "./travel/ItineraryTimelineLayout";
+import PricingComparisonLayout, { Schema as PricingComparisonSchema, layoutId as PricingComparisonId, layoutName as PricingComparisonName, layoutDescription as PricingComparisonDesc } from "./travel/PricingComparisonLayout";
+import AccommodationCardLayout, { Schema as AccommodationCardSchema, layoutId as AccommodationCardId, layoutName as AccommodationCardName, layoutDescription as AccommodationCardDesc } from "./travel/AccommodationCardLayout";
+import FlightInfoLayout, { Schema as FlightInfoSchema, layoutId as FlightInfoId, layoutName as FlightInfoName, layoutDescription as FlightInfoDesc } from "./travel/FlightInfoLayout";
+import TravelMapLayout, { Schema as TravelMapSchema, layoutId as TravelMapId, layoutName as TravelMapName, layoutDescription as TravelMapDesc } from "./travel/TravelMapLayout";
+import TestimonialLayout, { Schema as TestimonialSchema, layoutId as TestimonialId, layoutName as TestimonialName, layoutDescription as TestimonialDesc } from "./travel/TestimonialLayout";
+import WeatherClimateLayout, { Schema as WeatherClimateSchema, layoutId as WeatherClimateId, layoutName as WeatherClimateName, layoutDescription as WeatherClimateDesc } from "./travel/WeatherClimateLayout";
+import CulturalTipsLayout, { Schema as CulturalTipsSchema, layoutId as CulturalTipsId, layoutName as CulturalTipsName, layoutDescription as CulturalTipsDesc } from "./travel/CulturalTipsLayout";
+import DealCountdownLayout, { Schema as DealCountdownSchema, layoutId as DealCountdownId, layoutName as DealCountdownName, layoutDescription as DealCountdownDesc } from "./travel/DealCountdownLayout";
+import CompareDestinationsLayout, { Schema as CompareDestinationsSchema, layoutId as CompareDestinationsId, layoutName as CompareDestinationsName, layoutDescription as CompareDestinationsDesc } from "./travel/CompareDestinationsLayout";
+import PackageInclusionsLayout, { Schema as PackageInclusionsSchema, layoutId as PackageInclusionsId, layoutName as PackageInclusionsName, layoutDescription as PackageInclusionsDesc } from "./travel/PackageInclusionsLayout";
+import BookingCTALayout, { Schema as BookingCTASchema, layoutId as BookingCTAId, layoutName as BookingCTAName, layoutDescription as BookingCTADesc } from "./travel/BookingCTALayout";
 
 
 // Helper to create template entry
@@ -463,6 +482,36 @@ export const swiftTemplates: TemplateWithData[] = [
     createTemplateEntry(Timeline, TimelineSchema, TimelineId, TimelineName, TimelineDesc, "swift", "Timeline"),
 ];
 
+// Travel templates
+export const travelTemplates: TemplateWithData[] = [
+    createTemplateEntry(DestinationHeroLayout, DestinationHeroSchema, DestinationHeroId, DestinationHeroName, DestinationHeroDesc, "travel", "DestinationHeroLayout"),
+    createTemplateEntry(DestinationHighlightsLayout, DestinationHighlightsSchema, DestinationHighlightsId, DestinationHighlightsName, DestinationHighlightsDesc, "travel", "DestinationHighlightsLayout"),
+    createTemplateEntry(ItineraryDayLayout, ItineraryDaySchema, ItineraryDayId, ItineraryDayName, ItineraryDayDesc, "travel", "ItineraryDayLayout"),
+    createTemplateEntry(ItineraryTimelineLayout, ItineraryTimelineSchema, ItineraryTimelineId, ItineraryTimelineName, ItineraryTimelineDesc, "travel", "ItineraryTimelineLayout"),
+    createTemplateEntry(PricingComparisonLayout, PricingComparisonSchema, PricingComparisonId, PricingComparisonName, PricingComparisonDesc, "travel", "PricingComparisonLayout"),
+    createTemplateEntry(AccommodationCardLayout, AccommodationCardSchema, AccommodationCardId, AccommodationCardName, AccommodationCardDesc, "travel", "AccommodationCardLayout"),
+    createTemplateEntry(FlightInfoLayout, FlightInfoSchema, FlightInfoId, FlightInfoName, FlightInfoDesc, "travel", "FlightInfoLayout"),
+    createTemplateEntry(TravelMapLayout, TravelMapSchema, TravelMapId, TravelMapName, TravelMapDesc, "travel", "TravelMapLayout"),
+    createTemplateEntry(TestimonialLayout, TestimonialSchema, TestimonialId, TestimonialName, TestimonialDesc, "travel", "TestimonialLayout"),
+    createTemplateEntry(WeatherClimateLayout, WeatherClimateSchema, WeatherClimateId, WeatherClimateName, WeatherClimateDesc, "travel", "WeatherClimateLayout"),
+    createTemplateEntry(CulturalTipsLayout, CulturalTipsSchema, CulturalTipsId, CulturalTipsName, CulturalTipsDesc, "travel", "CulturalTipsLayout"),
+    createTemplateEntry(DealCountdownLayout, DealCountdownSchema, DealCountdownId, DealCountdownName, DealCountdownDesc, "travel", "DealCountdownLayout"),
+    createTemplateEntry(CompareDestinationsLayout, CompareDestinationsSchema, CompareDestinationsId, CompareDestinationsName, CompareDestinationsDesc, "travel", "CompareDestinationsLayout"),
+    createTemplateEntry(PackageInclusionsLayout, PackageInclusionsSchema, PackageInclusionsId, PackageInclusionsName, PackageInclusionsDesc, "travel", "PackageInclusionsLayout"),
+    createTemplateEntry(BookingCTALayout, BookingCTASchema, BookingCTAId, BookingCTAName, BookingCTADesc, "travel", "BookingCTALayout"),
+];
+
+// Travel itinerary templates (ordered subset of travel layouts)
+export const travelItineraryTemplates: TemplateWithData[] = [
+    createTemplateEntry(DestinationHeroLayout, DestinationHeroSchema, DestinationHeroId, DestinationHeroName, DestinationHeroDesc, "travel-itinerary", "DestinationHeroLayout"),
+    createTemplateEntry(DestinationHighlightsLayout, DestinationHighlightsSchema, DestinationHighlightsId, DestinationHighlightsName, DestinationHighlightsDesc, "travel-itinerary", "DestinationHighlightsLayout"),
+    createTemplateEntry(ItineraryDayLayout, ItineraryDaySchema, ItineraryDayId, ItineraryDayName, ItineraryDayDesc, "travel-itinerary", "ItineraryDayLayout"),
+    createTemplateEntry(AccommodationCardLayout, AccommodationCardSchema, AccommodationCardId, AccommodationCardName, AccommodationCardDesc, "travel-itinerary", "AccommodationCardLayout"),
+    createTemplateEntry(FlightInfoLayout, FlightInfoSchema, FlightInfoId, FlightInfoName, FlightInfoDesc, "travel-itinerary", "FlightInfoLayout"),
+    createTemplateEntry(PricingComparisonLayout, PricingComparisonSchema, PricingComparisonId, PricingComparisonName, PricingComparisonDesc, "travel-itinerary", "PricingComparisonLayout"),
+    createTemplateEntry(BookingCTALayout, BookingCTASchema, BookingCTAId, BookingCTAName, BookingCTADesc, "travel-itinerary", "BookingCTALayout"),
+];
+
 // TODO: Step 4: Combine all templates into a single array For UseCases (like the ones below)
 // All templates combined
 export const allLayouts: TemplateWithData[] = [
@@ -478,6 +527,8 @@ export const allLayouts: TemplateWithData[] = [
     ...educationTemplates,
     ...productOverviewTemplates,
     ...reportTemplates,
+    ...travelTemplates,
+    ...travelItineraryTemplates,
 ];
 
 
@@ -568,8 +619,20 @@ export const templates: TemplateLayoutsWithSettings[] = [
         settings: neoSwiftSettings as TemplateGroupSettings,
         layouts: neoSwiftTemplates,
     },
-
-
+    {
+        id: "travel",
+        name: "Travel",
+        description: travelSettings.description,
+        settings: travelSettings as TemplateGroupSettings,
+        layouts: travelTemplates,
+    },
+    {
+        id: "travel-itinerary",
+        name: "Travel Itinerary",
+        description: travelItinerarySettings.description,
+        settings: travelItinerarySettings as TemplateGroupSettings,
+        layouts: travelItineraryTemplates,
+    },
 ];
 
 // Helper to get templates by group ID

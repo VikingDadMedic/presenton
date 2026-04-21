@@ -24,7 +24,7 @@ export const CustomTemplateCard = memo(function CustomTemplateCard({
     return (
         <Card
             className={cn(
-                "font-syne cursor-pointer flex flex-col justify-between relative hover:shadow-sm transition-all duration-200 group overflow-hidden rounded-[22px] bg-white border",
+                "font-display cursor-pointer flex flex-col justify-between relative hover:shadow-sm transition-all duration-200 group overflow-hidden rounded-[22px] bg-white border",
                 isSelected
                     ? " border-blue-500 ring-2 ring-blue-500/25 shadow-sm"
                     : " border-[#E8E9EC]"
@@ -41,7 +41,7 @@ export const CustomTemplateCard = memo(function CustomTemplateCard({
                 />
             </TemplatePreviewStage>
             <div className="flex items-center justify-between px-6 py-5 bg-white border-t border-[#EDEEEF] relative z-40">
-                <h3 className="text-sm font-bold text-gray-900 font-syne">
+                <h3 className="text-sm font-bold text-gray-900 font-display">
                     {template.name}
                 </h3>
             </div>

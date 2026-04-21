@@ -2,9 +2,10 @@
 
 import React, { ReactNode, useRef, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { updateSlideImage, updateSlideIcon, updateImageProperties } from '@/store/slices/presentationGeneration';
+import { updateSlideImage, updateSlideIcon, updateImageProperties, updateSlideContent } from '@/store/slices/presentationGeneration';
 import ImageEditor from './ImageEditor';
 import IconsEditor from './IconsEditor';
+import ChartDataEditor, { ChartColumn } from '../presentation/components/ChartDataEditor';
 
 interface EditableLayoutWrapperProps {
     children: ReactNode;
@@ -17,11 +18,127 @@ interface EditableLayoutWrapperProps {
 
 interface EditableElement {
     id: string;
-    type: 'image' | 'icon';
+    type: 'image' | 'icon' | 'chart';
     src: string;
     dataPath: string;
     data: any;
     element: HTMLImageElement | SVGElement;
+}
+
+interface ChartDataInfo {
+    type: 'simple' | 'series' | 'scatter';
+    dataPath: string;
+    flatData: Record<string, string>[];
+    columns: ChartColumn[];
+    rawChart?: any;
+}
+
+function findChartDataInContent(obj: any, path: string = ''): ChartDataInfo[] {
+    if (!obj || typeof obj !== 'object') return [];
+    const results: ChartDataInfo[] = [];
+
+    if (
+        Array.isArray(obj.categories) &&
+        obj.categories.length > 0 &&
+        Array.isArray(obj.series) &&
+        obj.series.length > 0 &&
+        obj.series[0]?.values
+    ) {
+        results.push({
+            type: 'series',
+            dataPath: path,
+            flatData: obj.categories.map((cat: string, i: number) => {
+                const row: Record<string, string> = { category: String(cat) };
+                obj.series.forEach((s: any) => {
+                    row[s.name] = String(s.values?.[i] ?? 0);
+                });
+                return row;
+            }),
+            columns: [
+                { key: 'category', label: 'Category', type: 'string' },
+                ...obj.series.map((s: any) => ({
+                    key: s.name,
+                    label: s.name,
+                    type: 'number' as const,
+                })),
+            ],
+            rawChart: obj,
+        });
+        return results;
+    }
+
+    if (Array.isArray(obj.data) && obj.data.length > 0 && typeof obj.data[0] === 'object') {
+        const first = obj.data[0];
+        const dataPath = path ? `${path}.data` : 'data';
+        if ('name' in first && 'value' in first) {
+            results.push({
+                type: 'simple',
+                dataPath,
+                flatData: obj.data.map((d: any) => ({ name: String(d.name), value: String(d.value) })),
+                columns: [
+                    { key: 'name', label: 'Name', type: 'string' },
+                    { key: 'value', label: 'Value', type: 'number' },
+                ],
+            });
+            return results;
+        }
+        if ('x' in first && 'y' in first) {
+            results.push({
+                type: 'scatter',
+                dataPath,
+                flatData: obj.data.map((d: any) => ({ x: String(d.x), y: String(d.y) })),
+                columns: [
+                    { key: 'x', label: 'X', type: 'number' },
+                    { key: 'y', label: 'Y', type: 'number' },
+                ],
+            });
+            return results;
+        }
+    }
+
+    for (const [key, value] of Object.entries(obj)) {
+        if (key.startsWith('__') && key.endsWith('__')) continue;
+        const newPath = path ? `${path}.${key}` : key;
+
+        if (Array.isArray(value)) {
+            if (value.length > 0 && typeof value[0] === 'object') {
+                const first = value[0];
+                if ('name' in first && 'value' in first && typeof first.value === 'number') {
+                    results.push({
+                        type: 'simple',
+                        dataPath: newPath,
+                        flatData: value.map((d: any) => ({ name: String(d.name), value: String(d.value) })),
+                        columns: [
+                            { key: 'name', label: 'Name', type: 'string' },
+                            { key: 'value', label: 'Value', type: 'number' },
+                        ],
+                    });
+                    continue;
+                }
+                if ('x' in first && 'y' in first && typeof first.x === 'number') {
+                    results.push({
+                        type: 'scatter',
+                        dataPath: newPath,
+                        flatData: value.map((d: any) => ({ x: String(d.x), y: String(d.y) })),
+                        columns: [
+                            { key: 'x', label: 'X', type: 'number' },
+                            { key: 'y', label: 'Y', type: 'number' },
+                        ],
+                    });
+                    continue;
+                }
+            }
+            for (let i = 0; i < value.length; i++) {
+                if (value[i] && typeof value[i] === 'object') {
+                    results.push(...findChartDataInContent(value[i], `${newPath}[${i}]`));
+                }
+            }
+        } else if (value && typeof value === 'object') {
+            results.push(...findChartDataInContent(value as any, newPath));
+        }
+    }
+
+    return results;
 }
 
 const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
@@ -315,6 +432,59 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
         });
 
 
+        // Process Recharts chart SVGs
+        const rechartsElements = containerRef.current.querySelectorAll('svg.recharts-surface:not([data-editable-processed])');
+        if (rechartsElements.length > 0) {
+            const chartDataList = findChartDataInContent(slideData);
+            let chartMatchIdx = 0;
+
+            rechartsElements.forEach((el, index) => {
+                if (chartMatchIdx >= chartDataList.length) return;
+                const svgEl = el as SVGElement;
+                svgEl.setAttribute('data-editable-processed', 'true');
+
+                const chartInfo = chartDataList[chartMatchIdx];
+                chartMatchIdx++;
+
+                const editableElement: EditableElement = {
+                    id: `${slideIndex}-chart-${chartInfo.dataPath}-${index}`,
+                    type: 'chart',
+                    src: '',
+                    dataPath: chartInfo.dataPath,
+                    data: chartInfo,
+                    element: svgEl,
+                };
+
+                newEditableElements.push(editableElement);
+
+                const wrapper = (svgEl.closest('.recharts-wrapper') || svgEl.parentElement) as HTMLElement;
+                const clickHandler = (e: Event) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveEditor(editableElement);
+                };
+
+                wrapper.addEventListener('click', clickHandler);
+                wrapper.style.cursor = 'pointer';
+                wrapper.style.transition = 'opacity 0.2s';
+
+                const mouseEnterHandler = () => { wrapper.style.opacity = '0.85'; };
+                const mouseLeaveHandler = () => { wrapper.style.opacity = '1'; };
+                wrapper.addEventListener('mouseenter', mouseEnterHandler);
+                wrapper.addEventListener('mouseleave', mouseLeaveHandler);
+
+                (svgEl as any)._editableCleanup = () => {
+                    wrapper.removeEventListener('click', clickHandler);
+                    wrapper.removeEventListener('mouseenter', mouseEnterHandler);
+                    wrapper.removeEventListener('mouseleave', mouseLeaveHandler);
+                    wrapper.style.cursor = '';
+                    wrapper.style.transition = '';
+                    wrapper.style.opacity = '';
+                    svgEl.removeAttribute('data-editable-processed');
+                };
+            });
+        }
+
         setEditableElements(prev => [...prev, ...newEditableElements]);
     };
 
@@ -435,6 +605,35 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
 
     };
 
+    const handleChartSave = (newData: any[]) => {
+        if (!activeEditor || activeEditor.type !== 'chart') return;
+        const chartInfo = activeEditor.data as ChartDataInfo;
+
+        if (chartInfo.type === 'series' && chartInfo.rawChart) {
+            const updatedChart = {
+                ...chartInfo.rawChart,
+                categories: newData.map(row => row.category),
+                series: chartInfo.rawChart.series.map((s: any) => ({
+                    ...s,
+                    values: newData.map(row => Number(row[s.name]) || 0),
+                })),
+            };
+            dispatch(updateSlideContent({
+                slideIndex,
+                dataPath: chartInfo.dataPath,
+                content: updatedChart,
+            }));
+        } else {
+            dispatch(updateSlideContent({
+                slideIndex,
+                dataPath: chartInfo.dataPath,
+                content: newData,
+            }));
+        }
+
+        setActiveEditor(null);
+    };
+
     return (
         <div ref={containerRef} className="editable-layout-wrapper w-full ">
             {children}
@@ -463,6 +662,17 @@ const EditableLayoutWrapper: React.FC<EditableLayoutWrapperProps> = ({
                 >
 
                 </IconsEditor>
+            )}
+
+            {/* Render ChartDataEditor when a chart is being edited */}
+            {activeEditor && activeEditor.type === 'chart' && (
+                <ChartDataEditor
+                    isOpen={true}
+                    onClose={handleEditorClose}
+                    data={(activeEditor.data as ChartDataInfo).flatData}
+                    columns={(activeEditor.data as ChartDataInfo).columns}
+                    onSave={handleChartSave}
+                />
             )}
         </div>
     );

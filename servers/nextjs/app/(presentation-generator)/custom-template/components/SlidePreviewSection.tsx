@@ -76,7 +76,7 @@ export const SlidePreviewSection: React.FC<SlidePreviewSectionProps> = ({
                             size="lg"
                             onClick={onInitTemplate}
                             disabled={isLoading}
-                            className="px-4 py-2 h-auto text-xs font-syne font-medium rounded-full shadow-lg hover:shadow-xl transition-all duration-300 "
+                            className="px-4 py-2 h-auto text-xs font-display font-medium rounded-full shadow-lg hover:shadow-xl transition-all duration-300 "
                             style={{
                                 background: isLoading
                                     ? '#E5E7EB'

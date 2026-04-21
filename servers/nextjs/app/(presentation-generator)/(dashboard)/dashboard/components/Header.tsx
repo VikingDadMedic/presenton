@@ -55,7 +55,7 @@ const Header = () => {
             {showHeaderBack ? (
               <Link
                 href={backHref}
-                className="text-[#333333] text-xs font-syne font-semibold flex items-center gap-2"
+                className="text-[#333333] text-xs font-display font-semibold flex items-center gap-2"
                 onClick={() =>
                   trackEvent(MixpanelEvent.Navigation, { from: pathname, to: backHref })
                 }

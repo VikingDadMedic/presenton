@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import { DashboardApi } from "@/app/(presentation-generator)/services/api/dashboard";
 import { PresentationGrid } from "@/app/(presentation-generator)/(dashboard)/dashboard/components/PresentationGrid";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Plane } from "lucide-react";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { usePathname } from "next/navigation";
 
@@ -61,7 +61,7 @@ const DashboardPage: React.FC = () => {
     <div className="min-h-screen  w-full px-6 pb-10 relative">
       <div className="sticky top-0 right-0 z-50 py-[28px]   backdrop-blur mb-4 ">
         <div className="flex xl:flex-row flex-col gap-6 xl:gap-0 items-center justify-between">
-          <h3 className=" text-[28px] tracking-[-0.84px] font-unbounded font-normal text-[#101828] flex items-center gap-2">
+          <h3 className=" text-[28px] tracking-[-0.84px] font-display font-normal text-[#101828] flex items-center gap-2">
 
             Slide Presentations
           </h3>
@@ -70,9 +70,23 @@ const DashboardPage: React.FC = () => {
 
 
             <Link
+              href="/upload?type=travel"
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-black text-sm font-semibold font-display shadow-sm hover:shadow-md"
+              aria-label="Create travel presentation"
+              style={{
+                borderRadius: "48px",
+                background: "linear-gradient(270deg, #93E4C1 2.4%, #A8D8EA 27.88%, #C3AED6 69.23%, #D5CAFC 100%)",
+              }}
+            >
+              <Plane className="w-4 h-4" />
+              <span className="hidden md:inline">Travel Presentation</span>
+              <span className="md:hidden">Travel</span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+            <Link
               href="/upload"
               onClick={() => trackEvent(MixpanelEvent.Dashboard_New_Presentation_Clicked, { pathname, source: "dashboard_header" })}
-              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-black text-sm font-semibold font-syne shadow-sm hover:shadow-md"
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-black text-sm font-semibold font-display shadow-sm hover:shadow-md"
               aria-label="Create new presentation"
               style={{
                 borderRadius: "48px",

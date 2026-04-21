@@ -214,6 +214,9 @@ async def create_presentation(
     include_table_of_contents: Annotated[bool, Body()] = False,
     include_title_slide: Annotated[bool, Body()] = True,
     web_search: Annotated[bool, Body()] = False,
+    theme: Annotated[Optional[dict], Body()] = None,
+    origin: Annotated[Optional[str], Body()] = None,
+    currency: Annotated[str, Body()] = "USD",
     sql_session: AsyncSession = Depends(get_async_session),
 ):
 
@@ -252,6 +255,9 @@ async def create_presentation(
         include_table_of_contents=include_table_of_contents,
         include_title_slide=include_title_slide,
         web_search=web_search,
+        theme=theme,
+        origin=origin,
+        currency=currency,
     )
 
     sql_session.add(presentation)
@@ -320,6 +326,25 @@ async def prepare_presentation(
                 title_slide=presentation.include_title_slide,
             )
 
+    if layout.name.startswith("travel"):
+        try:
+            from enrichers.pipeline import run_enrichment_pipeline
+            result = await run_enrichment_pipeline(
+                content=presentation.content,
+                language=presentation.language,
+                currency=presentation.currency,
+                origin=presentation.origin,
+            )
+            if result.markdown:
+                presentation.enriched_context = result.markdown
+            if result.raw_data:
+                presentation.enriched_data = result.raw_data
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(
+                f"Enrichment pipeline failed during prepare (graceful degradation): {e}"
+            )
+
     sql_session.add(presentation)
     presentation.outlines = presentation_outline_model.model_dump(mode="json")
     presentation.title = title or presentation.title
@@ -361,7 +386,31 @@ async def stream_presentation(
         outline = presentation.get_presentation_outline()
         image_urls_for_slides = get_images_for_slides_from_outline(outline.slides)
 
-        # These tasks will be gathered and awaited after all slides are generated
+        yield SSEResponse(
+            event="response",
+            data=json.dumps({
+                "type": "outlines",
+                "outlines": [s.model_dump(mode="json") for s in outline.slides],
+            }),
+        ).to_string()
+
+        layout_names = [layout.slides[idx].id for idx in structure.slides]
+        yield SSEResponse(
+            event="response",
+            data=json.dumps({
+                "type": "structure",
+                "layouts": layout_names,
+            }),
+        ).to_string()
+
+        enriched_instructions = presentation.instructions or ""
+        if presentation.enriched_context:
+            enriched_instructions = (
+                f"{enriched_instructions}\n\n{presentation.enriched_context}"
+                if enriched_instructions
+                else presentation.enriched_context
+            )
+
         async_assets_generation_tasks = []
 
         slides: List[SlideModel] = []
@@ -379,11 +428,21 @@ async def stream_presentation(
                     presentation.language,
                     presentation.tone,
                     presentation.verbosity,
-                    presentation.instructions,
+                    enriched_instructions,
                 )
             except HTTPException as e:
                 yield SSEErrorResponse(detail=e.detail).to_string()
                 return
+
+            if presentation.enriched_data:
+                try:
+                    from enrichers.overlay import apply_enricher_overlays
+                    slide_content = apply_enricher_overlays(slide_content, slide_layout.id, presentation.enriched_data)
+                except Exception as overlay_err:
+                    import logging
+                    logging.getLogger(__name__).warning(
+                        f"Enricher overlay failed for slide {i} (continuing without overlay): {overlay_err}"
+                    )
 
             slide = SlideModel(
                 presentation=id,
@@ -642,6 +701,31 @@ async def generate_presentation_handler(
                 if documents:
                     additional_context = "\n\n".join(documents)
 
+            if request.template.startswith("travel"):
+                try:
+                    from enrichers.pipeline import run_enrichment_pipeline
+                    enrichment = await run_enrichment_pipeline(
+                        content=request.content,
+                        language=request.language,
+                        currency=request.currency,
+                        origin=request.origin,
+                    )
+                    if enrichment.markdown:
+                        additional_context = (
+                            f"{additional_context}\n\n{enrichment.markdown}"
+                            if additional_context
+                            else enrichment.markdown
+                        )
+                    enriched_data_for_model = enrichment.raw_data
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).warning(
+                        f"Enrichment pipeline failed (graceful degradation): {e}"
+                    )
+                    enriched_data_for_model = None
+            else:
+                enriched_data_for_model = None
+
             # Finding number of slides to generate by considering table of contents
             n_slides_to_generate = request.n_slides
             if request.include_table_of_contents and request.n_slides is not None:
@@ -815,7 +899,10 @@ async def generate_presentation_handler(
         if final_n_slides is None:
             final_n_slides = len(presentation_outlines.slides)
 
-        # Create PresentationModel
+        enriched_context_for_model = None
+        if request.template.startswith("travel") and additional_context:
+            enriched_context_for_model = additional_context
+
         presentation = PresentationModel(
             id=presentation_id,
             content=request.content,
@@ -830,6 +917,10 @@ async def generate_presentation_handler(
             tone=request.tone.value,
             verbosity=request.verbosity.value,
             instructions=request.instructions,
+            origin=request.origin,
+            currency=request.currency,
+            enriched_context=enriched_context_for_model,
+            enriched_data=enriched_data_for_model,
         )
 
         # Updating async status
@@ -848,14 +939,18 @@ async def generate_presentation_handler(
         slide_layout_indices = presentation_structure.slides
         slide_layouts = [layout_model.slides[idx] for idx in slide_layout_indices]
 
-        # Schedule slide content generation and asset fetching in batches of 10
+        enriched_instructions = request.instructions or ""
+        if enriched_context_for_model:
+            enriched_instructions = (
+                f"{enriched_instructions}\n\n{enriched_context_for_model}"
+                if enriched_instructions
+                else enriched_context_for_model
+            )
+
         batch_size = 10
         for start in range(0, len(slide_layouts), batch_size):
             end = min(start + batch_size, len(slide_layouts))
 
-            print(f"Generating slides from {start} to {end}")
-
-            # Generate contents for this batch concurrently
             content_tasks = [
                 get_slide_content_from_type_and_outline(
                     slide_layouts[i],
@@ -863,7 +958,7 @@ async def generate_presentation_handler(
                     language_to_use,
                     request.tone.value,
                     request.verbosity.value,
-                    request.instructions,
+                    enriched_instructions,
                 )
                 for i in range(start, end)
             ]
@@ -874,6 +969,15 @@ async def generate_presentation_handler(
             for offset, slide_content in enumerate(batch_contents):
                 i = start + offset
                 slide_layout = slide_layouts[i]
+                if enriched_data_for_model:
+                    try:
+                        from enrichers.overlay import apply_enricher_overlays
+                        slide_content = apply_enricher_overlays(slide_content, slide_layout.id, enriched_data_for_model)
+                    except Exception as overlay_err:
+                        import logging
+                        logging.getLogger(__name__).warning(
+                            f"Enricher overlay failed for slide {i} (continuing without overlay): {overlay_err}"
+                        )
                 slide = SlideModel(
                     presentation=presentation_id,
                     layout_group=layout_model.name,

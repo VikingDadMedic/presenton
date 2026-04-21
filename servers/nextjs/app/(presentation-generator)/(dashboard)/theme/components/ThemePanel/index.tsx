@@ -938,10 +938,10 @@ const ThemePanel: React.FC = () => {
 
 
   return (
-    <div className="space-y-6 px-6 font-syne">
+    <div className="space-y-6 px-6 font-display">
       <div className='py-[28px] flex justify-between'>
 
-        <h3 className=" text-[28px]  tracking-[-0.84px] font-unbounded font-normal text-[#101828] flex items-center gap-2">
+        <h3 className=" text-[28px]  tracking-[-0.84px] font-display font-normal text-[#101828] flex items-center gap-2">
           Themes
         </h3>
         <Link
@@ -950,7 +950,7 @@ const ThemePanel: React.FC = () => {
             pathname,
             source: "theme_page_header",
           })}
-          className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-black text-sm font-semibold font-syne shadow-sm hover:shadow-md"
+          className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-black text-sm font-semibold font-display shadow-sm hover:shadow-md"
           aria-label="Create new theme"
           style={{
             borderRadius: "48px",
@@ -1028,7 +1028,7 @@ const ThemePanel: React.FC = () => {
       <Sheet open={isSheetOpen} onOpenChange={handleCloseSheet} >
 
 
-        <SheetContent side="bottom" className="h-[90vh] font-syne w-full p-0 [&>button]:hidden focus:outline-none" >
+        <SheetContent side="bottom" className="h-[90vh] font-display w-full p-0 [&>button]:hidden focus:outline-none" >
           <div className="flex h-full">
             {/* Left side - Editor */}
             <div

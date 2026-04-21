@@ -2,13 +2,10 @@
 
 ## Test All Applications (`test-all.yml`)
 
-This workflow runs comprehensive tests for all parts of the application:
+This workflow runs comprehensive tests for the web application:
 
-- **Main FastAPI** - Python tests for the main backend
-- **Electron FastAPI** - Python tests for the Electron-compatible backend  
-- **Main Next.js** - Lint, build, and Cypress component tests
-- **Electron Next.js** - Lint, build, and Cypress component tests
-- **Docker Build** - Verifies Docker image builds successfully
+- **FastAPI** - Python backend (Python 3.12)
+- **Next.js** - Frontend lint, build, and Cypress component tests (Node.js 22)
 
 ## Testing Locally
 
@@ -26,7 +23,6 @@ If you prefer to test individual components:
 
 ### FastAPI Tests
 ```bash
-# Main FastAPI
 cd servers/fastapi
 export APP_DATA_DIRECTORY=/tmp/app_data
 export TEMP_DIRECTORY=/tmp/presenton
@@ -35,22 +31,11 @@ export DISABLE_ANONYMOUS_TRACKING=true
 export DISABLE_IMAGE_GENERATION=true
 export PYTHONPATH=$(pwd)
 pytest tests/ -v
-
-# Electron FastAPI
-cd electron/servers/fastapi
-# Same environment variables as above
-pytest tests/ -v
 ```
 
 ### Next.js Tests
 ```bash
-# Main Next.js
 cd servers/nextjs
-npm run lint
-npm run build
-
-# Electron Next.js
-cd electron/servers/nextjs
 npm run lint
 npm run build
 ```

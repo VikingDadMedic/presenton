@@ -116,4 +116,7 @@ COPY start.js LICENSE NOTICE ./
 COPY nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:8000/health || exit 1
+
 CMD ["node", "/app/start.js"]

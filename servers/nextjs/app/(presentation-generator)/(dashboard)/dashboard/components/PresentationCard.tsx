@@ -111,12 +111,12 @@ export const PresentationCard = ({
     <Card
       suppressHydrationWarning={true}
       onClick={handlePreview}
-      className="bg-[#F8FBFB] font-syne shadow-none sm:shadow-none  presentation-card rounded-[12px] p-0 group hover:shadow-md transition-all duration-500 slide-theme cursor-pointer overflow-hidden flex flex-col"
+      className="bg-[#F8FBFB] font-display shadow-none sm:shadow-none  presentation-card rounded-[12px] p-0 group hover:shadow-md transition-all duration-500 slide-theme cursor-pointer overflow-hidden flex flex-col"
     >
       <div
         id={`dashboard-presentation-card-${id}`}
         suppressHydrationWarning={true} className="flex flex-col flex-1 relative z-40">
-        {/* <p className=" text-xs font-syne absolute top-2 flex gap-1 capitalize  items-center left-2 rounded-[100px]  px-2.5 py-1 bg-[#3A3A3AF5] text-white font-semibold  z-40 ">
+        {/* <p className=" text-xs font-display absolute top-2 flex gap-1 capitalize  items-center left-2 rounded-[100px]  px-2.5 py-1 bg-[#3A3A3AF5] text-white font-semibold  z-40 ">
 
           {presentation.type}
         </p> */}
@@ -131,9 +131,9 @@ export const PresentationCard = ({
           <div className="flex items-center justify-between gap-7 w-full">
             <div className="flex flex-col items-start gap-1">
               <div className="text-sm text-[#191919] font-semibold  overflow-hidden line-clamp-1">
-                <MarkdownRenderer content={title} className="text-sm mb-0  font-syne text-[#191919] font-semibold  overflow-hidden line-clamp-1" />
+                <MarkdownRenderer content={title} className="text-sm mb-0  font-display text-[#191919] font-semibold  overflow-hidden line-clamp-1" />
               </div>
-              <p className="text-[#808080] text-sm font-syne">
+              <p className="text-[#808080] text-sm font-display">
                 {new Date(presentation?.created_at).toLocaleDateString()}
               </p>
 

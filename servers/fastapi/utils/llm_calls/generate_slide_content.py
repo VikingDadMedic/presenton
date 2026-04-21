@@ -110,9 +110,22 @@ def get_system_prompt(
         response_schema
     )
 
+    travel_rules = ""
+    if tone and "travel" in tone.lower():
+        travel_rules = (
+            "\n# Travel-Specific Rules\n"
+            "- Metrics should be in abbreviated form with least possible characters.\n"
+            "- Star ratings must be numeric (1-5).\n"
+            "- Prices must include currency code or symbol (e.g., \"$2,499 pp\" or \"EUR 1,899\").\n"
+            "- Activity times in 24h or contextual format (e.g., \"Morning\", \"09:00\").\n"
+            "- Image prompts should describe scenic travel photography, NOT generic stock images.\n"
+            "- Weather temperatures should include units (C or F).\n"
+            "- Duration formats: \"3 nights / 4 days\", \"2h 30m flight\".\n"
+        )
+
     return SLIDE_CONTENT_SYSTEM_PROMPT.format(
         markdown_emphasis_rules=markdown_emphasis_rules,
-        user_instructions=user_instructions,
+        user_instructions=user_instructions + travel_rules,
         tone_instructions=tone_instructions,
         verbosity_instructions=verbosity_instructions,
         output_fields_instructions=output_fields_instructions,

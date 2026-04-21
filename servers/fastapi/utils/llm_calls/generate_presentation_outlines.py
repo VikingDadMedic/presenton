@@ -62,6 +62,21 @@ def get_system_prompt(
         "   - First slide title must be the same as the presentation title."
     )
 
+    travel_block = ""
+    if tone and "travel" in tone.lower():
+        travel_block = (
+            "\n# Travel-Specific Guidelines\n"
+            "- You are an expert travel content creator and destination specialist.\n"
+            "- Structure content to flow from inspiration through logistics to conversion.\n"
+            "- Emphasize sensory destination details (sights, sounds, flavors, experiences).\n"
+            "- Always include practical travel logistics (dates, prices, durations, distances).\n"
+            "- Format prices with currency symbols and per-person/per-night context.\n"
+            "- Include seasonal/weather context when relevant.\n"
+            "- End with clear call-to-action (booking, inquiry, next steps).\n"
+            "- Place greater emphasis on numerical data and travel metrics.\n"
+            "- Search web for current travel advisories, visa requirements, pricing, and destination information.\n"
+        )
+
     system = (
         "Generate presentation title and content for slides.\n"
         "Generate flow based on user **content** and use **context** just for reference.\n"
@@ -79,6 +94,7 @@ def get_system_prompt(
         "Only include URLs if they appear in the provided content/context.\n"
         "Make sure data used is strictly from the provided content/context.\n"
         "Make sure data is consistent across all slides."
+        f"{travel_block}"
     )
 
     return system

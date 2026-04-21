@@ -65,7 +65,8 @@ export class PresentationGenerationApi {
     include_table_of_contents,
     include_title_slide,
     web_search,
-    
+    origin,
+    currency,
   }: {
     content: string;
     n_slides: number | null;
@@ -77,6 +78,8 @@ export class PresentationGenerationApi {
     include_table_of_contents?: boolean;
     include_title_slide?: boolean;
     web_search?: boolean;
+    origin?: string;
+    currency?: string;
   }) {
     try {
       const response = await fetch(
@@ -95,6 +98,8 @@ export class PresentationGenerationApi {
             include_table_of_contents,
             include_title_slide,
             web_search,
+            origin,
+            currency,
           }),
           cache: "no-cache",
         }
@@ -132,7 +137,34 @@ export class PresentationGenerationApi {
     }
   }
 
-  static async updatePresentationContent(body: any) {
+  static async editSlideField(
+    slideId: string,
+    fieldPath: string,
+    prompt: string
+  ) {
+    try {
+      const response = await fetch(
+        `/api/v1/ppt/slide/edit-field`,
+        {
+          method: "PATCH",
+          headers: getHeader(),
+          body: JSON.stringify({
+            id: slideId,
+            field_path: fieldPath,
+            prompt,
+          }),
+          cache: "no-cache",
+        }
+      );
+
+      return await ApiResponseHandler.handleResponse(response, "Failed to edit slide field");
+    } catch (error) {
+      console.error("error in slide field edit", error);
+      throw error;
+    }
+  }
+
+  static async updatePresentationContent(body: object | null) {
     try {
       const response = await fetch(
         getApiUrl(`/api/v1/ppt/presentation/update`),
@@ -151,7 +183,12 @@ export class PresentationGenerationApi {
     }
   }
 
-  static async presentationPrepare(presentationData: any) {
+  static async presentationPrepare(presentationData: {
+    presentation_id: string | null;
+    outlines: { content: string }[] | null;
+    layout: Record<string, unknown>;
+    title?: string;
+  }) {
     try {
       const response = await fetch(
         getApiUrl(`/api/v1/ppt/presentation/prepare`),
@@ -229,7 +266,7 @@ export class PresentationGenerationApi {
 
 
   // EXPORT PRESENTATION
-  static async exportAsPPTX(presentationData: any) {
+  static async exportAsPPTX(presentationData: object) {
     try {
       const response = await fetch(
         getApiUrl(`/api/v1/ppt/presentation/export/pptx`),

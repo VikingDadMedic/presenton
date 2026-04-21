@@ -9,7 +9,7 @@ function Shimmer({ className }: { className?: string }) {
 
 export default function LoadingSettings() {
     return (
-        <div className="h-screen font-syne flex flex-col overflow-hidden relative">
+        <div className="h-screen font-display flex flex-col overflow-hidden relative">
             <div
                 className="fixed z-0 bottom-[-14.5rem] left-0 w-full h-full pointer-events-none"
                 style={{

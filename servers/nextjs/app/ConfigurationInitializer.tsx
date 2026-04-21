@@ -148,10 +148,10 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
 
             {/* Loading Text */}
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-gray-800 font-inter">
+              <h3 className="text-lg font-semibold text-gray-800 font-sans">
                 Initializing Application
               </h3>
-              <p className="text-sm text-gray-600 font-inter">
+              <p className="text-sm text-gray-600 font-sans">
                 Loading configuration and checking model availability...
               </p>
             </div>

@@ -44,3 +44,9 @@ class GeneratePresentationRequest(BaseModel):
     trigger_webhook: bool = Field(
         default=False, description="Whether to trigger subscribed webhooks"
     )
+    origin: Optional[str] = Field(
+        default=None, description="Departure city for flight searches"
+    )
+    currency: str = Field(
+        default="USD", description="Currency for price formatting"
+    )

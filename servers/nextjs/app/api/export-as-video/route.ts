@@ -9,38 +9,43 @@ const TRANSITION_DURATION = 0.8;
 const TITLE_SELECTORS = 'h1, h2, [class*="title"], [class*="Title"], [class*="heading"], [class*="Heading"]';
 const CARD_SELECTORS = '[class*="card"], [class*="Card"], [class*="item"], [class*="Item"], [class*="metric"], [class*="Metric"], [class*="tier"], [class*="Tier"]';
 
-function buildSlideAnimations(slideIndex: number, slideDuration: number, totalSlides: number): string {
+function buildSlideAnimations(
+  slideIndex: number,
+  slideDuration: number,
+  totalSlides: number,
+  style: "scale-zoom" | "slide-right" | "clip-reveal",
+  transitionDur: number,
+): string {
   const s = `#slide-${slideIndex}`;
   const t = slideDuration;
   const start = slideIndex * t;
   const isLast = slideIndex === totalSlides - 1;
-  const variety = slideIndex % 3;
 
   let entrance = "";
   let exit = "";
 
-  if (variety === 0) {
-    entrance = `  tl.fromTo("${s}", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.8, ease: "expo.out" }, ${start});`;
+  if (style === "scale-zoom") {
+    entrance = `  tl.fromTo("${s}", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: ${transitionDur}, ease: "expo.out" }, ${start});`;
     exit = isLast
-      ? `  tl.to("${s}", { opacity: 1, duration: 0.01 }, ${start + t - 0.6});`
-      : `  tl.to("${s}", { opacity: 0, scale: 1.02, filter: "blur(4px)", duration: 0.6, ease: "power2.in" }, ${start + t - 0.6});`;
-  } else if (variety === 1) {
-    entrance = `  tl.fromTo("${s}", { opacity: 0, x: 80 }, { opacity: 1, x: 0, duration: 0.7, ease: "power3.out" }, ${start});`;
+      ? `  tl.to("${s}", { opacity: 1, duration: 0.01 }, ${start + t - transitionDur * 0.75});`
+      : `  tl.to("${s}", { opacity: 0, scale: 1.02, filter: "blur(4px)", duration: ${transitionDur * 0.75}, ease: "power2.in" }, ${start + t - transitionDur * 0.75});`;
+  } else if (style === "slide-right") {
+    entrance = `  tl.fromTo("${s}", { opacity: 0, x: 80 }, { opacity: 1, x: 0, duration: ${transitionDur * 0.875}, ease: "power3.out" }, ${start});`;
     exit = isLast
-      ? `  tl.to("${s}", { opacity: 1, duration: 0.01 }, ${start + t - 0.6});`
-      : `  tl.to("${s}", { opacity: 0, x: -80, duration: 0.6, ease: "power2.in" }, ${start + t - 0.6});`;
+      ? `  tl.to("${s}", { opacity: 1, duration: 0.01 }, ${start + t - transitionDur * 0.75});`
+      : `  tl.to("${s}", { opacity: 0, x: -80, duration: ${transitionDur * 0.75}, ease: "power2.in" }, ${start + t - transitionDur * 0.75});`;
   } else {
-    entrance = `  tl.fromTo("${s}", { opacity: 0, clipPath: "inset(0 100% 0 0)" }, { opacity: 1, clipPath: "inset(0 0% 0 0)", duration: 0.9, ease: "expo.out" }, ${start});`;
+    entrance = `  tl.fromTo("${s}", { opacity: 0, clipPath: "inset(0 100% 0 0)" }, { opacity: 1, clipPath: "inset(0 0% 0 0)", duration: ${transitionDur * 1.125}, ease: "expo.out" }, ${start});`;
     exit = isLast
-      ? `  tl.to("${s}", { opacity: 1, duration: 0.01 }, ${start + t - 0.6});`
-      : `  tl.to("${s}", { opacity: 0, duration: 0.5, ease: "power2.in" }, ${start + t - 0.5});`;
+      ? `  tl.to("${s}", { opacity: 1, duration: 0.01 }, ${start + t - transitionDur * 0.625});`
+      : `  tl.to("${s}", { opacity: 0, duration: ${transitionDur * 0.625}, ease: "power2.in" }, ${start + t - transitionDur * 0.625});`;
   }
 
   const titleFlyIn = `  tl.from("${s} ${TITLE_SELECTORS}", { y: 30, opacity: 0, duration: 0.6, ease: "power3.out", stagger: 0.1 }, ${start + 0.3});`;
   const cardStagger = `  tl.from("${s} ${CARD_SELECTORS}", { y: 20, opacity: 0, duration: 0.5, ease: "power2.out", stagger: 0.15 }, ${start + 0.8});`;
 
   return [
-    `  // --- Slide ${slideIndex} (${variety === 0 ? "scale zoom" : variety === 1 ? "slide right" : "clip reveal"}) ---`,
+    `  // --- Slide ${slideIndex} (${style}) ---`,
     entrance,
     titleFlyIn,
     cardStagger,
@@ -48,13 +53,46 @@ function buildSlideAnimations(slideIndex: number, slideDuration: number, totalSl
   ].join("\n");
 }
 
+const STYLE_NAMES: Array<"scale-zoom" | "slide-right" | "clip-reveal"> = [
+  "scale-zoom", "slide-right", "clip-reveal",
+];
+
+function seededRandom(seed: number): () => number {
+  let s = seed;
+  return () => {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+function resolveSlideStyle(
+  slideIndex: number,
+  transitionStyle: string,
+): "scale-zoom" | "slide-right" | "clip-reveal" {
+  if (transitionStyle === "random") {
+    const rng = seededRandom(slideIndex * 7919 + 42);
+    return STYLE_NAMES[Math.floor(rng() * STYLE_NAMES.length)];
+  }
+  if (transitionStyle === "cycle") {
+    return STYLE_NAMES[slideIndex % 3];
+  }
+  if (STYLE_NAMES.includes(transitionStyle as typeof STYLE_NAMES[number])) {
+    return transitionStyle as "scale-zoom" | "slide-right" | "clip-reveal";
+  }
+  return STYLE_NAMES[slideIndex % 3];
+}
+
 function buildHyperframesComposition(
   slides: { html: string; note: string }[],
   slideDuration: number,
   themeVars: Record<string, string>,
-  stylesheets: string[]
+  stylesheets: string[],
+  transitionStyle: string,
+  transitionDuration: number,
+  audioUrl?: string,
 ): string {
   const totalSlides = slides.length;
+  const totalDuration = totalSlides * slideDuration;
 
   const slideClips = slides
     .map((slide, i) => {
@@ -69,7 +107,10 @@ function buildHyperframesComposition(
     .join("\n\n");
 
   const animations = slides
-    .map((_, i) => buildSlideAnimations(i, slideDuration, totalSlides))
+    .map((_, i) => {
+      const style = resolveSlideStyle(i, transitionStyle);
+      return buildSlideAnimations(i, slideDuration, totalSlides, style, transitionDuration);
+    })
     .join("\n\n");
 
   const themeStyle = Object.entries(themeVars)
@@ -97,6 +138,7 @@ ${themeStyle}">
 
 ${slideClips}
 
+${audioUrl ? `<audio data-start="0" data-duration="${totalDuration}" data-track-index="10" data-volume="0.3" src="${audioUrl}"></audio>` : ""}
 </div>
 
 <script>
@@ -112,7 +154,7 @@ ${animations}
 }
 
 export async function POST(req: NextRequest) {
-  const { id, title, slideDuration } = await req.json();
+  const { id, title, slideDuration, transitionStyle, transitionDuration, audioUrl } = await req.json();
   if (!id) {
     return NextResponse.json(
       { error: "Missing Presentation ID" },
@@ -208,11 +250,17 @@ export async function POST(req: NextRequest) {
       throw new Error("No slides found in presentation");
     }
 
+    const style = transitionStyle || "cycle";
+    const transDur = transitionDuration || TRANSITION_DURATION;
+
     const compositionHtml = buildHyperframesComposition(
       slideData.slides,
       duration,
       slideData.themeVars,
-      slideData.stylesheets
+      slideData.stylesheets,
+      style,
+      transDur,
+      audioUrl,
     );
 
     const compositionPath = path.join(tempDir, "index.html");

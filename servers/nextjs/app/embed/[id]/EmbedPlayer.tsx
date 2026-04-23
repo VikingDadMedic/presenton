@@ -27,14 +27,20 @@ interface PresentationData {
 
 export default function EmbedPlayer({
   presentationId,
+  autoPlay: initialAutoPlay = false,
+  interval: autoPlayInterval = 5000,
+  startSlide = 0,
 }: {
   presentationId: string;
+  autoPlay?: boolean;
+  interval?: number;
+  startSlide?: number;
 }) {
   const [data, setData] = useState<PresentationData | null>(null);
-  const [current, setCurrent] = useState(0);
+  const [current, setCurrent] = useState(startSlide);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [autoPlay, setAutoPlay] = useState(false);
+  const [autoPlay, setAutoPlay] = useState(initialAutoPlay);
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -101,7 +107,7 @@ export default function EmbedPlayer({
 
   useEffect(() => {
     if (autoPlay) {
-      autoRef.current = setInterval(next, 5000);
+      autoRef.current = setInterval(next, autoPlayInterval);
     } else if (autoRef.current) {
       clearInterval(autoRef.current);
       autoRef.current = null;
@@ -109,7 +115,7 @@ export default function EmbedPlayer({
     return () => {
       if (autoRef.current) clearInterval(autoRef.current);
     };
-  }, [autoPlay, next]);
+  }, [autoPlay, next, autoPlayInterval]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

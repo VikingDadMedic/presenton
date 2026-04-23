@@ -99,9 +99,20 @@
                   },
                   "export_as": {
                     "type": "string",
-"enum": ["pptx", "pdf", "html", "video"],
-            "default": "pptx",
-            "description": "Export format (video = MP4 slideshow)"
+                    "enum": ["pptx", "pdf", "html", "video"],
+                    "default": "pptx",
+                    "description": "Export format (video = MP4 slideshow)"
+                  },
+                  "export_options": {
+                    "type": "object",
+                    "description": "Format-specific options (slide_duration, transition_style, etc.)",
+                    "properties": {
+                      "slide_duration": { "type": "integer", "description": "Seconds per slide" },
+                      "transition_style": { "type": "string", "enum": ["scale-zoom", "slide-right", "clip-reveal", "cycle", "random"] },
+                      "transition_duration": { "type": "number", "description": "Transition duration in seconds" },
+                      "audio_url": { "type": "string", "description": "Background audio URL for video" },
+                      "auto_play_interval": { "type": "integer", "description": "Auto-play interval in ms for HTML" }
+                    }
                   }
                 }
               }
@@ -243,6 +254,97 @@
           }
         }
       }
+    },
+    "/api/export-as-embed": {
+      "post": {
+        "tags": ["Presentation"],
+        "summary": "Get embed URL and iframe code for interactive presentation player.",
+        "operationId": "get_embed_url",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["id"],
+                "properties": {
+                  "id": { "type": "string", "format": "uuid", "description": "Presentation ID" }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Embed URL and iframe code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "embed_url": { "type": "string" },
+                    "iframe_code": { "type": "string" },
+                    "presentation_id": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ppt/presentation/export/json/{id}": {
+      "get": {
+        "tags": ["Presentation"],
+        "summary": "Download presentation as structured JSON file.",
+        "operationId": "export_json",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON file download",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PresentationWithSlides" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ppt/presentation/generate/async": {
+      "post": {
+        "tags": ["Presentation"],
+        "summary": "Start async presentation generation. Poll /status/{id} for completion.",
+        "operationId": "generate_async",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/GeneratePresentationRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Task created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "status": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -295,7 +397,7 @@
           },
           "export_as": {
             "type": "string",
-            "enum": ["pptx", "pdf", "html"],
+            "enum": ["pptx", "pdf", "html", "video"],
             "default": "pptx"
           },
           "origin": {
@@ -306,6 +408,29 @@
             "type": "string",
             "default": "USD",
             "description": "Currency for price formatting"
+          },
+          "slides_markdown": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Custom slide outlines"
+          },
+          "instructions": {
+            "type": "string",
+            "description": "Custom instructions for the AI"
+          },
+          "trigger_webhook": {
+            "type": "boolean",
+            "default": false
+          },
+          "slide_duration": {
+            "type": "integer",
+            "description": "Seconds per slide for video/HTML export"
+          },
+          "transition_style": {
+            "type": "string",
+            "enum": ["scale-zoom", "slide-right", "clip-reveal", "cycle", "random"],
+            "default": "cycle",
+            "description": "Video transition animation style"
           }
         }
       },

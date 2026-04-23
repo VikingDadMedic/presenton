@@ -50,3 +50,9 @@ class GeneratePresentationRequest(BaseModel):
     currency: str = Field(
         default="USD", description="Currency for price formatting"
     )
+    slide_duration: Optional[int] = Field(
+        default=None, description="Seconds per slide for video/HTML export"
+    )
+    transition_style: Optional[str] = Field(
+        default=None, description="Video transition: scale-zoom, slide-right, clip-reveal, cycle, random"
+    )

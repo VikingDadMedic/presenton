@@ -1,7 +1,7 @@
 import json
 import os
 import aiohttp
-from typing import Literal
+from typing import Literal, Optional
 import uuid
 from fastapi import HTTPException
 from pathvalidate import sanitize_filename
@@ -15,7 +15,8 @@ import uuid
 
 
 async def export_presentation(
-    presentation_id: uuid.UUID, title: str, export_as: Literal["pptx", "pdf", "html", "video"]
+    presentation_id: uuid.UUID, title: str, export_as: Literal["pptx", "pdf", "html", "video"],
+    export_options: Optional[dict] = None,
 ) -> PresentationAndPath:
     if export_as == "pptx":
 
@@ -49,12 +50,14 @@ async def export_presentation(
             path=pptx_path,
         )
     elif export_as == "html":
+        opts = export_options or {}
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 "http://localhost/api/export-as-html",
                 json={
                     "id": str(presentation_id),
                     "title": sanitize_filename(title or str(uuid.uuid4())),
+                    "autoPlayInterval": opts.get("auto_play_interval", 5000),
                 },
                 timeout=aiohttp.ClientTimeout(total=120),
             ) as response:
@@ -72,12 +75,17 @@ async def export_presentation(
             path=response_json["path"],
         )
     elif export_as == "video":
+        opts = export_options or {}
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 "http://localhost/api/export-as-video",
                 json={
                     "id": str(presentation_id),
                     "title": sanitize_filename(title or str(uuid.uuid4())),
+                    "slideDuration": opts.get("slide_duration", 5),
+                    "transitionStyle": opts.get("transition_style", "cycle"),
+                    "transitionDuration": opts.get("transition_duration", 0.8),
+                    "audioUrl": opts.get("audio_url"),
                 },
                 timeout=aiohttp.ClientTimeout(total=300),
             ) as response:

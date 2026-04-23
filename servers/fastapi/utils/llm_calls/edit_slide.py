@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 from fastapi import HTTPException
 from llmai import get_client
 from llmai.shared import JSONSchemaResponse, Message, SystemMessage, UserMessage
@@ -173,5 +173,52 @@ async def get_edited_slide_content(
 
         raise HTTPException(status_code=400, detail="LLM did not return any content")
 
+    except Exception as e:
+        raise handle_llm_client_exceptions(e)
+
+
+async def get_edited_field_value(
+    prompt: str,
+    current_value: Any,
+    language: str = "English",
+) -> str:
+    model = get_model()
+    type_name = type(current_value).__name__
+
+    messages: list[Message] = [
+        SystemMessage(
+            content=(
+                "You are a precise data editor. Edit the given field value based on "
+                "the user's instruction. Return ONLY the new value as plain text. "
+                "Do not add any explanation, formatting, quotes, or markdown. "
+                "If the value is a number, return only the number. "
+                "If it's text, return only the text."
+            ),
+        ),
+        UserMessage(
+            content=(
+                f"Current value: {current_value}\n"
+                f"Type: {type_name}\n"
+                f"Language: {language}\n"
+                f"Instruction: {prompt}"
+            ),
+        ),
+    ]
+
+    client = get_client(config=get_llm_config())
+    try:
+        response = await asyncio.to_thread(
+            client.generate,
+            **get_generate_kwargs(
+                model=model,
+                messages=messages,
+            ),
+        )
+        text = response.content
+        if isinstance(text, list):
+            text = "".join(
+                block.text for block in text if hasattr(block, "text")
+            )
+        return str(text).strip()
     except Exception as e:
         raise handle_llm_client_exceptions(e)

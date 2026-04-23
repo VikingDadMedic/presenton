@@ -39,3 +39,5 @@
 - Language selector hidden (not deleted) on the upload page; Help/Community sidebar links hidden on the dashboard — intentional feature-hiding for TripStory scope.
 - Dark mode Phase 2 backlog (post-audit numbers): ~68 files with `bg-white`, ~59 files with hardcoded gray hex, 12 pill-shaped button instances need replacing before `defaultTheme` can switch from `"light"` to `"dark"`.
 - FastAPI backend exposes an MCP server (`mcp_server.py`) for programmatic presentation creation and export (PPTX + PDF).
+- Export pipeline supports 6 formats: PPTX (Puppeteer DOM extraction -> python-pptx), PDF (Puppeteer -> bundled converter), HTML (self-contained slideshow bundle), Video/MP4 (Hyperframes + GSAP or FFmpeg fallback), JSON (direct DB fetch), and interactive embed (`/embed/{id}` route, embeddable via iframe).
+- Video export generates Hyperframes HTML compositions with a GSAP timeline (crossfade transitions, expo easing), rendered by `npx hyperframes render`. Hyperframes CLI installed globally in both Dockerfiles. Falls back to Puppeteer screenshot + FFmpeg frame stitching if Hyperframes render fails.

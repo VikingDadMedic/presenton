@@ -6,6 +6,47 @@ import path from "path";
 
 const DEFAULT_SLIDE_DURATION = 5;
 const TRANSITION_DURATION = 0.8;
+const TITLE_SELECTORS = 'h1, h2, [class*="title"], [class*="Title"], [class*="heading"], [class*="Heading"]';
+const CARD_SELECTORS = '[class*="card"], [class*="Card"], [class*="item"], [class*="Item"], [class*="metric"], [class*="Metric"], [class*="tier"], [class*="Tier"]';
+
+function buildSlideAnimations(slideIndex: number, slideDuration: number, totalSlides: number): string {
+  const s = `#slide-${slideIndex}`;
+  const t = slideDuration;
+  const start = slideIndex * t;
+  const isLast = slideIndex === totalSlides - 1;
+  const variety = slideIndex % 3;
+
+  let entrance = "";
+  let exit = "";
+
+  if (variety === 0) {
+    entrance = `  tl.fromTo("${s}", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.8, ease: "expo.out" }, ${start});`;
+    exit = isLast
+      ? `  tl.to("${s}", { opacity: 1, duration: 0.01 }, ${start + t - 0.6});`
+      : `  tl.to("${s}", { opacity: 0, scale: 1.02, filter: "blur(4px)", duration: 0.6, ease: "power2.in" }, ${start + t - 0.6});`;
+  } else if (variety === 1) {
+    entrance = `  tl.fromTo("${s}", { opacity: 0, x: 80 }, { opacity: 1, x: 0, duration: 0.7, ease: "power3.out" }, ${start});`;
+    exit = isLast
+      ? `  tl.to("${s}", { opacity: 1, duration: 0.01 }, ${start + t - 0.6});`
+      : `  tl.to("${s}", { opacity: 0, x: -80, duration: 0.6, ease: "power2.in" }, ${start + t - 0.6});`;
+  } else {
+    entrance = `  tl.fromTo("${s}", { opacity: 0, clipPath: "inset(0 100% 0 0)" }, { opacity: 1, clipPath: "inset(0 0% 0 0)", duration: 0.9, ease: "expo.out" }, ${start});`;
+    exit = isLast
+      ? `  tl.to("${s}", { opacity: 1, duration: 0.01 }, ${start + t - 0.6});`
+      : `  tl.to("${s}", { opacity: 0, duration: 0.5, ease: "power2.in" }, ${start + t - 0.5});`;
+  }
+
+  const titleFlyIn = `  tl.from("${s} ${TITLE_SELECTORS}", { y: 30, opacity: 0, duration: 0.6, ease: "power3.out", stagger: 0.1 }, ${start + 0.3});`;
+  const cardStagger = `  tl.from("${s} ${CARD_SELECTORS}", { y: 20, opacity: 0, duration: 0.5, ease: "power2.out", stagger: 0.15 }, ${start + 0.8});`;
+
+  return [
+    `  // --- Slide ${slideIndex} (${variety === 0 ? "scale zoom" : variety === 1 ? "slide right" : "clip reveal"}) ---`,
+    entrance,
+    titleFlyIn,
+    cardStagger,
+    exit,
+  ].join("\n");
+}
 
 function buildHyperframesComposition(
   slides: { html: string; note: string }[],
@@ -14,7 +55,6 @@ function buildHyperframesComposition(
   stylesheets: string[]
 ): string {
   const totalSlides = slides.length;
-  const transitionDur = TRANSITION_DURATION;
 
   const slideClips = slides
     .map((slide, i) => {
@@ -28,16 +68,9 @@ function buildHyperframesComposition(
     })
     .join("\n\n");
 
-  const entranceAnimations = slides
-    .map((_, i) => {
-      const startTime = i * slideDuration;
-      return `  tl.fromTo("#slide-${i}", { opacity: 0 }, { opacity: 1, duration: ${transitionDur}, ease: "power2.out" }, ${startTime});
-  tl.to("#slide-${i}", { opacity: 0, duration: ${transitionDur}, ease: "power2.in" }, ${startTime + slideDuration - transitionDur});`;
-    })
-    .join("\n");
-
-  const lastSlideStart = (totalSlides - 1) * slideDuration;
-  const lastSlideKeepVisible = `  tl.to("#slide-${totalSlides - 1}", { opacity: 1, duration: 0.01 }, ${lastSlideStart + slideDuration - transitionDur});`;
+  const animations = slides
+    .map((_, i) => buildSlideAnimations(i, slideDuration, totalSlides))
+    .join("\n\n");
 
   const themeStyle = Object.entries(themeVars)
     .map(([k, v]) => `      ${k}: ${v};`)
@@ -69,8 +102,7 @@ ${slideClips}
 <script>
   const tl = gsap.timeline({ paused: true });
 
-${entranceAnimations}
-${lastSlideKeepVisible}
+${animations}
 
   window.__timelines = window.__timelines || {};
   window.__timelines["tripstory-video"] = tl;

@@ -626,6 +626,7 @@ async def export_presentation_as_pptx_or_pdf(
     export_as: Annotated[
         Literal["pptx", "pdf", "html", "video"], Body(description="Format to export the presentation as")
     ] = "pptx",
+    export_options: Annotated[Optional[dict], Body(description="Format-specific export options")] = None,
     sql_session: AsyncSession = Depends(get_async_session),
 ):
     """
@@ -642,6 +643,7 @@ async def export_presentation_as_pptx_or_pdf(
         id,
         presentation.title or str(uuid.uuid4()),
         export_as,
+        export_options=export_options,
     )
 
     return PresentationPathAndEditPath(

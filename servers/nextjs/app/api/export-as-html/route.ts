@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 
 export async function POST(req: NextRequest) {
-  const { id, title } = await req.json();
+  const { id, title, autoPlayInterval } = await req.json();
   if (!id) {
     return NextResponse.json(
       { error: "Missing Presentation ID" },
@@ -190,7 +190,7 @@ ${slidesHtml}
 
       function toggleAuto() {
         if (autoTimer) { clearInterval(autoTimer); autoTimer = null; autoBtn.innerHTML = '&#9654; Play'; }
-        else { autoTimer = setInterval(next, 5000); autoBtn.innerHTML = '&#9632; Stop'; }
+        else { autoTimer = setInterval(next, ${autoPlayInterval || 5000}); autoBtn.innerHTML = '&#9632; Stop'; }
       }
 
       document.getElementById('ts-next').onclick = next;

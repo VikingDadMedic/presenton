@@ -256,6 +256,27 @@ import CompareDestinationsLayout, { Schema as CompareDestinationsSchema, layoutI
 import PackageInclusionsLayout, { Schema as PackageInclusionsSchema, layoutId as PackageInclusionsId, layoutName as PackageInclusionsName, layoutDescription as PackageInclusionsDesc } from "./travel/PackageInclusionsLayout";
 import BookingCTALayout, { Schema as BookingCTASchema, layoutId as BookingCTAId, layoutName as BookingCTAName, layoutDescription as BookingCTADesc } from "./travel/BookingCTALayout";
 
+// New travel layouts — emotional / sensory hooks
+import GoldenHourMoodBoardLayout, { Schema as GoldenHourSchema, layoutId as GoldenHourId, layoutName as GoldenHourName, layoutDescription as GoldenHourDesc } from "./travel/GoldenHourMoodBoardLayout";
+import DayNightSplitLayout, { Schema as DayNightSchema, layoutId as DayNightId, layoutName as DayNightName, layoutDescription as DayNightDesc } from "./travel/DayNightSplitLayout";
+import BeforeAfterArrivalLayout, { Schema as BeforeAfterSchema, layoutId as BeforeAfterId, layoutName as BeforeAfterName, layoutDescription as BeforeAfterDesc } from "./travel/BeforeAfterArrivalLayout";
+import CuisineDiscoveryLayout, { Schema as CuisineSchema, layoutId as CuisineId, layoutName as CuisineName, layoutDescription as CuisineDesc } from "./travel/CuisineDiscoveryLayout";
+import AmbientSoundsLayout, { Schema as AmbientSoundsSchema, layoutId as AmbientSoundsId, layoutName as AmbientSoundsName, layoutDescription as AmbientSoundsDesc } from "./travel/AmbientSoundsLayout";
+
+// New travel layouts — logistics
+import VisaEntryLayout, { Schema as VisaEntrySchema, layoutId as VisaEntryId, layoutName as VisaEntryName, layoutDescription as VisaEntryDesc } from "./travel/VisaEntryLayout";
+import TransportationInfoLayout, { Schema as TransportSchema, layoutId as TransportId, layoutName as TransportName, layoutDescription as TransportDesc } from "./travel/TransportationInfoLayout";
+import HealthSafetyLayout, { Schema as HealthSafetySchema, layoutId as HealthSafetyId, layoutName as HealthSafetyName, layoutDescription as HealthSafetyDesc } from "./travel/HealthSafetyLayout";
+import LanguageSurvivalLayout, { Schema as LanguageSurvivalSchema, layoutId as LanguageSurvivalId, layoutName as LanguageSurvivalName, layoutDescription as LanguageSurvivalDesc } from "./travel/LanguageSurvivalLayout";
+import ConnectivityCardLayout, { Schema as ConnectivitySchema, layoutId as ConnectivityId, layoutName as ConnectivityName, layoutDescription as ConnectivityDesc } from "./travel/ConnectivityCardLayout";
+
+// Template sequence settings
+import travelRevealSettings from "./travel-reveal/settings.json";
+import travelContrastSettings from "./travel-contrast/settings.json";
+import travelAudienceSettings from "./travel-audience/settings.json";
+import travelMicroSettings from "./travel-micro/settings.json";
+import travelLocalSettings from "./travel-local/settings.json";
+
 
 // Helper to create template entry
 
@@ -499,6 +520,18 @@ export const travelTemplates: TemplateWithData[] = [
     createTemplateEntry(CompareDestinationsLayout, CompareDestinationsSchema, CompareDestinationsId, CompareDestinationsName, CompareDestinationsDesc, "travel", "CompareDestinationsLayout"),
     createTemplateEntry(PackageInclusionsLayout, PackageInclusionsSchema, PackageInclusionsId, PackageInclusionsName, PackageInclusionsDesc, "travel", "PackageInclusionsLayout"),
     createTemplateEntry(BookingCTALayout, BookingCTASchema, BookingCTAId, BookingCTAName, BookingCTADesc, "travel", "BookingCTALayout"),
+    // Emotional / sensory hooks
+    createTemplateEntry(GoldenHourMoodBoardLayout, GoldenHourSchema, GoldenHourId, GoldenHourName, GoldenHourDesc, "travel", "GoldenHourMoodBoardLayout"),
+    createTemplateEntry(DayNightSplitLayout, DayNightSchema, DayNightId, DayNightName, DayNightDesc, "travel", "DayNightSplitLayout"),
+    createTemplateEntry(BeforeAfterArrivalLayout, BeforeAfterSchema, BeforeAfterId, BeforeAfterName, BeforeAfterDesc, "travel", "BeforeAfterArrivalLayout"),
+    createTemplateEntry(CuisineDiscoveryLayout, CuisineSchema, CuisineId, CuisineName, CuisineDesc, "travel", "CuisineDiscoveryLayout"),
+    createTemplateEntry(AmbientSoundsLayout, AmbientSoundsSchema, AmbientSoundsId, AmbientSoundsName, AmbientSoundsDesc, "travel", "AmbientSoundsLayout"),
+    // Logistics
+    createTemplateEntry(VisaEntryLayout, VisaEntrySchema, VisaEntryId, VisaEntryName, VisaEntryDesc, "travel", "VisaEntryLayout"),
+    createTemplateEntry(TransportationInfoLayout, TransportSchema, TransportId, TransportName, TransportDesc, "travel", "TransportationInfoLayout"),
+    createTemplateEntry(HealthSafetyLayout, HealthSafetySchema, HealthSafetyId, HealthSafetyName, HealthSafetyDesc, "travel", "HealthSafetyLayout"),
+    createTemplateEntry(LanguageSurvivalLayout, LanguageSurvivalSchema, LanguageSurvivalId, LanguageSurvivalName, LanguageSurvivalDesc, "travel", "LanguageSurvivalLayout"),
+    createTemplateEntry(ConnectivityCardLayout, ConnectivitySchema, ConnectivityId, ConnectivityName, ConnectivityDesc, "travel", "ConnectivityCardLayout"),
 ];
 
 // Travel itinerary templates (ordered subset of travel layouts)
@@ -510,6 +543,58 @@ export const travelItineraryTemplates: TemplateWithData[] = [
     createTemplateEntry(FlightInfoLayout, FlightInfoSchema, FlightInfoId, FlightInfoName, FlightInfoDesc, "travel-itinerary", "FlightInfoLayout"),
     createTemplateEntry(PricingComparisonLayout, PricingComparisonSchema, PricingComparisonId, PricingComparisonName, PricingComparisonDesc, "travel-itinerary", "PricingComparisonLayout"),
     createTemplateEntry(BookingCTALayout, BookingCTASchema, BookingCTAId, BookingCTAName, BookingCTADesc, "travel-itinerary", "BookingCTALayout"),
+];
+
+// "The Reveal" arc: contrast -> hero -> golden hour -> cuisine -> accommodation -> pricing -> CTA
+export const travelRevealTemplates: TemplateWithData[] = [
+    createTemplateEntry(BeforeAfterArrivalLayout, BeforeAfterSchema, BeforeAfterId, BeforeAfterName, BeforeAfterDesc, "travel-reveal", "BeforeAfterArrivalLayout"),
+    createTemplateEntry(DestinationHeroLayout, DestinationHeroSchema, DestinationHeroId, DestinationHeroName, DestinationHeroDesc, "travel-reveal", "DestinationHeroLayout"),
+    createTemplateEntry(GoldenHourMoodBoardLayout, GoldenHourSchema, GoldenHourId, GoldenHourName, GoldenHourDesc, "travel-reveal", "GoldenHourMoodBoardLayout"),
+    createTemplateEntry(CuisineDiscoveryLayout, CuisineSchema, CuisineId, CuisineName, CuisineDesc, "travel-reveal", "CuisineDiscoveryLayout"),
+    createTemplateEntry(AccommodationCardLayout, AccommodationCardSchema, AccommodationCardId, AccommodationCardName, AccommodationCardDesc, "travel-reveal", "AccommodationCardLayout"),
+    createTemplateEntry(PricingComparisonLayout, PricingComparisonSchema, PricingComparisonId, PricingComparisonName, PricingComparisonDesc, "travel-reveal", "PricingComparisonLayout"),
+    createTemplateEntry(BookingCTALayout, BookingCTASchema, BookingCTAId, BookingCTAName, BookingCTADesc, "travel-reveal", "BookingCTALayout"),
+];
+
+// "Contrast" arc: before/after -> hero -> day/night -> sounds -> transport -> pricing -> CTA
+export const travelContrastTemplates: TemplateWithData[] = [
+    createTemplateEntry(BeforeAfterArrivalLayout, BeforeAfterSchema, BeforeAfterId, BeforeAfterName, BeforeAfterDesc, "travel-contrast", "BeforeAfterArrivalLayout"),
+    createTemplateEntry(DestinationHeroLayout, DestinationHeroSchema, DestinationHeroId, DestinationHeroName, DestinationHeroDesc, "travel-contrast", "DestinationHeroLayout"),
+    createTemplateEntry(DayNightSplitLayout, DayNightSchema, DayNightId, DayNightName, DayNightDesc, "travel-contrast", "DayNightSplitLayout"),
+    createTemplateEntry(AmbientSoundsLayout, AmbientSoundsSchema, AmbientSoundsId, AmbientSoundsName, AmbientSoundsDesc, "travel-contrast", "AmbientSoundsLayout"),
+    createTemplateEntry(TransportationInfoLayout, TransportSchema, TransportId, TransportName, TransportDesc, "travel-contrast", "TransportationInfoLayout"),
+    createTemplateEntry(PricingComparisonLayout, PricingComparisonSchema, PricingComparisonId, PricingComparisonName, PricingComparisonDesc, "travel-contrast", "PricingComparisonLayout"),
+    createTemplateEntry(BookingCTALayout, BookingCTASchema, BookingCTAId, BookingCTAName, BookingCTADesc, "travel-contrast", "BookingCTALayout"),
+];
+
+// "Solo / Couple / Family" arc: hero -> highlights -> 3x itinerary days (audience tracks) -> pricing -> CTA
+export const travelAudienceTemplates: TemplateWithData[] = [
+    createTemplateEntry(DestinationHeroLayout, DestinationHeroSchema, DestinationHeroId, DestinationHeroName, DestinationHeroDesc, "travel-audience", "DestinationHeroLayout"),
+    createTemplateEntry(DestinationHighlightsLayout, DestinationHighlightsSchema, DestinationHighlightsId, DestinationHighlightsName, DestinationHighlightsDesc, "travel-audience", "DestinationHighlightsLayout"),
+    createTemplateEntry(ItineraryDayLayout, ItineraryDaySchema, ItineraryDayId, ItineraryDayName, ItineraryDayDesc, "travel-audience", "ItineraryDayLayout"),
+    createTemplateEntry(ItineraryDayLayout, ItineraryDaySchema, ItineraryDayId, ItineraryDayName, ItineraryDayDesc, "travel-audience", "ItineraryDayLayout"),
+    createTemplateEntry(ItineraryDayLayout, ItineraryDaySchema, ItineraryDayId, ItineraryDayName, ItineraryDayDesc, "travel-audience", "ItineraryDayLayout"),
+    createTemplateEntry(PricingComparisonLayout, PricingComparisonSchema, PricingComparisonId, PricingComparisonName, PricingComparisonDesc, "travel-audience", "PricingComparisonLayout"),
+    createTemplateEntry(BookingCTALayout, BookingCTASchema, BookingCTAId, BookingCTAName, BookingCTADesc, "travel-audience", "BookingCTALayout"),
+];
+
+// "Micro-Adventure" arc: hero -> golden hour -> cuisine -> CTA (fast 4-slide format)
+export const travelMicroTemplates: TemplateWithData[] = [
+    createTemplateEntry(DestinationHeroLayout, DestinationHeroSchema, DestinationHeroId, DestinationHeroName, DestinationHeroDesc, "travel-micro", "DestinationHeroLayout"),
+    createTemplateEntry(GoldenHourMoodBoardLayout, GoldenHourSchema, GoldenHourId, GoldenHourName, GoldenHourDesc, "travel-micro", "GoldenHourMoodBoardLayout"),
+    createTemplateEntry(CuisineDiscoveryLayout, CuisineSchema, CuisineId, CuisineName, CuisineDesc, "travel-micro", "CuisineDiscoveryLayout"),
+    createTemplateEntry(BookingCTALayout, BookingCTASchema, BookingCTAId, BookingCTAName, BookingCTADesc, "travel-micro", "BookingCTALayout"),
+];
+
+// "Local's Perspective" arc: hero -> local intro -> local's day -> food picks -> ambient -> tips -> CTA
+export const travelLocalTemplates: TemplateWithData[] = [
+    createTemplateEntry(DestinationHeroLayout, DestinationHeroSchema, DestinationHeroId, DestinationHeroName, DestinationHeroDesc, "travel-local", "DestinationHeroLayout"),
+    createTemplateEntry(TestimonialLayout, TestimonialSchema, TestimonialId, TestimonialName, TestimonialDesc, "travel-local", "TestimonialLayout"),
+    createTemplateEntry(ItineraryDayLayout, ItineraryDaySchema, ItineraryDayId, ItineraryDayName, ItineraryDayDesc, "travel-local", "ItineraryDayLayout"),
+    createTemplateEntry(CuisineDiscoveryLayout, CuisineSchema, CuisineId, CuisineName, CuisineDesc, "travel-local", "CuisineDiscoveryLayout"),
+    createTemplateEntry(AmbientSoundsLayout, AmbientSoundsSchema, AmbientSoundsId, AmbientSoundsName, AmbientSoundsDesc, "travel-local", "AmbientSoundsLayout"),
+    createTemplateEntry(CulturalTipsLayout, CulturalTipsSchema, CulturalTipsId, CulturalTipsName, CulturalTipsDesc, "travel-local", "CulturalTipsLayout"),
+    createTemplateEntry(BookingCTALayout, BookingCTASchema, BookingCTAId, BookingCTAName, BookingCTADesc, "travel-local", "BookingCTALayout"),
 ];
 
 // TODO: Step 4: Combine all templates into a single array For UseCases (like the ones below)
@@ -529,6 +614,11 @@ export const allLayouts: TemplateWithData[] = [
     ...reportTemplates,
     ...travelTemplates,
     ...travelItineraryTemplates,
+    ...travelRevealTemplates,
+    ...travelContrastTemplates,
+    ...travelAudienceTemplates,
+    ...travelMicroTemplates,
+    ...travelLocalTemplates,
 ];
 
 
@@ -632,6 +722,41 @@ export const templates: TemplateLayoutsWithSettings[] = [
         description: travelItinerarySettings.description,
         settings: travelItinerarySettings as TemplateGroupSettings,
         layouts: travelItineraryTemplates,
+    },
+    {
+        id: "travel-reveal",
+        name: "The Reveal",
+        description: travelRevealSettings.description,
+        settings: travelRevealSettings as TemplateGroupSettings,
+        layouts: travelRevealTemplates,
+    },
+    {
+        id: "travel-contrast",
+        name: "Contrast",
+        description: travelContrastSettings.description,
+        settings: travelContrastSettings as TemplateGroupSettings,
+        layouts: travelContrastTemplates,
+    },
+    {
+        id: "travel-audience",
+        name: "Solo / Couple / Family",
+        description: travelAudienceSettings.description,
+        settings: travelAudienceSettings as TemplateGroupSettings,
+        layouts: travelAudienceTemplates,
+    },
+    {
+        id: "travel-micro",
+        name: "Micro-Adventure",
+        description: travelMicroSettings.description,
+        settings: travelMicroSettings as TemplateGroupSettings,
+        layouts: travelMicroTemplates,
+    },
+    {
+        id: "travel-local",
+        name: "Local's Perspective",
+        description: travelLocalSettings.description,
+        settings: travelLocalSettings as TemplateGroupSettings,
+        layouts: travelLocalTemplates,
     },
 ];
 

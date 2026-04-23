@@ -81,6 +81,7 @@ def get_system_prompt(
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
     response_schema: Optional[dict] = None,
+    template: str = "",
 ):
     markdown_emphasis_rules = (
         "- Strictly use markdown to emphasize important points, by bolding or "
@@ -107,7 +108,7 @@ def get_system_prompt(
     )
 
     travel_rules = ""
-    if tone and "travel" in tone.lower():
+    if template and template.startswith("travel"):
         travel_rules = (
             "\n# Travel-Specific Rules\n"
             "- Metrics should be in abbreviated form with least possible characters.\n"
@@ -143,6 +144,7 @@ def get_messages(
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
     response_schema: Optional[dict] = None,
+    template: str = "",
 ):
 
     return [
@@ -152,6 +154,7 @@ def get_messages(
                 verbosity,
                 instructions,
                 response_schema,
+                template,
             ),
         ),
         LLMUserMessage(
@@ -167,6 +170,7 @@ async def get_slide_content_from_type_and_outline(
     tone: Optional[str] = None,
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
+    template: str = "",
 ):
     client = LLMClient()
     model = get_model()
@@ -197,6 +201,7 @@ async def get_slide_content_from_type_and_outline(
                 verbosity,
                 instructions,
                 response_schema,
+                template,
             ),
             response_format=response_schema,
             strict=False,

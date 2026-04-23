@@ -84,7 +84,7 @@ class ImageGenerationService:
             with_theme=not self.is_stock_provider_selected()
         )
 
-        if prompt.template == "travel":
+        if prompt.template and prompt.template.startswith("travel"):
             if self.is_stock_provider_selected():
                 image_prompt = f"travel destination {image_prompt}"
             else:

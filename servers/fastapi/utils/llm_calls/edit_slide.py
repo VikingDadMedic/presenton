@@ -25,6 +25,7 @@ def get_system_prompt(
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
     memory_context: Optional[str] = None,
+    template: str = "",
 ):
     memory_block = (
         "\n    # Retrieved Presentation Memory Context\n"
@@ -55,8 +56,8 @@ def get_system_prompt(
     - Make sure to follow language guidelines.
     - Speaker note should be normal text, not markdown.
     - Speaker note should be simple, clear, concise and to the point.
-    - When editing travel slides, maintain consistent pricing format, date format, and destination naming.
-    - Preserve travel-specific data accuracy (flight times, distances, ratings) unless explicitly asked to change.
+    {"- When editing travel slides, maintain consistent pricing format, date format, and destination naming." if template and template.startswith("travel") else ""}
+    {"- Preserve travel-specific data accuracy (flight times, distances, ratings) unless explicitly asked to change." if template and template.startswith("travel") else ""}
     {memory_block}
 
     **Go through all notes and steps and make sure they are followed, including mentioned constraints**
@@ -91,10 +92,11 @@ def get_messages(
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
     memory_context: Optional[str] = None,
+    template: str = "",
 ):
     return [
         LLMSystemMessage(
-            content=get_system_prompt(tone, verbosity, instructions, memory_context),
+            content=get_system_prompt(tone, verbosity, instructions, memory_context, template),
         ),
         LLMUserMessage(
             content=get_user_prompt(prompt, slide_data, language),
@@ -111,6 +113,7 @@ async def get_edited_slide_content(
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
     memory_context: Optional[str] = None,
+    template: str = "",
 ):
     model = get_model()
 
@@ -142,6 +145,7 @@ async def get_edited_slide_content(
                 verbosity,
                 instructions,
                 memory_context,
+                template,
             ),
             response_format=response_schema,
             strict=False,

@@ -57,6 +57,7 @@ async def edit_slide(
         presentation.verbosity,
         presentation.instructions,
         memory_context,
+        template=slide.layout_group or "",
     )
 
     image_generation_service = ImageGenerationService(get_images_directory())

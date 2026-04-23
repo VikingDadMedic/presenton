@@ -429,6 +429,7 @@ async def stream_presentation(
                     presentation.tone,
                     presentation.verbosity,
                     enriched_instructions,
+                    template=layout.name,
                 )
             except HTTPException as e:
                 yield SSEErrorResponse(detail=e.detail).to_string()
@@ -819,6 +820,7 @@ async def generate_presentation_handler(
                 request.include_title_slide,
                 request.web_search,
                 request.include_table_of_contents,
+                template=request.template,
             ):
 
                 if isinstance(chunk, HTTPException):
@@ -1001,6 +1003,7 @@ async def generate_presentation_handler(
                     request.tone.value,
                     request.verbosity.value,
                     enriched_instructions,
+                    template=request.template,
                 )
                 for i in range(start, end)
             ]

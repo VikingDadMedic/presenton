@@ -150,7 +150,7 @@ export const usePresentationGeneration = (
         // Built-in template
         layout = {
           name: selectedTemplate.id,
-          ordered: false,
+          ordered: selectedTemplate.settings?.ordered ?? false,
           slides: selectedTemplate.layouts.map((layoutItem: any) => ({
             id: layoutItem.layoutId,
             name: layoutItem.layoutName,

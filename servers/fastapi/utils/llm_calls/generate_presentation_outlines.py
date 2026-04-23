@@ -29,6 +29,7 @@ def get_system_prompt(
     instructions: Optional[str] = None,
     include_title_slide: bool = True,
     include_table_of_contents: bool = False,
+    template: str = "",
 ):
     verbosity_instruction = (
         "Slide content should be abound 20 words but detailed enough to generate a good slide."
@@ -63,7 +64,7 @@ def get_system_prompt(
     )
 
     travel_block = ""
-    if tone and "travel" in tone.lower():
+    if template and template.startswith("travel"):
         travel_block = (
             "\n# Travel-Specific Guidelines\n"
             "- You are an expert travel content creator and destination specialist.\n"
@@ -153,6 +154,7 @@ def get_messages(
     instructions: Optional[str] = None,
     include_title_slide: bool = True,
     include_table_of_contents: bool = False,
+    template: str = "",
 ) -> list[Message]:
     return [
         SystemMessage(
@@ -162,6 +164,7 @@ def get_messages(
                 instructions,
                 include_title_slide,
                 include_table_of_contents,
+                template,
             ),
         ),
         UserMessage(
@@ -190,6 +193,7 @@ async def generate_ppt_outline(
     include_title_slide: bool = True,
     web_search: bool = False,
     include_table_of_contents: bool = False,
+    template: str = "",
 ):
     model = get_model()
     response_model = (
@@ -222,6 +226,7 @@ async def generate_ppt_outline(
                     instructions,
                     include_title_slide,
                     include_table_of_contents,
+                    template,
                 ),
                 response_format=response_format,
                 tools=([WebSearchTool()] if use_search_tool else None),

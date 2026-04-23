@@ -88,7 +88,7 @@ const AdvanceSettings = ({ config, onConfigChange }: ConfigurationSelectsProps) 
                         title="Advanced settings"
                         type="button"
                         onClick={handleOpenAdvanced}
-                        className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
+                        className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-foreground shadow-sm transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
                         data-testid="advanced-settings-button"
                     >
                         <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
@@ -113,7 +113,7 @@ const AdvanceSettings = ({ config, onConfigChange }: ConfigurationSelectsProps) 
                             type="button"
                             onClick={handleCloseAdvanced}
                             aria-label="Close advanced settings"
-                            className="absolute -top-[62px] right-2 flex h-[50px] w-[50px] items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition hover:bg-accent"
+                            className="absolute -top-[62px] right-2 flex h-[50px] w-[50px] items-center justify-center rounded-lg border border-border bg-card text-foreground shadow-sm transition hover:bg-accent"
                         >
                             <X className="h-3.5 w-3.5" />
                         </button>

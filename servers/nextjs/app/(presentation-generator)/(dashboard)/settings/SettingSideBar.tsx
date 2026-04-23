@@ -13,8 +13,8 @@ const SettingSideBar = ({ mode, setMode, selectedProvider, setSelectedProvider }
             <p className='text-xs text-black  font-medium border-b mt-[3.15rem]  border-[#E1E1E5] pb-3.5'>FILTER BY:</p>
             <div className='mt-6 flex-1'>
                 <p className='text-[#3A3A3A] text-xs font-medium pb-2.5'>Select Mode</p>
-                <div className='p-0.5 rounded-[40px] bg-[#ffffff] w-fit border border-[#EDEEEF] flex items-center justify-center mb-[34px] '>
-                    <button className='px-3 font-display h-[26px] text-[10px] font-medium text-[#3A3A3A] rounded-[70px]'
+                <div className='p-0.5 rounded-lg bg-[#ffffff] w-fit border border-[#EDEEEF] flex items-center justify-center mb-[34px] '>
+                    <button className='px-3 font-display h-[26px] text-[10px] font-medium text-[#3A3A3A] rounded-md'
                         onClick={() => setMode('presenton')}
                         style={{
                             background: mode === 'presenton' ? 'var(--primary-5, rgba(154,106,26,0.05))' : 'transparent',
@@ -26,7 +26,7 @@ const SettingSideBar = ({ mode, setMode, selectedProvider, setSelectedProvider }
                         <path d="M1 0V16.5" stroke="#EDECEC" strokeWidth="2" />
                     </svg>
                     <div className='relative'>
-                        <button className='px-3 font-display  h-[26px] text-[10px] font-medium rounded-[70px] cursor-not-allowed opacity-60'
+                        <button className='px-3 font-display  h-[26px] text-[10px] font-medium rounded-md cursor-not-allowed opacity-60'
                             disabled
                             style={{
                                 background: 'transparent',

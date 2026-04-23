@@ -399,7 +399,7 @@ export default function CodexConfig({
     return (
         <button
             onClick={handleSignIn}
-            className="mt-8 py-2.5 px-3.5 bg-[#EDEEEF] hover:bg-[#E4E5E6] rounded-[48px] text-xs font-semibold text-[#101323] transition-colors"
+            className="mt-8 py-2.5 px-3.5 bg-[#EDEEEF] hover:bg-[#E4E5E6] rounded-md text-xs font-semibold text-[#101323] transition-colors"
         >
             Sign in with ChatGPT
         </button>

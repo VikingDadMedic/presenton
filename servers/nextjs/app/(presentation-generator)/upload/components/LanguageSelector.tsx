@@ -23,7 +23,7 @@ export const LanguageSelector: React.FC<{
                     name="language"
                     data-testid="language-select"
                     aria-expanded={openLanguage}
-                    className="px-3.5 py-1 justify-between rounded-[48px] font-instrument_sans font-semibold overflow-hidden bg-[#F7F6F9] border-[#EDEEEF] focus-visible:ring-primary border-none"
+                    className="px-3.5 py-1 justify-between rounded-md font-instrument_sans font-semibold overflow-hidden bg-[#F7F6F9] border-[#EDEEEF] focus-visible:ring-primary border-none"
                 >
                     <p className="text-sm font-medium truncate">
                         {value || "Select language"}

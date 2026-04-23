@@ -3,16 +3,20 @@ import React from "react";
 interface SlideSkeletonProps {
   outlineText?: string;
   layoutName?: string;
+  slideIndex?: number;
+  totalSlides?: number;
 }
 
 const SlideSkeleton: React.FC<SlideSkeletonProps> = ({
   outlineText,
   layoutName,
+  slideIndex,
+  totalSlides,
 }) => {
   return (
     <div
       className="slide-skeleton aspect-video max-w-[1280px] w-full rounded-lg overflow-hidden relative"
-      style={{ backgroundColor: "var(--background-color, #f8f8f8)" }}
+      style={{ backgroundColor: "var(--background-color, var(--card))" }}
     >
       <style>{`
         @keyframes skeleton-shimmer {
@@ -22,13 +26,14 @@ const SlideSkeleton: React.FC<SlideSkeletonProps> = ({
         .shimmer-bar {
           background: linear-gradient(
             90deg,
-            var(--card-color, #e5e5e5) 25%,
-            var(--background-color, #f0f0f0) 50%,
-            var(--card-color, #e5e5e5) 75%
+            var(--card-color, var(--primary, #c9a84c)) 25%,
+            var(--background-color, var(--card)) 50%,
+            var(--card-color, var(--primary, #c9a84c)) 75%
           );
           background-size: 200% 100%;
           animation: skeleton-shimmer 1.8s ease-in-out infinite;
           border-radius: 6px;
+          opacity: 0.15;
         }
       `}</style>
 
@@ -39,7 +44,7 @@ const SlideSkeleton: React.FC<SlideSkeletonProps> = ({
           {outlineText ? (
             <p
               className="text-sm leading-relaxed opacity-50 max-w-[70%] line-clamp-4"
-              style={{ color: "var(--primary-text, #666)" }}
+              style={{ color: "var(--primary-text, var(--muted-foreground))" }}
             >
               {outlineText}
             </p>
@@ -61,14 +66,21 @@ const SlideSkeleton: React.FC<SlideSkeletonProps> = ({
         </div>
       </div>
 
-      {layoutName && (
-        <span
-          className="absolute bottom-2 right-3 text-[10px] opacity-30 font-mono"
-          style={{ color: "var(--primary-text, #999)" }}
-        >
-          {layoutName}
-        </span>
-      )}
+      <div className="absolute bottom-2 left-3 right-3 flex justify-between items-center">
+        {slideIndex != null && totalSlides != null && (
+          <span className="font-mono text-[9px] tracking-widest uppercase text-primary opacity-60">
+            Crafting slide {slideIndex + 1} of {totalSlides}
+          </span>
+        )}
+        {layoutName && (
+          <span
+            className="text-[10px] opacity-30 font-mono"
+            style={{ color: "var(--primary-text, var(--muted-foreground))" }}
+          >
+            {layoutName}
+          </span>
+        )}
+      </div>
     </div>
   );
 };

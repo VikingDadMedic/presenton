@@ -38,18 +38,18 @@ const Loading = () => {
                 <div className="flex xl:flex-row flex-col gap-6 xl:gap-0 items-center justify-between">
                     <Skeleton className="h-[34px] w-[180px] rounded-lg" />
                     <div className="flex gap-2.5 max-sm:w-full max-md:justify-center max-sm:flex-wrap">
-                        <Skeleton className="h-[42px] w-[160px] rounded-[48px]" />
+                        <Skeleton className="h-[42px] w-[160px] rounded-md" />
                     </div>
                 </div>
             </div>
 
             <div className="mx-auto px-6 py-8">
-                <div className="p-1 rounded-[40px] bg-[#ffffff] w-fit border border-[#EDEEEF] flex items-center justify-center">
-                    <Skeleton className="h-8 w-20 rounded-[70px]" />
+                <div className="p-1 rounded-lg bg-[#ffffff] w-fit border border-[#EDEEEF] flex items-center justify-center">
+                    <Skeleton className="h-8 w-20 rounded-md" />
                     <svg xmlns="http://www.w3.org/2000/svg" className="mx-1" width="2" height="17" viewBox="0 0 2 17" fill="none">
                         <path d="M1 0V16.5" stroke="#EDECEC" strokeWidth="2" />
                     </svg>
-                    <Skeleton className="h-8 w-20 rounded-[70px]" />
+                    <Skeleton className="h-8 w-20 rounded-md" />
                 </div>
 
                 <section className="my-12">

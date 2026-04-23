@@ -34,10 +34,10 @@ const Loading = () => {
     return (
         <div className="space-y-6">
             {/* Tabs skeleton */}
-            <div className="p-1 rounded-[40px] bg-[#F7F6F9] w-fit border border-[#F4F4F4] flex items-center justify-center">
-                <Skeleton className="h-8 w-20 rounded-[70px]" />
+            <div className="p-1 rounded-lg bg-[#F7F6F9] w-fit border border-[#F4F4F4] flex items-center justify-center">
+                <Skeleton className="h-8 w-20 rounded-md" />
                 <div className="mx-1 w-[2px] h-[17px] bg-[#EDECEC]" />
-                <Skeleton className="h-8 w-20 rounded-[70px]" />
+                <Skeleton className="h-8 w-20 rounded-md" />
             </div>
 
             {/* Theme cards grid */}

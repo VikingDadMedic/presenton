@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
     DndContext,
     closestCenter,
@@ -15,7 +15,16 @@ import {
 } from "@dnd-kit/sortable";
 import { OutlineItem } from "./OutlineItem";
 import { Button } from "@/components/ui/button";
-import { FileText, Loader2 } from "lucide-react";
+import { FileText } from "lucide-react";
+import { TextFlippingBoard } from "@/components/ui/text-flipping-board";
+
+const STATUS_MESSAGES = [
+    "CRAFTING YOUR STORY",
+    "RESEARCHING DESTINATIONS",
+    "BUILDING THE NARRATIVE",
+    "DESIGNING SLIDE LAYOUTS",
+    "SELECTING KEY HIGHLIGHTS",
+];
 
 interface OutlineContentProps {
     outlines: { content: string }[] | null;
@@ -43,42 +52,56 @@ const OutlineContent: React.FC<OutlineContentProps> = ({
         })
     );
 
+    const [messageIndex, setMessageIndex] = useState(0);
+
+    useEffect(() => {
+        if (!isLoading) return;
+        const interval = setInterval(() => {
+            setMessageIndex((prev) => (prev + 1) % STATUS_MESSAGES.length);
+        }, 4000);
+        return () => clearInterval(interval);
+    }, [isLoading]);
+
     return (
-        <div className="space-y-6 font-display ">
+        <div className="space-y-6 font-display">
             {isLoading && (!outlines || outlines.length === 0) && (
-                <div className="flex items-center justify-center">
-                    <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 text-blue-600 px-2 py-0.5 text-xs">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        Thinking
-                    </span>
+                <div className="flex flex-col items-center justify-center gap-6 py-12">
+                    <div className="w-full max-w-md">
+                        <TextFlippingBoard
+                            text={STATUS_MESSAGES[messageIndex]}
+                            duration={1.0}
+                            className="mx-auto scale-75 sm:scale-90"
+                        />
+                    </div>
+                    <p className="font-mono text-xs tracking-widest uppercase text-primary animate-pulse">
+                        TripStory is working...
+                    </p>
                 </div>
             )}
 
             {isLoading && (
-                <div className="space-y-4 bg-white">
+                <div className="space-y-4">
                     {[...Array(6)].map((_, index) => (
                         <div key={index} className="animate-pulse">
-                            <div className="flex items-start space-x-3 p-4 border rounded-lg bg-white">
-                                <div className="w-6 h-6 bg-gray-200 rounded-full flex-shrink-0"></div>
+                            <div className="flex items-start space-x-3 p-4 border border-primary/10 rounded-lg bg-card">
+                                <div className="w-6 h-6 bg-primary/10 rounded-md flex-shrink-0"></div>
                                 <div className="flex-1 space-y-2">
-                                    <div className="h-5 bg-gray-200 rounded w-3/4"></div>
+                                    <div className="h-5 bg-primary/10 rounded w-3/4"></div>
                                     <div className="space-y-1">
-                                        <div className="h-4 bg-gray-100 rounded w-full"></div>
-                                        <div className="h-4 bg-gray-100 rounded w-5/6"></div>
-                                        <div className="h-4 bg-gray-100 rounded w-4/6"></div>
+                                        <div className="h-4 bg-primary/5 rounded w-full"></div>
+                                        <div className="h-4 bg-primary/5 rounded w-5/6"></div>
+                                        <div className="h-4 bg-primary/5 rounded w-4/6"></div>
                                     </div>
                                 </div>
-                                <div className="w-5 h-5 bg-gray-200 rounded flex-shrink-0"></div>
+                                <div className="w-5 h-5 bg-primary/10 rounded flex-shrink-0"></div>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
 
-            {/* Outlines content */}
-
             {outlines && outlines.length > 0 && (
-                <div className="bg-[#F9F8F8] p-7 relative z-20 rounded-[20px] min-h-[calc(100vh-200px)]">
+                <div className="bg-card p-7 relative z-20 rounded-xl min-h-[calc(100vh-200px)]">
                     <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}
@@ -108,24 +131,23 @@ const OutlineContent: React.FC<OutlineContentProps> = ({
                             onAddSlide();
                         }}
                         disabled={isLoading || isStreaming}
-                        className="w-full my-4 text-blue-600 border-blue-200"
+                        className="w-full my-4 text-primary border-primary/20"
                     >
                         + Add Slide
                     </Button>
                 </div>
             )}
 
-            {/* Empty state */}
             {!isStreaming && !isLoading && outlines && outlines.length === 0 && (
-                <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-200">
-                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-4">No outlines available</p>
+                <div className="text-center py-12 bg-card rounded-lg border-2 border-dashed border-border">
+                    <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground mb-4">No outlines available</p>
                     <Button
                         variant="outline"
                         onClick={() => {
                             onAddSlide();
                         }}
-                        className="text-blue-600 border-blue-200"
+                        className="text-primary border-primary/20"
                     >
                         + Add First Slide
                     </Button>
@@ -135,4 +157,4 @@ const OutlineContent: React.FC<OutlineContentProps> = ({
     );
 };
 
-export default OutlineContent; 
+export default OutlineContent;

@@ -188,7 +188,7 @@ const GroupLayoutPreview = () => {
                   <div className=" px-4 py-6 bg-white border-b border-[#EDEEEF] ">
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="px-3 py-1 bg-primary text-white  font-display  rounded-full text-sm font-medium">
+                        <span className="px-3 py-1 bg-primary text-white  font-display  rounded-md text-sm font-medium">
                           {index + 1 < 10 ? `0${index + 1}` : index + 1}
                         </span>
                         <h3 className="text-xl font-semibold text-gray-900 mt-3">

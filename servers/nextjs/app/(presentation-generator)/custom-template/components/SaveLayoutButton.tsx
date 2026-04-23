@@ -18,14 +18,14 @@ export const SaveLayoutButton: React.FC<SaveLayoutButtonProps> = ({
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 p-2"
       style={{
-        borderRadius: '36px',
+        borderRadius: '8px',
         background: 'rgba(0, 0, 0, 0.28)',
       }}
     >
       <Button
         onClick={onSave}
         disabled={isSaving || isProcessing}
-        className="bg-[#6938EF] hover:bg-[#6938EF]/90 rounded-[24px] text-white shadow-lg hover:shadow-xl transition-all duration-200 p-3.5 text-base font-semibold"
+        className="bg-[#6938EF] hover:bg-[#6938EF]/90 rounded-lg text-white shadow-lg hover:shadow-xl transition-all duration-200 p-3.5 text-base font-semibold"
         size="lg"
       >
         {isSaving ? (

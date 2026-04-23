@@ -22,9 +22,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && curl -LsSf https://astral.sh/uv/install.sh | sh \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install -g hyperframes
 
 COPY package.json package-lock.json /app/
 RUN npm --prefix /app install --omit=dev

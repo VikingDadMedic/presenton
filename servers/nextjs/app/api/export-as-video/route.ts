@@ -244,7 +244,7 @@ export async function POST(req: NextRequest) {
       for (let i = 0; i < slideElements.length; i++) {
         const inner = await slideElements[i].$(".aspect-video, [class*='aspect-video']");
         const target = inner || slideElements[i];
-        const screenshotPath = path.join(framesDir, `slide-${i}.png`);
+        const screenshotPath = path.join(framesDir, `slide-${i}.png`) as `${string}.png`;
         await target.screenshot({ path: screenshotPath, type: "png" });
 
         const holdFrames = duration * fps;

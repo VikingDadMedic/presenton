@@ -1,20 +1,21 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "FastAPI",
-    "version": "0.1.0"
+    "title": "TripStory API",
+    "version": "0.2.0",
+    "description": "TripStory is a visual travel experience builder. Generate presentations from prompts, fetch structured data, and export in multiple formats."
   },
   "paths": {
     "/api/v1/ppt/presentation/generate": {
       "post": {
         "tags": ["Presentation"],
-        "summary": "Returns base URL of generated presentation's PDF or PPTX.",
+        "summary": "Generate a complete presentation and export as PPTX, PDF, or HTML.",
         "operationId": "generate_presentation",
         "requestBody": {
           "content": {
-            "multipart/form-data": {
+            "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Body_generate_presentation_api_api_v1_ppt_presentation_generate_post"
+                "$ref": "#/components/schemas/GeneratePresentationRequest"
               }
             }
           },
@@ -22,7 +23,7 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Presentation generated successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -44,29 +45,198 @@
         }
       }
     },
-    "/api/v1/ppt/template-management/summary": {
+    "/api/v1/ppt/presentation/{id}": {
       "get": {
-        "tags": ["template-management"],
-        "summary": "Get all presentations with layout counts",
-        "description": "Returns a list of extra custom templates available for presenation creation.",
-        "operationId": "templates_list",
+        "tags": ["Presentation"],
+        "summary": "Get a presentation with all slides (JSON export).",
+        "description": "Returns the full presentation model including all slides with their structured JSON content, layout info, speaker notes, theme, and metadata. This is the programmatic JSON export format -- consumers can use the structured slide data for CRM integration, email templates, or custom rendering.",
+        "operationId": "get_presentation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Presentation ID (UUID returned from generate)"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Presentations summary retrieved successfully",
+            "description": "Presentation with all slides",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GetPresentationSummaryResponse"
+                  "$ref": "#/components/schemas/PresentationWithSlides"
                 }
               }
             }
           },
-          "500": {
-            "description": "Internal server error",
+          "404": {
+            "description": "Presentation not found"
+          }
+        }
+      }
+    },
+    "/api/v1/ppt/presentation/export": {
+      "post": {
+        "tags": ["Presentation"],
+        "summary": "Export an existing presentation as PPTX, PDF, or HTML.",
+        "operationId": "export_presentation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["id"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Presentation ID to export"
+                  },
+                  "export_as": {
+                    "type": "string",
+"enum": ["pptx", "pdf", "html", "video"],
+            "default": "pptx",
+            "description": "Export format (video = MP4 slideshow)"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Export path and edit URL",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/PresentationPathAndEditPath"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ppt/slide/edit-field": {
+      "patch": {
+        "tags": ["Slide"],
+        "summary": "Edit a single field on a slide using AI.",
+        "operationId": "edit_slide_field",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["id", "field_path", "prompt"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Slide ID"
+                  },
+                  "field_path": {
+                    "type": "string",
+                    "description": "Dot-notation path to the field (e.g. 'tiers.0.price')"
+                  },
+                  "prompt": {
+                    "type": "string",
+                    "description": "Instruction for how to edit the field"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated slide"
+          }
+        }
+      }
+    },
+    "/api/v1/ppt/enrichers/status": {
+      "get": {
+        "tags": ["Enrichers"],
+        "summary": "Check which travel enricher API keys are configured.",
+        "description": "Returns lists of available and unavailable enrichers. Available enrichers have all required API keys set. Unavailable ones list their missing keys.",
+        "operationId": "get_enricher_status",
+        "responses": {
+          "200": {
+            "description": "Enricher availability status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "available": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "description": "Names of enrichers with all API keys configured"
+                    },
+                    "unavailable": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": { "type": "string" },
+                          "missing_keys": {
+                            "type": "array",
+                            "items": { "type": "string" }
+                          }
+                        }
+                      },
+                      "description": "Enrichers missing API keys"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ppt/presentation/all": {
+      "get": {
+        "tags": ["Presentation"],
+        "summary": "List all presentations.",
+        "operationId": "list_presentations",
+        "responses": {
+          "200": {
+            "description": "All presentations with slides",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PresentationWithSlides"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ppt/template-management/summary": {
+      "get": {
+        "tags": ["template-management"],
+        "summary": "Get all custom templates with layout counts.",
+        "description": "Returns a list of custom templates available for presentation creation.",
+        "operationId": "templates_list",
+        "responses": {
+          "200": {
+            "description": "Templates summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPresentationSummaryResponse"
                 }
               }
             }
@@ -77,217 +247,158 @@
   },
   "components": {
     "schemas": {
-      "Body_generate_presentation_api_api_v1_ppt_presentation_generate_post": {
+      "GeneratePresentationRequest": {
+        "type": "object",
+        "required": ["content"],
         "properties": {
           "content": {
             "type": "string",
-            "title": "Content",
-            "description": "The content for generating the presentation"
+            "description": "The content/prompt for generating the presentation"
           },
           "n_slides": {
             "type": "integer",
-            "title": "N Slides",
+            "description": "Number of slides. If omitted, auto-detected.",
             "default": 8
           },
           "language": {
             "type": "string",
-            "title": "Language",
+            "description": "Presentation language. If omitted, auto-detected.",
             "default": "English"
           },
           "template": {
             "type": "string",
-            "title": "Template",
+            "description": "Template group: general, travel, travel-itinerary, code, education, product-overview, report, etc.",
             "default": "general"
           },
-          "files": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string",
-                  "format": "binary"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Files"
+          "tone": {
+            "type": "string",
+            "enum": ["default", "casual", "professional", "funny", "educational", "sales_pitch", "inspirational", "adventurous", "luxury"],
+            "default": "default"
+          },
+          "verbosity": {
+            "type": "string",
+            "enum": ["concise", "standard", "text-heavy"],
+            "default": "standard"
+          },
+          "web_search": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable web search grounding"
+          },
+          "include_table_of_contents": {
+            "type": "boolean",
+            "default": false
+          },
+          "include_title_slide": {
+            "type": "boolean",
+            "default": true
           },
           "export_as": {
             "type": "string",
-            "enum": ["pptx", "pdf"],
-            "title": "Export As",
+            "enum": ["pptx", "pdf", "html"],
             "default": "pptx"
+          },
+          "origin": {
+            "type": "string",
+            "description": "Departure city for travel flight searches"
+          },
+          "currency": {
+            "type": "string",
+            "default": "USD",
+            "description": "Currency for price formatting"
           }
-        },
+        }
+      },
+      "PresentationWithSlides": {
         "type": "object",
-        "required": ["content"],
-        "title": "Body_generate_presentation_api_api_v1_ppt_presentation_generate_post"
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "content": { "type": "string" },
+          "n_slides": { "type": "integer" },
+          "language": { "type": "string" },
+          "title": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "tone": { "type": "string" },
+          "verbosity": { "type": "string" },
+          "theme": { "type": "object" },
+          "slides": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/SlideModel" }
+          }
+        }
+      },
+      "SlideModel": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "layout_group": { "type": "string", "description": "Template group (e.g. 'travel', 'general')" },
+          "layout": { "type": "string", "description": "Layout ID (e.g. 'travel:destination-hero')" },
+          "index": { "type": "integer" },
+          "content": { "type": "object", "description": "Structured slide data matching the layout's Zod schema" },
+          "speaker_note": { "type": "string" },
+          "html_content": { "type": "string" }
+        }
       },
       "PresentationPathAndEditPath": {
-        "properties": {
-          "presentation_id": {
-            "type": "string",
-            "title": "Presentation Id"
-          },
-          "path": {
-            "type": "string",
-            "title": "Path"
-          },
-          "edit_path": {
-            "type": "string",
-            "title": "Edit Path"
-          }
-        },
         "type": "object",
         "required": ["presentation_id", "path", "edit_path"],
-        "title": "PresentationPathAndEditPath"
+        "properties": {
+          "presentation_id": { "type": "string" },
+          "path": { "type": "string", "description": "File path to the exported file" },
+          "edit_path": { "type": "string", "description": "URL path to edit the presentation in the UI" }
+        }
       },
       "HTTPValidationError": {
+        "type": "object",
         "properties": {
           "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
             "type": "array",
-            "title": "Detail"
+            "items": { "$ref": "#/components/schemas/ValidationError" }
           }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
+        }
       },
       "ValidationError": {
-        "properties": {
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Location"
-          },
-          "msg": {
-            "type": "string",
-            "title": "Message"
-          },
-          "type": {
-            "type": "string",
-            "title": "Error Type"
-          }
-        },
         "type": "object",
         "required": ["loc", "msg", "type"],
-        "title": "ValidationError"
+        "properties": {
+          "loc": { "type": "array", "items": { "type": "string" } },
+          "msg": { "type": "string" },
+          "type": { "type": "string" }
+        }
       },
       "GetPresentationSummaryResponse": {
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "title": "Success"
-          },
-          "presentations": {
-            "items": {
-              "$ref": "#/components/schemas/PresentationSummary"
-            },
-            "type": "array",
-            "title": "Presentations"
-          },
-          "total_presentations": {
-            "type": "integer",
-            "title": "Total Presentations"
-          },
-          "total_layouts": {
-            "type": "integer",
-            "title": "Total Layouts"
-          },
-          "message": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Message"
-          }
-        },
         "type": "object",
         "required": ["success", "presentations", "total_presentations", "total_layouts"],
-        "title": "GetPresentationSummaryResponse"
+        "properties": {
+          "success": { "type": "boolean" },
+          "presentations": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PresentationSummary" }
+          },
+          "total_presentations": { "type": "integer" },
+          "total_layouts": { "type": "integer" },
+          "message": { "type": "string" }
+        }
       },
       "PresentationSummary": {
-        "properties": {
-          "presentation_id": {
-            "type": "string",
-            "title": "Presentation Id"
-          },
-          "layout_count": {
-            "type": "integer",
-            "title": "Layout Count"
-          },
-          "last_updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Last Updated At"
-          },
-          "template": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Template"
-          }
-        },
         "type": "object",
         "required": ["presentation_id", "layout_count"],
-        "title": "PresentationSummary"
+        "properties": {
+          "presentation_id": { "type": "string" },
+          "layout_count": { "type": "integer" },
+          "last_updated_at": { "type": "string", "format": "date-time" },
+          "template": { "type": "object" }
+        }
       },
       "ErrorResponse": {
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "title": "Success",
-            "default": false
-          },
-          "detail": {
-            "type": "string",
-            "title": "Detail"
-          },
-          "error_code": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error Code"
-          }
-        },
         "type": "object",
         "required": ["detail"],
-        "title": "ErrorResponse"
+        "properties": {
+          "success": { "type": "boolean", "default": false },
+          "detail": { "type": "string" },
+          "error_code": { "type": "string" }
+        }
       }
     }
   }

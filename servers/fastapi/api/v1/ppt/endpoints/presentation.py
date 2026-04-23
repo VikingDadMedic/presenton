@@ -561,6 +561,46 @@ async def update_presentation(
     )
 
 
+@PRESENTATION_ROUTER.get("/export/json/{id}")
+async def export_presentation_as_json(
+    id: str = Path(description="Presentation ID"),
+    sql_session: AsyncSession = Depends(get_async_session),
+):
+    """Export a presentation as structured JSON (all slides with content, layout, speaker notes)."""
+    presentation = await sql_session.get(PresentationModel, id)
+    if not presentation:
+        raise HTTPException(status_code=404, detail="Presentation not found")
+
+    slides = (
+        await sql_session.scalars(
+            select(SlideModel)
+            .where(SlideModel.presentation == id)
+            .order_by(SlideModel.index)
+        )
+    ).all()
+
+    fonts = await _resolve_presentation_fonts(presentation, list(slides), sql_session)
+
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        content=PresentationWithSlides(
+            id=presentation.id,
+            content=presentation.content,
+            n_slides=presentation.n_slides,
+            language=presentation.language,
+            title=presentation.title,
+            created_at=presentation.created_at,
+            updated_at=presentation.updated_at,
+            tone=presentation.tone,
+            verbosity=presentation.verbosity,
+            slides=list(slides),
+            theme=presentation.theme,
+            fonts=fonts,
+        ).model_dump(mode="json"),
+        headers={"Content-Disposition": f'attachment; filename="{presentation.title or id}.json"'},
+    )
+
+
 @PRESENTATION_ROUTER.post("/export/pptx", response_model=str)
 async def export_presentation_as_pptx(
     pptx_model: Annotated[PptxPresentationModel, Body()],
@@ -583,7 +623,7 @@ async def export_presentation_as_pptx(
 async def export_presentation_as_pptx_or_pdf(
     id: Annotated[uuid.UUID, Body(description="Presentation ID to export")],
     export_as: Annotated[
-        Literal["pptx", "pdf"], Body(description="Format to export the presentation as")
+        Literal["pptx", "pdf", "html", "video"], Body(description="Format to export the presentation as")
     ] = "pptx",
     sql_session: AsyncSession = Depends(get_async_session),
 ):

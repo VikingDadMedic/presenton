@@ -17,7 +17,7 @@ ENV APP_DATA_DIRECTORY=/app_data \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates curl unzip build-essential \
-      nginx libreoffice fontconfig chromium imagemagick zstd \
+      nginx libreoffice fontconfig chromium imagemagick zstd ffmpeg \
       tesseract-ocr tesseract-ocr-eng \
     && curl -LsSf https://astral.sh/uv/install.sh | sh \
     && rm -rf /var/lib/apt/lists/*

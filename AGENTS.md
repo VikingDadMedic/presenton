@@ -13,7 +13,7 @@
 
 ## Learned Workspace Facts
 
-- TripStory: open-source AI presentation generator (Apache 2.0) pivoting to a travel-specialized platform for travel agents and BDMs. Travel pivot in REFACTOR-PIVOT.MD (Phases 0-10 done); enricher expansion in FEAT-EXPANSION.md.
+- TripStory: visual travel experience builder (Apache 2.0) for travel agents and BDMs — "craft visual destination stories that sell trips." Travel pivot in REFACTOR-PIVOT.MD (Phases 0-10 done); enricher expansion in FEAT-EXPANSION.md.
 - Dual-server architecture: FastAPI (Python, port 8000) + Next.js (port 3000) behind Nginx reverse proxy.
 - Schema-driven pipeline: Zod schemas define slide data contracts, 3-call LLM pipeline (Outlines -> Structure -> Content), React renders slides, Puppeteer exports to PPTX/PDF.
 - Electron desktop app extracted to separate `electron-desktop` branch. This repo is web-only (Docker/cloud). All Electron references fully cleaned.
@@ -35,5 +35,7 @@
 - `usePresentationStreaming.ts` has three SSE resilience layers: try/finally cleanup on complete/closing events, 2-minute fallback timeout that fetches from DB, and onerror recovery via `fetchUserSlides()` instead of dead-end error screen.
 - `CODEBASE_DESIGNS.md` at repo root documents the complete styling, CSS, UI, component, and theming architecture of the Next.js frontend (8 sections: stack overview, file map, Tailwind v4 config, color/theme architecture, typography, component inventory, third-party libs, layout/scaling).
 - `DEPLOYMENT.md` at repo root documents Azure deployment: resource topology (presenton-rg, eastus), env vars, 3-step redeployment (`az acr build` -> `az webapp restart` -> verify), troubleshooting, scaling, and CI/CD setup.
-- Dark mode Phase 2 backlog: ~350+ hardcoded light-mode color classes across ~40 component files need replacing before `defaultTheme` can switch from `"light"` to `"dark"`.
+- TripStory rebrand completed: all user-visible strings (UI, meta tags, docs, package names) renamed from "Presenton" to "TripStory." Code identifiers (`PresentonMode`, env vars, Docker volumes, ACR registry `presentonacr`, domain URLs) intentionally kept as "presenton." Logo image assets in `/public/` still need TripStory visual replacements.
+- Language selector hidden (not deleted) on the upload page; Help/Community sidebar links hidden on the dashboard — intentional feature-hiding for TripStory scope.
+- Dark mode Phase 2 backlog (post-audit numbers): ~68 files with `bg-white`, ~59 files with hardcoded gray hex, 12 pill-shaped button instances need replacing before `defaultTheme` can switch from `"light"` to `"dark"`.
 - FastAPI backend exposes an MCP server (`mcp_server.py`) for programmatic presentation creation and export (PPTX + PDF).

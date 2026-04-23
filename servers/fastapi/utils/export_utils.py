@@ -15,11 +15,10 @@ import uuid
 
 
 async def export_presentation(
-    presentation_id: uuid.UUID, title: str, export_as: Literal["pptx", "pdf"]
+    presentation_id: uuid.UUID, title: str, export_as: Literal["pptx", "pdf", "html", "video"]
 ) -> PresentationAndPath:
     if export_as == "pptx":
 
-        # Get the converted PPTX model from the Next.js service
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 f"http://localhost/api/presentation_to_pptx_model?id={presentation_id}"
@@ -33,7 +32,6 @@ async def export_presentation(
                     )
                 pptx_model_data = await response.json()
 
-        # Create PPTX file using the converted model
         pptx_model = PptxPresentationModel(**pptx_model_data)
         temp_dir = TEMP_FILE_SERVICE.create_temp_dir()
         pptx_creator = PptxPresentationCreator(pptx_model, temp_dir)
@@ -49,6 +47,52 @@ async def export_presentation(
         return PresentationAndPath(
             presentation_id=presentation_id,
             path=pptx_path,
+        )
+    elif export_as == "html":
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                "http://localhost/api/export-as-html",
+                json={
+                    "id": str(presentation_id),
+                    "title": sanitize_filename(title or str(uuid.uuid4())),
+                },
+                timeout=aiohttp.ClientTimeout(total=120),
+            ) as response:
+                if response.status != 200:
+                    error_text = await response.text()
+                    print(f"Failed to export as HTML: {error_text}")
+                    raise HTTPException(
+                        status_code=500,
+                        detail="Failed to export presentation as HTML bundle",
+                    )
+                response_json = await response.json()
+
+        return PresentationAndPath(
+            presentation_id=presentation_id,
+            path=response_json["path"],
+        )
+    elif export_as == "video":
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                "http://localhost/api/export-as-video",
+                json={
+                    "id": str(presentation_id),
+                    "title": sanitize_filename(title or str(uuid.uuid4())),
+                },
+                timeout=aiohttp.ClientTimeout(total=300),
+            ) as response:
+                if response.status != 200:
+                    error_text = await response.text()
+                    print(f"Failed to export as video: {error_text}")
+                    raise HTTPException(
+                        status_code=500,
+                        detail="Failed to export presentation as video",
+                    )
+                response_json = await response.json()
+
+        return PresentationAndPath(
+            presentation_id=presentation_id,
+            path=response_json["path"],
         )
     else:
         async with aiohttp.ClientSession() as session:

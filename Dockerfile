@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1.7
-
 FROM python:3.11-slim-trixie AS fastapi-builder
 
 WORKDIR /app/servers/fastapi
@@ -11,20 +9,16 @@ RUN python -m venv --without-pip /opt/venv \
     && pip install --no-cache-dir uv
 
 COPY servers/fastapi/pyproject.toml servers/fastapi/uv.lock ./
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv export --frozen --no-dev --no-emit-project -o /tmp/requirements.txt \
-    && uv pip install --python /opt/venv/bin/python -r /tmp/requirements.txt
+RUN uv export --frozen --no-dev --no-emit-project -o /tmp/requirements.txt \
+    && uv pip install --python /opt/venv/bin/python --no-cache -r /tmp/requirements.txt
 
 COPY servers/fastapi /app/servers/fastapi
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --python /opt/venv/bin/python --no-deps .
+RUN uv pip install --python /opt/venv/bin/python --no-cache --no-deps .
 # mem0/spaCy BM25 lemmatization loads en_core_web_sm at runtime; spaCy tries pip to
 # download it otherwise. Runtime image has no pip in PATH (--without-pip venv).
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --python /opt/venv/bin/python \
+RUN uv pip install --python /opt/venv/bin/python --no-cache \
     "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl"
-RUN --mount=type=cache,target=/root/.cache \
-    /opt/venv/bin/python scripts/warm_fastembed_cache.py
+RUN /opt/venv/bin/python scripts/warm_fastembed_cache.py
 
 
 FROM node:20-bookworm-slim AS nextjs-builder
@@ -35,8 +29,7 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
     PUPPETEER_SKIP_DOWNLOAD=true
 
 COPY servers/nextjs/package.json servers/nextjs/package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci
+RUN npm ci
 
 COPY servers/nextjs /app/servers/nextjs
 RUN npm run build \
@@ -57,7 +50,7 @@ RUN mkdir -p /app/document-extraction-liteparse \
     && npm --prefix /app/document-extraction-liteparse init -y \
     && npm --prefix /app/document-extraction-liteparse install @llamaindex/liteparse@1.4.0 --omit=dev
 
-COPY electron/resources/document-extraction/liteparse_runner.mjs /app/document-extraction-liteparse/liteparse_runner.mjs
+COPY resources/document-extraction/liteparse_runner.mjs /app/document-extraction-liteparse/liteparse_runner.mjs
 COPY scripts/sync-presentation-export.cjs /app/scripts/sync-presentation-export.cjs
 # Bundled export still loads @img/sharp-* native addons from node_modules (not inlined).
 RUN node /app/scripts/sync-presentation-export.cjs --force \

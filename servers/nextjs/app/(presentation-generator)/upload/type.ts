@@ -149,3 +149,23 @@ export enum VerbosityType {
   Text_Heavy = "text-heavy",
 }
 
+export interface TripContext {
+  destination: string;
+  origin: string;
+  tripDays: number;
+  budget: "budget" | "mid-range" | "luxury";
+  tripType: string;
+  notes: string;
+}
+
+export interface ClientProfile {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  preferences: string[];
+  travelStyle?: "budget" | "mid-range" | "luxury";
+  notes?: string;
+  createdAt: number;
+}
+

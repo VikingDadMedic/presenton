@@ -133,35 +133,32 @@ export function ConfigurationInitializer({ children }: { children: React.ReactNo
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#E9E8F8] via-[#F5F4FF] to-[#E0DFF7] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="max-w-md w-full">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 text-center">
-            {/* Logo/Branding */}
+          <div className="bg-card backdrop-blur-sm rounded-xl shadow-lg border border-border p-8 text-center">
             <div className="mb-6">
               <img
                 src="/Logo.png"
                 alt="TripStory"
                 className="h-12 mx-auto mb-4 opacity-90"
               />
-              <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-primary mx-auto rounded-full"></div>
+              <div className="w-16 h-1 bg-primary mx-auto rounded-full"></div>
             </div>
 
-            {/* Loading Text */}
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-gray-800 font-sans">
+              <h3 className="text-lg font-semibold text-foreground font-sans">
                 Initializing Application
               </h3>
-              <p className="text-sm text-gray-600 font-sans">
+              <p className="text-sm text-muted-foreground font-sans">
                 Loading configuration and checking model availability...
               </p>
             </div>
 
-            {/* Progress Indicator */}
             <div className="mt-6">
-              <div className="flex space-x-1 justify-center">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+              <div className="flex space-x-1.5 justify-center">
+                <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-primary/60 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-2 h-2 bg-primary/30 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
               </div>
             </div>
           </div>

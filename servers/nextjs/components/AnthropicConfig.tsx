@@ -114,7 +114,7 @@ export default function AnthropicConfig({
               <button
                 onClick={fetchAvailableModels}
                 disabled={modelsLoading || !anthropicApiKey}
-                className={` mt-7 py-2.5 bg-[#F7F6F9] px-3.5 rounded-[48px] text-xs font-semibold text-[#101323] transition-all duration-200 border ${modelsLoading || !anthropicApiKey
+                className={` mt-7 py-2.5 bg-[#F7F6F9] px-3.5 rounded-md text-xs font-semibold text-[#101323] transition-all duration-200 border ${modelsLoading || !anthropicApiKey
                   ? " border-gray-300 cursor-not-allowed text-gray-500"
                   : " border-[#EDEEEF] text-blue-600 hover:bg-[#E8F0FF]/90 focus:ring-2 focus:ring-blue-500/20"
                   }`}

@@ -37,7 +37,7 @@ const DashboardSidebar = () => {
             <div>
 
                 <Link href={`/dashboard`} className="flex items-center  pb-6 border-b border-[#E1E1E5]   gap-2    ">
-                    <div className="bg-primary rounded-full cursor-pointer p-1 flex justify-center items-center mx-auto">
+                    <div className="bg-primary rounded-lg cursor-pointer p-1 flex justify-center items-center mx-auto">
                         <img src="/logo-with-bg.png" alt="TripStory logo" className="h-[40px] object-contain w-full" />
                     </div>
                 </Link>

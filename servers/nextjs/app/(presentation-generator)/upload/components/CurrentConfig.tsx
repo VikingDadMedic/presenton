@@ -33,7 +33,7 @@ const CurrentConfig = () => {
             ? IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER]?.label || llmConfig.IMAGE_PROVIDER
             : "No image provider";
     return (
-        <p className="text-[10px] px-2.5 py-0.5 rounded-[50px] text-primary border border-[#EDEEEF]  font-medium ">
+        <p className="text-[10px] px-2.5 py-0.5 rounded-md text-primary border border-[#EDEEEF]  font-medium ">
             {textSummary} · {imageSummary}
         </p>
 

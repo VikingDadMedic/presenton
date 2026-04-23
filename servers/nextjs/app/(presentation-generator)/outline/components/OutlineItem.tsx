@@ -122,7 +122,7 @@ export function OutlineItem({
         <div
             ref={setNodeRef}
             style={style}
-            className={`mb-4 bg-white rounded-[12px] group shadow-sm p-10 relative font-display transition-all duration-500 hover:shadow-[0_6.6px_13.2px_0_rgba(0,0,0,0.10)] ${isDragging ? "opacity-50" : ""}`}
+            className={`mb-4 bg-card rounded-xl group shadow-sm p-10 relative font-display transition-all duration-500 hover:shadow-[0_6.6px_13.2px_0_rgba(0,0,0,0.10)] ${isDragging ? "opacity-50" : ""} ${isStableStreaming ? "outline-item-enter" : ""}`}
         >
 
             <div
@@ -146,7 +146,7 @@ export function OutlineItem({
 
 
                 <div id={`outline-item-${index}`} className="flex flex-col basis-full gap-2">
-                    <p className="text-black w-fit text-[10px] font-medium  bg-white border border-[#EDEEEF] rounded-[80px] px-2.5">Slide {index}</p>
+                    <p className="text-foreground w-fit text-[10px] font-medium bg-card border border-border rounded-md px-2.5">Slide {index}</p>
                     {/* Editable Markdown Content */}
                     {isStreaming ? (
                         isActiveStreaming ? (

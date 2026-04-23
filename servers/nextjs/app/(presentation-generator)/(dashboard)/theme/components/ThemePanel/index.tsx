@@ -964,8 +964,8 @@ const ThemePanel: React.FC = () => {
         </Link>
       </div>
       {/* Tabs */}
-      <div className='p-1 rounded-[40px] bg-[#F7F6F9] w-fit border border-[#F4F4F4] flex items-center justify-center '>
-        <button className='px-5  py-2 text-xs font-medium text-[#3A3A3A] rounded-[70px]'
+      <div className='p-1 rounded-lg bg-[#F7F6F9] w-fit border border-[#F4F4F4] flex items-center justify-center '>
+        <button className='px-5  py-2 text-xs font-medium text-[#3A3A3A] rounded-md'
           onClick={() => {
             trackEvent(MixpanelEvent.Theme_Tab_Switched, { pathname, tab: 'custom' })
             setTab('custom')
@@ -977,7 +977,7 @@ const ThemePanel: React.FC = () => {
         <svg xmlns="http://www.w3.org/2000/svg" className='mx-1' width="2" height="17" viewBox="0 0 2 17" fill="none">
           <path d="M1 0V16.5" stroke="#EDECEC" strokeWidth="2" />
         </svg>
-        <button className='px-5  py-2 text-xs font-medium text-[#3A3A3A] rounded-[70px]'
+        <button className='px-5  py-2 text-xs font-medium text-[#3A3A3A] rounded-md'
           onClick={() => {
             trackEvent(MixpanelEvent.Theme_Tab_Switched, { pathname, tab: 'default' })
             setTab('default')
@@ -1055,11 +1055,11 @@ const ThemePanel: React.FC = () => {
                     <div className='flex justify-end px-5 gap-2'>
                       {currentStep > 1 && <button
 
-                        className='px-3.5 py-2.5 bg-[#F7F6F9] rounded-[48px] text-xs font-semibold text-[#101323]'
+                        className='px-3.5 py-2.5 bg-[#F7F6F9] rounded-md text-xs font-semibold text-[#101323]'
                         onClick={() => setCurrentStep(currentStep - 1)}
                       >Back</button>}
 
-                      <button className='px-7 py-2.5 flex items-center gap-1 rounded-[48px] text-xs font-semibold text-[#101323] '
+                      <button className='px-7 py-2.5 flex items-center gap-1 rounded-md text-xs font-semibold text-[#101323] '
 
                         onClick={() => {
                           if (currentStep === 4) {

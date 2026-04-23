@@ -25,7 +25,7 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({ theme, onSelect, onDelete,
 
   >
     {showDeleteButton && <button
-      className="absolute hidden group-hover:block duration-300 transition-all -top-3 -right-3 z-10 bg-white rounded-full p-2  border border-[#EDEEEF] hover:bg-gray-100 hover:text-gray-700"
+      className="absolute hidden group-hover:block duration-300 transition-all -top-3 -right-3 z-10 bg-white rounded-lg p-2  border border-[#EDEEEF] hover:bg-gray-100 hover:text-gray-700"
       style={{ boxShadow: '0 6.6px 13.2px 0 rgba(0, 0, 0, 0.10)' }}
       onClick={(e) => {
         e.stopPropagation()
@@ -86,21 +86,21 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({ theme, onSelect, onDelete,
       <div className=" absolute top-0 left-0 flex items-center justify-between gap-2  z-[2] p-2">
         <ToolTip content='Font' >
 
-          <p className=" text-xs font-display  flex gap-1 capitalize  items-center  rounded-[100px]  px-2.5 py-1 bg-[#3A3A3AF5] text-white font-semibold  z-40 ">
+          <p className=" text-xs font-display  flex gap-1 capitalize  items-center  rounded-md  px-2.5 py-1 bg-[#3A3A3AF5] text-white font-semibold  z-40 ">
 
             {theme.data.fonts.textFont.name}
           </p>
         </ToolTip>
         {theme.company_name && <ToolTip content='COMPANY'>
 
-          <p className=" text-xs font-display  flex gap-1 capitalize  items-center  rounded-[100px]  px-2.5 py-1 bg-[#3A3A3AF5] text-white font-semibold  text-ellipsis overflow-hidden whitespace-nowrap z-40 ">
+          <p className=" text-xs font-display  flex gap-1 capitalize  items-center  rounded-md  px-2.5 py-1 bg-[#3A3A3AF5] text-white font-semibold  text-ellipsis overflow-hidden whitespace-nowrap z-40 ">
 
             {theme.company_name}
           </p>
         </ToolTip>}
         {theme.logo_url && <ToolTip content='LOGO'>
 
-          <p className=" text-xs font-display  flex gap-1 capitalize  items-center  rounded-[100px]  px-2.5 py-1 bg-[#3A3A3AF5] text-white font-semibold  z-40 ">
+          <p className=" text-xs font-display  flex gap-1 capitalize  items-center  rounded-md  px-2.5 py-1 bg-[#3A3A3AF5] text-white font-semibold  z-40 ">
 
             <img src={theme.logo_url} alt={theme.name} className="w-full max-w-6 h-4 rounded-full object-cover" />
           </p>

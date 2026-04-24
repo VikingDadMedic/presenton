@@ -25,7 +25,7 @@ import {
 } from "recharts";
 
 // Color palettes
-const DEFAULT_CHART_COLORS = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#EC4899']
+const DEFAULT_CHART_COLORS = ['#3b82f6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#EC4899']
 
 const ChartLegend: React.FC<{ series: z.infer<typeof SeriesSchema>[], colors: string[] }> = ({ series, colors }) => (
     <div className="my-2 flex flex-wrap justify-center gap-6">

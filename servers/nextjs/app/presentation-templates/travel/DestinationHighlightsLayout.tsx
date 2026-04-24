@@ -98,7 +98,7 @@ const DestinationHighlightsLayout: React.FC<DestinationHighlightsLayoutProps> = 
                 {/* Decorative Element */}
                 <div className="absolute top-0 right-0 w-64 h-64 opacity-10 overflow-hidden">
                     <svg className="w-full h-full" viewBox="0 0 200 200" fill="none">
-                        <circle cx="150" cy="50" r="120" fill="var(--primary-color,#9333ea)" opacity="0.3" />
+                        <circle cx="150" cy="50" r="120" fill="var(--primary-color,#2563eb)" opacity="0.3" />
                     </svg>
                 </div>
 
@@ -112,7 +112,7 @@ const DestinationHighlightsLayout: React.FC<DestinationHighlightsLayoutProps> = 
                         >
                             {slideData?.title || 'Top Experiences in Bali'}
                         </h1>
-                        <div className="w-16 h-1 mx-auto mb-3" style={{ background: 'var(--primary-color,#9333ea)' }} />
+                        <div className="w-16 h-1 mx-auto mb-3" style={{ background: 'var(--primary-color,#2563eb)' }} />
                         <p
                             className="text-sm sm:text-base max-w-[600px] mx-auto"
                             style={{ color: 'var(--background-text,#4b5563)', fontFamily: 'var(--body-font-family,Poppins)' }}

@@ -121,14 +121,14 @@ const ItineraryDayLayout: React.FC<ItineraryDayLayoutProps> = ({ data: slideData
                         <div className="flex items-center gap-3 mb-4">
                             <span
                                 className="inline-flex items-center justify-center w-12 h-12 rounded-full text-lg font-bold"
-                                style={{ background: 'var(--primary-color,#9333ea)', color: 'var(--primary-text,#ffffff)' }}
+                                style={{ background: 'var(--primary-color,#2563eb)', color: 'var(--primary-text,#ffffff)' }}
                             >
                                 {slideData?.day_number || 1}
                             </span>
                             <div>
                                 <span
                                     className="text-xs font-semibold uppercase tracking-wider"
-                                    style={{ color: 'var(--primary-color,#9333ea)' }}
+                                    style={{ color: 'var(--primary-color,#2563eb)' }}
                                 >
                                     Day {slideData?.day_number || 1}
                                 </span>
@@ -156,7 +156,7 @@ const ItineraryDayLayout: React.FC<ItineraryDayLayoutProps> = ({ data: slideData
                                     <div className="flex flex-col items-center flex-shrink-0">
                                         <div
                                             className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm"
-                                            style={{ background: 'var(--primary-color,#9333ea)' }}
+                                            style={{ background: 'var(--primary-color,#2563eb)' }}
                                         >
                                             <RemoteSvgIcon
                                                 url={activity.icon?.__icon_url__}
@@ -175,7 +175,7 @@ const ItineraryDayLayout: React.FC<ItineraryDayLayoutProps> = ({ data: slideData
                                     <div className="flex-1 pb-2">
                                         <span
                                             className="text-xs font-semibold"
-                                            style={{ color: 'var(--primary-color,#9333ea)' }}
+                                            style={{ color: 'var(--primary-color,#2563eb)' }}
                                         >
                                             {activity.time}
                                         </span>

@@ -48,7 +48,7 @@ export const DEFAULT_THEMES: any[] = [
         graph_0: "#2dd4bf",
         graph_1: "#f59e0b",
         graph_2: "#5b8cff",
-        graph_3: "#a78bfa",
+        graph_3: "#3b82f6",
         graph_4: "#fb7185",
         graph_5: "#4ade80",
         graph_6: "#e8c87a",

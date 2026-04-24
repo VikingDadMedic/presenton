@@ -35,7 +35,7 @@ export default function NotFound() {
 
         <div className="mb-8 flex flex-col justify-center gap-3 sm:flex-row sm:space-x-4">
           <Link href="/dashboard" className="inline-flex sm:flex-1 sm:justify-center">
-            <Button className="w-full rounded-md bg-indigo-600 px-6 py-2 text-white hover:bg-indigo-700 sm:w-auto">
+            <Button className="w-full rounded-md bg-primary px-6 py-2 text-white hover:bg-primary/90 sm:w-auto">
               Go to Homepage
             </Button>
           </Link>

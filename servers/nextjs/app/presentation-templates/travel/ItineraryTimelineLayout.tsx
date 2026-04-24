@@ -120,7 +120,7 @@ const ItineraryTimelineLayout: React.FC<ItineraryTimelineLayoutProps> = ({ data:
                         >
                             {slideData?.title || '7-Day Japan Discovery'}
                         </h1>
-                        <div className="w-16 h-1 mx-auto mt-3" style={{ background: 'var(--primary-color,#9333ea)' }} />
+                        <div className="w-16 h-1 mx-auto mt-3" style={{ background: 'var(--primary-color,#2563eb)' }} />
                     </div>
 
                     {/* Timeline Section */}
@@ -169,12 +169,12 @@ const ItineraryTimelineLayout: React.FC<ItineraryTimelineLayoutProps> = ({ data:
                                                     </div>
 
                                                     {/* Connector */}
-                                                    <div className="w-0.5 h-4" style={{ background: 'var(--primary-color,#9333ea)' }} />
+                                                    <div className="w-0.5 h-4" style={{ background: 'var(--primary-color,#2563eb)' }} />
 
                                                     {/* Dot */}
                                                     <div
                                                         className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm"
-                                                        style={{ background: 'var(--primary-color,#9333ea)', color: 'var(--primary-text,#ffffff)' }}
+                                                        style={{ background: 'var(--primary-color,#2563eb)', color: 'var(--primary-text,#ffffff)' }}
                                                     >
                                                         {day.day_number}
                                                     </div>
@@ -188,13 +188,13 @@ const ItineraryTimelineLayout: React.FC<ItineraryTimelineLayoutProps> = ({ data:
                                                     {/* Dot */}
                                                     <div
                                                         className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm"
-                                                        style={{ background: 'var(--primary-color,#9333ea)', color: 'var(--primary-text,#ffffff)' }}
+                                                        style={{ background: 'var(--primary-color,#2563eb)', color: 'var(--primary-text,#ffffff)' }}
                                                     >
                                                         {day.day_number}
                                                     </div>
 
                                                     {/* Connector */}
-                                                    <div className="w-0.5 h-4" style={{ background: 'var(--primary-color,#9333ea)' }} />
+                                                    <div className="w-0.5 h-4" style={{ background: 'var(--primary-color,#2563eb)' }} />
 
                                                     {/* Card Below */}
                                                     <div

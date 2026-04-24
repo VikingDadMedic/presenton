@@ -26,7 +26,7 @@ import * as z from 'zod';
 import React from 'react';
 
 // Default color palettes for beautiful charts (fallback)
-const DEFAULT_CHART_COLORS = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#EC4899']
+const DEFAULT_CHART_COLORS = ['#3b82f6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#EC4899']
 
 
 

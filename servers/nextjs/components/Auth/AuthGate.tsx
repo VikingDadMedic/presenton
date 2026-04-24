@@ -158,28 +158,28 @@ export default function AuthGate() {
 
   if (isLoading) {
     return (
-      <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#E9E8F8] via-[#F5F4FF] to-[#E0DFF7] flex items-center justify-center p-6">
+      <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-background via-background to-background flex items-center justify-center p-6">
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 h-[45%] opacity-90"
           style={{
             background:
-              "radial-gradient(50% 50% at 50% 100%, rgba(122, 90, 248, 0.35) 0%, rgba(122, 90, 248, 0) 70%)",
+              "radial-gradient(50% 50% at 50% 100%, rgba(154, 106, 26, 0.35) 0%, rgba(154, 106, 26, 0) 70%)",
           }}
         />
         <div className="relative z-10 w-full max-w-md">
-          <div className="rounded-2xl border border-white/40 bg-white/80 p-8 text-center shadow-xl backdrop-blur-sm">
+          <div className="rounded-2xl border border-white/40 bg-card p-8 text-center shadow-xl backdrop-blur-sm">
             <img src="/Logo.png" alt="Presenton" className="mx-auto mb-5 h-12 opacity-95" />
-            <div className="mx-auto mb-4 h-1 w-16 rounded-full bg-gradient-to-r from-[#5146E5] to-[#7C51F8]" />
+            <div className="mx-auto mb-4 h-1 w-16 rounded-full bg-gradient-to-r from-primary to-primary" />
             <h1 className="font-syne text-lg font-semibold text-black">Presenton</h1>
             <p className="mt-3 font-syne text-sm text-[#000000CC]">Preparing your workspace…</p>
             <div className="mt-6 flex justify-center gap-1.5">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-[#5146E5]" />
+              <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
               <span
-                className="h-2 w-2 animate-pulse rounded-full bg-[#7C51F8]"
+                className="h-2 w-2 animate-pulse rounded-full bg-primary"
                 style={{ animationDelay: "0.2s" }}
               />
               <span
-                className="h-2 w-2 animate-pulse rounded-full bg-[#5146E5]"
+                className="h-2 w-2 animate-pulse rounded-full bg-primary"
                 style={{ animationDelay: "0.4s" }}
               />
             </div>
@@ -198,25 +198,25 @@ export default function AuthGate() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-[#E9E8F8] via-[#F5F4FF] to-[#E0DFF7] p-6">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-background via-background to-background p-6">
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 h-[50%] opacity-95"
         style={{
           background:
-            "radial-gradient(50% 50% at 50% 100%, rgba(122, 90, 248, 0.45) 0%, rgba(122, 90, 248, 0) 72%)",
+            "radial-gradient(50% 50% at 50% 100%, rgba(154, 106, 26, 0.45) 0%, rgba(154, 106, 26, 0) 72%)",
         }}
       />
-      <div className="pointer-events-none absolute -right-32 -top-32 h-[380px] w-[380px] rounded-full bg-[#7C51F8]/20 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-40 -left-32 h-[420px] w-[420px] rounded-full bg-[#5146E5]/15 blur-3xl" />
+      <div className="pointer-events-none absolute -right-32 -top-32 h-[380px] w-[380px] rounded-full bg-primary/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-40 -left-32 h-[420px] w-[420px] rounded-full bg-primary/15 blur-3xl" />
 
       <section className="relative z-10 w-full max-w-xl rounded-2xl border border-[#E1E1E5] bg-white/90 p-7 shadow-xl backdrop-blur-sm sm:p-10">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-[74px] w-[74px] shrink-0 items-center justify-center rounded-[4px] bg-[#F4F3FF] p-3">
+            <div className="flex h-[74px] w-[74px] shrink-0 items-center justify-center rounded-[4px] bg-card p-3">
               <img src="/logo-with-bg.png" alt="" className="h-10 w-10 object-contain" />
             </div>
             <div>
-              <p className="font-syne text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7A5AF8]">
+              <p className="font-syne text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
                 Secure instance
               </p>
               <h1 className="mt-1 font-syne text-2xl font-semibold leading-tight text-black sm:text-[26px]">
@@ -243,7 +243,7 @@ export default function AuthGate() {
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               placeholder="your-admin-user"
-              className="w-full rounded-[11px] border border-[#EDEEEF] bg-white px-4 py-3 font-syne text-sm text-black outline-none transition placeholder:text-[#999999] focus:border-[#a49cfc] focus:ring-2 focus:ring-[#5146E5]/20"
+              className="w-full rounded-[11px] border border-[#EDEEEF] bg-white px-4 py-3 font-syne text-sm text-black outline-none transition placeholder:text-[#999999] focus:border-primary focus:ring-2 focus:ring-primary/20"
               disabled={isSubmitting}
             />
           </div>
@@ -259,7 +259,7 @@ export default function AuthGate() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="At least 6 characters"
-              className="w-full rounded-[11px] border border-[#EDEEEF] bg-white px-4 py-3 font-syne text-sm text-black outline-none transition placeholder:text-[#999999] focus:border-[#a49cfc] focus:ring-2 focus:ring-[#5146E5]/20"
+              className="w-full rounded-[11px] border border-[#EDEEEF] bg-white px-4 py-3 font-syne text-sm text-black outline-none transition placeholder:text-[#999999] focus:border-primary focus:ring-2 focus:ring-primary/20"
               disabled={isSubmitting}
             />
           </div>
@@ -276,7 +276,7 @@ export default function AuthGate() {
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 placeholder="Re-enter your password"
-                className="w-full rounded-[11px] border border-[#EDEEEF] bg-white px-4 py-3 font-syne text-sm text-black outline-none transition placeholder:text-[#999999] focus:border-[#a49cfc] focus:ring-2 focus:ring-[#5146E5]/20"
+                className="w-full rounded-[11px] border border-[#EDEEEF] bg-white px-4 py-3 font-syne text-sm text-black outline-none transition placeholder:text-[#999999] focus:border-primary focus:ring-2 focus:ring-primary/20"
                 disabled={isSubmitting}
               />
             </div>
@@ -297,7 +297,7 @@ export default function AuthGate() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-[58px] border border-[#EDEEEF] bg-[#7C51F8] px-5 py-3 font-syne text-xs font-semibold text-white transition hover:bg-[#6d46e6] disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-[58px] border border-[#EDEEEF] bg-primary px-5 py-3 font-syne text-xs font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting
               ? isSetupMode

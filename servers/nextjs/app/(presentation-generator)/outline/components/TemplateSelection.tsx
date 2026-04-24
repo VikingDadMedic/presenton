@@ -141,16 +141,20 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(function Templa
     );
   }, [customLoading, customTemplates, handleCustomSelect, selectedCustomId]);
 
+  const HIDDEN_TEMPLATE_IDS = new Set(["code", "education", "product-overview"]);
+
   const builtInTemplateCards = useMemo(
     () =>
-      templates.map((template: TemplateLayoutsWithSettings) => (
-        <BuiltInTemplateCard
-          key={template.id}
-          template={template}
-          isSelected={selectedBuiltInId === template.id}
-          onSelect={handleBuiltInSelect}
-        />
-      )),
+      templates
+        .filter((t: TemplateLayoutsWithSettings) => !HIDDEN_TEMPLATE_IDS.has(t.id))
+        .map((template: TemplateLayoutsWithSettings) => (
+          <BuiltInTemplateCard
+            key={template.id}
+            template={template}
+            isSelected={selectedBuiltInId === template.id}
+            onSelect={handleBuiltInSelect}
+          />
+        )),
     [selectedBuiltInId, handleBuiltInSelect]
   );
 

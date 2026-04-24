@@ -35,7 +35,7 @@ export const SlideContentDisplay: React.FC<SlideContentDisplayProps> = ({
               <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
                 <span className="text-white text-xs">✨</span>
               </div>
-              <span className="text-sm font-medium text-[#5B21B6]">
+              <span className="text-sm font-medium text-primary">
                 Showing AI-generated preview
               </span>
             </div>
@@ -44,7 +44,7 @@ export const SlideContentDisplay: React.FC<SlideContentDisplayProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={onClearPreview}
-                className="h-8 text-primary hover:text-[#5B21B6] hover:bg-primary/15"
+                className="h-8 text-primary hover:text-primary hover:bg-primary/15"
               >
                 <X className="w-4 h-4 mr-1.5" />
                 Clear

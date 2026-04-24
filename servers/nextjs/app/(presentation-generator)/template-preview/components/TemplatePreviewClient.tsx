@@ -202,7 +202,7 @@ const GroupLayoutPreview = () => {
                         <span className="px-3 py-1  text-gray-600 rounded text-sm font-mono">
                           {template.layoutId}
                         </span>
-                        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                        <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
                           #{index + 1}
                         </span>
                       </div> */}

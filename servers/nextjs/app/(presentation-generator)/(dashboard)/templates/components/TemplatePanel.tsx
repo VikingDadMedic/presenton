@@ -110,10 +110,13 @@ const LayoutPreview = () => {
         router.push(`/template-preview?slug=${id}`);
     }, [router]);
 
+    const HIDDEN_TEMPLATE_IDS = new Set(["code", "education", "product-overview"]);
+
     const { nonNeoInbuilt, neoInbuilt } = useMemo(() => {
         const nonNeo: TemplateLayoutsWithSettings[] = [];
         const neo: TemplateLayoutsWithSettings[] = [];
         for (const t of templates) {
+            if (HIDDEN_TEMPLATE_IDS.has(t.id)) continue;
             if (t.id.startsWith("neo")) neo.push(t);
             else nonNeo.push(t);
         }

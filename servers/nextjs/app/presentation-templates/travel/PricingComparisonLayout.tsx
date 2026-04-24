@@ -144,7 +144,7 @@ const PricingComparisonLayout: React.FC<PricingComparisonLayoutProps> = ({ data:
                                     key={index}
                                     className={`rounded-xl flex flex-col overflow-hidden transition-all ${isHighlighted ? 'shadow-xl scale-[1.03] -mt-2 -mb-2' : 'shadow-md'}`}
                                     style={{
-                                        background: isHighlighted ? 'var(--primary-color,#9333ea)' : 'var(--card-color,#f9fafb)',
+                                        background: isHighlighted ? 'var(--primary-color,#2563eb)' : 'var(--card-color,#f9fafb)',
                                         border: isHighlighted ? 'none' : '1px solid var(--stroke,#e5e7eb)',
                                     }}
                                 >
@@ -153,7 +153,7 @@ const PricingComparisonLayout: React.FC<PricingComparisonLayoutProps> = ({ data:
                                         <div
                                             className="text-center py-1.5 text-xs font-bold uppercase tracking-wider"
                                             style={{
-                                                background: isHighlighted ? 'rgba(255,255,255,0.2)' : 'var(--primary-color,#9333ea)',
+                                                background: isHighlighted ? 'rgba(255,255,255,0.2)' : 'var(--primary-color,#2563eb)',
                                                 color: isHighlighted ? '#ffffff' : 'var(--primary-text,#ffffff)',
                                             }}
                                         >
@@ -174,7 +174,7 @@ const PricingComparisonLayout: React.FC<PricingComparisonLayoutProps> = ({ data:
                                         <div className="mb-1">
                                             <span
                                                 className="text-3xl sm:text-4xl font-bold"
-                                                style={{ color: isHighlighted ? '#ffffff' : 'var(--primary-color,#9333ea)' }}
+                                                style={{ color: isHighlighted ? '#ffffff' : 'var(--primary-color,#2563eb)' }}
                                             >
                                                 {tier.price}
                                             </span>
@@ -206,7 +206,7 @@ const PricingComparisonLayout: React.FC<PricingComparisonLayoutProps> = ({ data:
                                                         className="w-4 h-4 flex-shrink-0 mt-0.5"
                                                         viewBox="0 0 20 20"
                                                         fill="currentColor"
-                                                        style={{ color: isHighlighted ? '#ffffff' : 'var(--primary-color,#9333ea)' }}
+                                                        style={{ color: isHighlighted ? '#ffffff' : 'var(--primary-color,#2563eb)' }}
                                                     >
                                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                                     </svg>

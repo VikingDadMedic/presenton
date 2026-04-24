@@ -78,8 +78,8 @@ const QuoteSlideLayout: React.FC<QuoteSlideLayoutProps> = ({ data: slideData }) 
                 ></div>
 
                 {/* Decorative Elements */}
-                <div className="absolute top-0 left-0 w-32 h-32 bg-purple-600/20 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-0 right-0 w-40 h-40 bg-purple-400/20 rounded-full blur-3xl"></div>
+                <div className="absolute top-0 left-0 w-32 h-32 bg-blue-600/20 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-0 right-0 w-40 h-40 bg-blue-400/20 rounded-full blur-3xl"></div>
                 <div className="absolute top-1/2 left-1/4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
 
                 {/* Main Content */}
@@ -92,7 +92,7 @@ const QuoteSlideLayout: React.FC<QuoteSlideLayoutProps> = ({ data: slideData }) 
                                 {slideData?.heading || 'Words of Wisdom'}
                             </h1>
                             {/* Purple accent line */}
-                            <div style={{ background: "var(--primary-color,#9333ea)" }} className="w-20 h-1 bg-purple-400 mx-auto"></div>
+                            <div style={{ background: "var(--primary-color,#2563eb)" }} className="w-20 h-1 bg-blue-400 mx-auto"></div>
                         </div>
 
                         {/* Quote Section */}
@@ -100,7 +100,7 @@ const QuoteSlideLayout: React.FC<QuoteSlideLayoutProps> = ({ data: slideData }) 
                             {/* Quote Icon */}
                             <div className="flex justify-center">
                                 <svg
-                                    className="w-12 h-12 text-purple-300 opacity-80" style={{ color: "var(--primary-color,#9333ea)" }}
+                                    className="w-12 h-12 text-blue-300 opacity-80" style={{ color: "var(--primary-color,#2563eb)" }}
                                     fill="currentColor"
                                     viewBox="0 0 24 24"
                                 >
@@ -115,8 +115,8 @@ const QuoteSlideLayout: React.FC<QuoteSlideLayoutProps> = ({ data: slideData }) 
 
                             {/* Author */}
                             <div className="flex justify-center items-center space-x-4">
-                                <div style={{ background: "var(--primary-color,#9333ea)" }} className="w-16 h-px bg-purple-300"></div>
-                                <cite className="text-base sm:text-lg text-purple-200 font-semibold not-italic"
+                                <div style={{ background: "var(--primary-color,#2563eb)" }} className="w-16 h-px bg-blue-300"></div>
+                                <cite className="text-base sm:text-lg text-blue-200 font-semibold not-italic"
 
                                     style={{
                                         color: 'var(--background-text,#ffffff)'
@@ -124,7 +124,7 @@ const QuoteSlideLayout: React.FC<QuoteSlideLayoutProps> = ({ data: slideData }) 
                                 >
                                     {slideData?.author || 'Winston Churchill'}
                                 </cite>
-                                <div style={{ background: "var(--primary-color,#9333ea)" }} className="w-16 h-px bg-purple-300"></div>
+                                <div style={{ background: "var(--primary-color,#2563eb)" }} className="w-16 h-px bg-blue-300"></div>
                             </div>
                         </div>
                     </div>

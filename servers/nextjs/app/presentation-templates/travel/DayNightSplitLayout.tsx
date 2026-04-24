@@ -136,7 +136,7 @@ const DayNightSplitLayout: React.FC<DayNightSplitLayoutProps> = ({ data: slideDa
                         <div className="relative h-[42%] flex-shrink-0">
                             <img src={slideData?.night_image?.__image_url__ || ''} alt={slideData?.night_image?.__image_prompt__ || ''} className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#1a1a2e]/40" />
-                            <span className="absolute bottom-3 left-4 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide" style={{ background: 'var(--primary-color, #6366f1)', color: 'var(--primary-text, #ffffff)' }}>
+                            <span className="absolute bottom-3 left-4 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide" style={{ background: 'var(--primary-color, #2563eb)', color: 'var(--primary-text, #ffffff)' }}>
                                 ✦ {slideData?.night_title || 'By Night'}
                             </span>
                         </div>

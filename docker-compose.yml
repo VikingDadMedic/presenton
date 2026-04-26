@@ -54,6 +54,7 @@ services:
       - AUTH_PASSWORD=${AUTH_PASSWORD:-}
       - AUTH_OVERRIDE_FROM_ENV=${AUTH_OVERRIDE_FROM_ENV:-}
       - RESET_AUTH=${RESET_AUTH:-}
+      - VIATOR_API_KEY=${VIATOR_API_KEY:-}
 
   production-gpu:
     # image: ghcr.io/presenton/presenton:latest
@@ -117,6 +118,7 @@ services:
       - AUTH_PASSWORD=${AUTH_PASSWORD:-}
       - AUTH_OVERRIDE_FROM_ENV=${AUTH_OVERRIDE_FROM_ENV:-}
       - RESET_AUTH=${RESET_AUTH:-}
+      - VIATOR_API_KEY=${VIATOR_API_KEY:-}
 
   development:
     build:
@@ -175,6 +177,7 @@ services:
       - AUTH_PASSWORD=${AUTH_PASSWORD:-}
       - AUTH_OVERRIDE_FROM_ENV=${AUTH_OVERRIDE_FROM_ENV:-}
       - RESET_AUTH=${RESET_AUTH:-}
+      - VIATOR_API_KEY=${VIATOR_API_KEY:-}
 
   development-gpu:
     build:
@@ -239,6 +242,7 @@ services:
       - AUTH_PASSWORD=${AUTH_PASSWORD:-}
       - AUTH_OVERRIDE_FROM_ENV=${AUTH_OVERRIDE_FROM_ENV:-}
       - RESET_AUTH=${RESET_AUTH:-}
+      - VIATOR_API_KEY=${VIATOR_API_KEY:-}
 
 volumes:
   presenton_root_node_modules:

@@ -269,6 +269,7 @@ import TransportationInfoLayout, { Schema as TransportSchema, layoutId as Transp
 import HealthSafetyLayout, { Schema as HealthSafetySchema, layoutId as HealthSafetyId, layoutName as HealthSafetyName, layoutDescription as HealthSafetyDesc } from "./travel/HealthSafetyLayout";
 import LanguageSurvivalLayout, { Schema as LanguageSurvivalSchema, layoutId as LanguageSurvivalId, layoutName as LanguageSurvivalName, layoutDescription as LanguageSurvivalDesc } from "./travel/LanguageSurvivalLayout";
 import ConnectivityCardLayout, { Schema as ConnectivitySchema, layoutId as ConnectivityId, layoutName as ConnectivityName, layoutDescription as ConnectivityDesc } from "./travel/ConnectivityCardLayout";
+import ExperienceCardsLayout, { Schema as ExperienceCardsSchema, layoutId as ExperienceCardsId, layoutName as ExperienceCardsName, layoutDescription as ExperienceCardsDesc } from "./travel/ExperienceCardsLayout";
 
 // Template sequence settings
 import travelRevealSettings from "./travel-reveal/settings.json";
@@ -532,6 +533,7 @@ export const travelTemplates: TemplateWithData[] = [
     createTemplateEntry(HealthSafetyLayout, HealthSafetySchema, HealthSafetyId, HealthSafetyName, HealthSafetyDesc, "travel", "HealthSafetyLayout"),
     createTemplateEntry(LanguageSurvivalLayout, LanguageSurvivalSchema, LanguageSurvivalId, LanguageSurvivalName, LanguageSurvivalDesc, "travel", "LanguageSurvivalLayout"),
     createTemplateEntry(ConnectivityCardLayout, ConnectivitySchema, ConnectivityId, ConnectivityName, ConnectivityDesc, "travel", "ConnectivityCardLayout"),
+    createTemplateEntry(ExperienceCardsLayout, ExperienceCardsSchema, ExperienceCardsId, ExperienceCardsName, ExperienceCardsDesc, "travel", "ExperienceCardsLayout"),
 ];
 
 // Travel itinerary templates (ordered subset of travel layouts)
@@ -551,6 +553,7 @@ export const travelRevealTemplates: TemplateWithData[] = [
     createTemplateEntry(DestinationHeroLayout, DestinationHeroSchema, DestinationHeroId, DestinationHeroName, DestinationHeroDesc, "travel-reveal", "DestinationHeroLayout"),
     createTemplateEntry(GoldenHourMoodBoardLayout, GoldenHourSchema, GoldenHourId, GoldenHourName, GoldenHourDesc, "travel-reveal", "GoldenHourMoodBoardLayout"),
     createTemplateEntry(CuisineDiscoveryLayout, CuisineSchema, CuisineId, CuisineName, CuisineDesc, "travel-reveal", "CuisineDiscoveryLayout"),
+    createTemplateEntry(ExperienceCardsLayout, ExperienceCardsSchema, ExperienceCardsId, ExperienceCardsName, ExperienceCardsDesc, "travel-reveal", "ExperienceCardsLayout"),
     createTemplateEntry(AccommodationCardLayout, AccommodationCardSchema, AccommodationCardId, AccommodationCardName, AccommodationCardDesc, "travel-reveal", "AccommodationCardLayout"),
     createTemplateEntry(PricingComparisonLayout, PricingComparisonSchema, PricingComparisonId, PricingComparisonName, PricingComparisonDesc, "travel-reveal", "PricingComparisonLayout"),
     createTemplateEntry(BookingCTALayout, BookingCTASchema, BookingCTAId, BookingCTAName, BookingCTADesc, "travel-reveal", "BookingCTALayout"),
@@ -592,6 +595,7 @@ export const travelLocalTemplates: TemplateWithData[] = [
     createTemplateEntry(TestimonialLayout, TestimonialSchema, TestimonialId, TestimonialName, TestimonialDesc, "travel-local", "TestimonialLayout"),
     createTemplateEntry(ItineraryDayLayout, ItineraryDaySchema, ItineraryDayId, ItineraryDayName, ItineraryDayDesc, "travel-local", "ItineraryDayLayout"),
     createTemplateEntry(CuisineDiscoveryLayout, CuisineSchema, CuisineId, CuisineName, CuisineDesc, "travel-local", "CuisineDiscoveryLayout"),
+    createTemplateEntry(ExperienceCardsLayout, ExperienceCardsSchema, ExperienceCardsId, ExperienceCardsName, ExperienceCardsDesc, "travel-local", "ExperienceCardsLayout"),
     createTemplateEntry(AmbientSoundsLayout, AmbientSoundsSchema, AmbientSoundsId, AmbientSoundsName, AmbientSoundsDesc, "travel-local", "AmbientSoundsLayout"),
     createTemplateEntry(CulturalTipsLayout, CulturalTipsSchema, CulturalTipsId, CulturalTipsName, CulturalTipsDesc, "travel-local", "CulturalTipsLayout"),
     createTemplateEntry(BookingCTALayout, BookingCTASchema, BookingCTAId, BookingCTAName, BookingCTADesc, "travel-local", "BookingCTALayout"),

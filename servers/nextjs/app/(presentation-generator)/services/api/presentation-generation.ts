@@ -283,7 +283,46 @@ export class PresentationGenerationApi {
       throw error;
     }
   }
-  
-  
+
+  static async exportAsHTML(params: { id: string; title: string }) {
+    const response = await fetch("/api/export-as-html", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+    if (!response.ok) throw new Error("Failed to export HTML");
+    return response.json() as Promise<{ path: string }>;
+  }
+
+  static async exportAsVideo(params: {
+    id: string;
+    title: string;
+    slideDuration?: number;
+    transitionStyle?: string;
+    transitionDuration?: number;
+    audioUrl?: string;
+  }) {
+    const response = await fetch("/api/export-as-video", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+    if (!response.ok) throw new Error("Failed to export video");
+    return response.json() as Promise<{ path: string }>;
+  }
+
+  static async getEmbedInfo(params: { id: string }) {
+    const response = await fetch("/api/export-as-embed", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+    if (!response.ok) throw new Error("Failed to get embed info");
+    return response.json() as Promise<{
+      embed_url: string;
+      iframe_code: string;
+      presentation_id: string;
+    }>;
+  }
 
 }

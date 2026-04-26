@@ -11,6 +11,7 @@ import {
   Pencil,
   Check,
   X,
+  Link2,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -41,12 +42,13 @@ import ThemeApi from "../../services/api/theme";
 import { Theme } from "../../services/api/types";
 import MarkdownRenderer from "@/components/MarkDownRender";
 import { cn } from "@/lib/utils";
+import EmbedShareDialog from "./EmbedShareDialog";
 
 const MAX_EXPORT_TITLE_LENGTH = 40;
 
 const buildSafeExportFileName = (
   rawTitle: string | null | undefined,
-  extension: "pdf" | "pptx"
+  extension: "pdf" | "pptx" | "html" | "mp4" | "json"
 ) => {
   const normalizedTitle = (rawTitle || "presentation").trim();
   const titleWithoutExtension = normalizedTitle.replace(
@@ -93,6 +95,8 @@ const PresentationHeader = ({
   const [isExporting, setIsExporting] = useState(false);
   const [themes, setThemes] = useState<Theme[]>([]);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [embedDialogOpen, setEmbedDialogOpen] = useState(false);
+  const [embedInfo, setEmbedInfo] = useState<{ embed_url: string; iframe_code: string } | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
   /** Avoid committing on blur when Save/Cancel was used (focus/click ordering) */
@@ -279,6 +283,81 @@ const PresentationHeader = ({
       setIsExporting(false);
     }
   };
+  const handleExportHtml = async () => {
+    if (isStreaming) return;
+    try {
+      toast.info("Exporting HTML...");
+      setIsExporting(true);
+      await PresentationGenerationApi.updatePresentationContent(presentationData);
+      const safeFileName = buildSafeExportFileName(presentationData?.title, "html");
+      const safeTitle = safeFileName.replace(/\.html$/i, "");
+      const { path } = await PresentationGenerationApi.exportAsHTML({
+        id: presentation_id,
+        title: safeTitle,
+      });
+      if (path) {
+        downloadLink(path, safeFileName);
+      } else {
+        throw new Error("No path returned from HTML export");
+      }
+    } catch (error) {
+      console.error("HTML export failed:", error);
+      toast.error("Having trouble exporting!", {
+        description: "We are having trouble exporting your presentation as HTML. Please try again.",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportVideo = async () => {
+    if (isStreaming) return;
+    try {
+      toast.info("Rendering video... this may take a minute or two.", { duration: 10000 });
+      setIsExporting(true);
+      await PresentationGenerationApi.updatePresentationContent(presentationData);
+      const safeFileName = buildSafeExportFileName(presentationData?.title, "mp4");
+      const safeTitle = safeFileName.replace(/\.mp4$/i, "");
+      const { path } = await PresentationGenerationApi.exportAsVideo({
+        id: presentation_id,
+        title: safeTitle,
+        slideDuration: 5,
+        transitionStyle: "cycle",
+        transitionDuration: 0.8,
+      });
+      if (path) {
+        downloadLink(path, safeFileName);
+        toast.success("Video exported successfully!");
+      } else {
+        throw new Error("No path returned from video export");
+      }
+    } catch (error) {
+      console.error("Video export failed:", error);
+      toast.error("Having trouble exporting!", {
+        description: "Video export failed. Please try again.",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportJson = () => {
+    if (isStreaming) return;
+    const url = `/api/v1/ppt/presentation/export/json/${presentation_id}`;
+    window.open(url, "_blank");
+  };
+
+  const handleShowEmbed = async () => {
+    try {
+      const info = await PresentationGenerationApi.getEmbedInfo({ id: presentation_id });
+      setEmbedInfo(info);
+      setEmbedDialogOpen(true);
+    } catch (error) {
+      console.error("Failed to get embed info:", error);
+      toast.error("Failed to generate embed link.");
+    }
+  };
+
   const handleReGenerate = () => {
     dispatch(clearPresentationData());
     dispatch(clearHistory())
@@ -328,8 +407,54 @@ const PresentationHeader = ({
           PPTX
           <ArrowUpRight className="w-3.5 h-3.5" />
         </Button>
+        <Button
+          onClick={() => {
+            handleExportHtml();
+            setOpen(false);
+          }}
+          variant="ghost"
+          className={`w-full flex px-0 justify-start text-xs text-black hover:bg-transparent  ${mobile ? "bg-white py-6" : ""}`}
+        >
+          HTML
+          <ArrowUpRight className="w-3.5 h-3.5" />
+        </Button>
+        <Button
+          onClick={() => {
+            handleExportVideo();
+            setOpen(false);
+          }}
+          variant="ghost"
+          className={`w-full flex px-0 justify-start text-xs text-black hover:bg-transparent  ${mobile ? "bg-white py-6" : ""}`}
+        >
+          Video
+          <ArrowUpRight className="w-3.5 h-3.5" />
+        </Button>
+        <Button
+          onClick={() => {
+            handleExportJson();
+            setOpen(false);
+          }}
+          variant="ghost"
+          className={`w-full flex px-0 justify-start text-xs text-black hover:bg-transparent  ${mobile ? "bg-white py-6" : ""}`}
+        >
+          JSON
+          <ArrowUpRight className="w-3.5 h-3.5" />
+        </Button>
       </div>
-
+      <div className="my-[18px] h-[1px] bg-[#E8E8E8]" />
+      <div>
+        <Button
+          onClick={() => {
+            handleShowEmbed();
+            setOpen(false);
+          }}
+          variant="ghost"
+          className={`w-full flex px-0 justify-start text-xs text-black hover:bg-transparent  ${mobile ? "bg-white py-6" : ""}`}
+        >
+          Embed
+          <Link2 className="w-3.5 h-3.5" />
+        </Button>
+      </div>
 
     </div>
   );
@@ -497,6 +622,14 @@ const PresentationHeader = ({
           </Popover>
         </div>
       </div>
+      {embedInfo && (
+        <EmbedShareDialog
+          open={embedDialogOpen}
+          onOpenChange={setEmbedDialogOpen}
+          embedUrl={embedInfo.embed_url}
+          iframeCode={embedInfo.iframe_code}
+        />
+      )}
     </>
   );
 };

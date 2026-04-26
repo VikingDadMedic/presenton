@@ -85,10 +85,12 @@ RUN set -eux; \
     if [ "$INSTALL_LIBREOFFICE" = "true" ]; then packages="$packages libreoffice"; fi; \
     if [ "$INSTALL_CHROMIUM" = "true" ]; then packages="$packages chromium"; fi; \
     if [ "$INSTALL_TESSERACT" = "true" ]; then packages="$packages tesseract-ocr tesseract-ocr-eng"; fi; \
+    packages="$packages ffmpeg"; \
     apt-get update; \
     apt-get install -y --no-install-recommends $packages; \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash -; \
     apt-get install -y --no-install-recommends nodejs; \
+    npm install -g hyperframes; \
     rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /app/scripts /app/servers/fastapi /app/servers/nextjs

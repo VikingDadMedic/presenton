@@ -34,7 +34,7 @@ export const CustomTemplateCard = React.memo(function CustomTemplateCard({ templ
 
     return (
         <Card
-            className="cursor-pointer flex flex-col shadow-none sm:shadow-none relative hover:shadow-sm transition-all duration-200 group overflow-hidden rounded-[22px] border border-[#E8E9EC] bg-white"
+            className="cursor-pointer flex flex-col shadow-none sm:shadow-none relative hover:-translate-y-1 hover:shadow-lg transition-all duration-200 group overflow-hidden rounded-[22px] border border-[#E8E9EC] bg-white"
             onClick={handleOpen}
         >
             <TemplatePreviewStage>
@@ -71,7 +71,7 @@ const InbuiltTemplateCard = React.memo(function InbuiltTemplateCard({
     return (
         <Card
             key={template.id}
-            className="group relative cursor-pointer overflow-hidden rounded-[22px] border border-[#E8E9EC] bg-white shadow-none sm:shadow-none transition-all duration-200 hover:shadow-sm"
+            className="group relative cursor-pointer overflow-hidden rounded-[22px] border border-[#E8E9EC] bg-white shadow-none sm:shadow-none transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
             onClick={handleOpen}
         >
             <TemplatePreviewStage>

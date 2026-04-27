@@ -8,7 +8,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Check, Copy, ExternalLink } from "lucide-react";
+import { Copy, ExternalLink } from "lucide-react";
+import { MotionIcon } from "motion-icons-react";
 
 interface EmbedShareDialogProps {
   open: boolean;
@@ -39,7 +40,7 @@ function CopyField({ label, value }: { label: string; value: string }) {
           className="flex-shrink-0 h-9 w-9"
           onClick={handleCopy}
         >
-          {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? <MotionIcon name="Check" entrance="zoomIn" animation="tada" size={14} color="#16a34a" /> : <Copy className="h-3.5 w-3.5" />}
         </Button>
       </div>
     </div>

@@ -383,7 +383,7 @@ const UploadPage = () => {
             style={{
               background: "linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)"
             }}
-            className="w-fit mr-0 ml-auto rounded-lg flex items-center justify-center py-5 px-4 text-[#101323] font-display font-semibold text-xs"
+            className="w-fit mr-0 ml-auto rounded-lg flex items-center justify-center py-5 px-4 text-[#101323] font-display font-semibold text-xs hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200"
           >
             <span>Get Started</span>
             <ChevronRight className="!w-5 !h-5" />

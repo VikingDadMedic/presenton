@@ -6,7 +6,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Map, Waves, Mountain, Landmark, Building2, Ship, Binoculars, Minus, Plus } from "lucide-react";
+import { Map, Minus, Plus } from "lucide-react";
+import { MotionIcon } from "motion-icons-react";
 import { cn } from "@/lib/utils";
 import type { TripContext } from "../type";
 
@@ -17,12 +18,12 @@ const BUDGET_TIERS = [
 ] as const;
 
 const TRIP_TYPES = [
-  { value: "beach", label: "Beach", icon: Waves },
-  { value: "adventure", label: "Adventure", icon: Mountain },
-  { value: "cultural", label: "Cultural", icon: Landmark },
-  { value: "city", label: "City", icon: Building2 },
-  { value: "cruise", label: "Cruise", icon: Ship },
-  { value: "safari", label: "Safari", icon: Binoculars },
+  { value: "beach", label: "Beach", icon: "waves" },
+  { value: "adventure", label: "Adventure", icon: "mountain" },
+  { value: "cultural", label: "Cultural", icon: "landmark" },
+  { value: "city", label: "City", icon: "building-2" },
+  { value: "cruise", label: "Cruise", icon: "ship" },
+  { value: "safari", label: "Safari", icon: "binoculars" },
 ] as const;
 
 interface TripPlanPopoverProps {
@@ -136,21 +137,29 @@ export function TripPlanPopover({ tripContext, onTripContextChange }: TripPlanPo
           <div className="space-y-1.5">
             <label className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">Trip Type</label>
             <div className="grid grid-cols-3 gap-2">
-              {TRIP_TYPES.map(({ value, label, icon: Icon }) => (
-                <button
-                  key={value}
-                  onClick={() => update({ tripType: value })}
-                  className={cn(
-                    "flex flex-col items-center gap-1 rounded-md border px-2 py-2 text-[10px] font-medium transition-colors",
-                    ctx.tripType === value
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-card text-muted-foreground hover:bg-accent"
-                  )}
-                >
-                  <Icon className="w-4 h-4" />
-                  {label}
-                </button>
-              ))}
+              {TRIP_TYPES.map(({ value, label, icon }) => {
+                const isSelected = ctx.tripType === value;
+                return (
+                  <button
+                    key={value}
+                    onClick={() => update({ tripType: value })}
+                    className={cn(
+                      "flex flex-col items-center gap-1 rounded-md border px-2 py-2 text-[10px] font-medium transition-colors",
+                      isSelected
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-muted-foreground hover:bg-accent"
+                    )}
+                  >
+                    <MotionIcon
+                      name={icon}
+                      animation={isSelected ? "heartbeat" : "none"}
+                      trigger={isSelected ? "always" : "hover"}
+                      size={20}
+                    />
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

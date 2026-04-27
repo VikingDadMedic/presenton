@@ -13,6 +13,7 @@ import {
   X,
   Link2,
 } from "lucide-react";
+import { MotionIcon } from "motion-icons-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
@@ -393,7 +394,7 @@ const PresentationHeader = ({
           className={`  rounded-none px-0 w-full text-xs flex justify-start text-black hover:bg-transparent ${mobile ? "bg-white py-6 border-none rounded-lg" : ""}`} >
 
           PDF
-          <ArrowUpRight className="w-3.5 h-3.5" />
+          <MotionIcon name="ArrowUpRight" animation="bounce" trigger="hover" size={14} />
         </Button>
         <Button
           onClick={() => {
@@ -405,7 +406,7 @@ const PresentationHeader = ({
         >
 
           PPTX
-          <ArrowUpRight className="w-3.5 h-3.5" />
+          <MotionIcon name="ArrowUpRight" animation="bounce" trigger="hover" size={14} />
         </Button>
         <Button
           onClick={() => {
@@ -416,7 +417,7 @@ const PresentationHeader = ({
           className={`w-full flex px-0 justify-start text-xs text-black hover:bg-transparent  ${mobile ? "bg-white py-6" : ""}`}
         >
           HTML
-          <ArrowUpRight className="w-3.5 h-3.5" />
+          <MotionIcon name="ArrowUpRight" animation="bounce" trigger="hover" size={14} />
         </Button>
         <Button
           onClick={() => {
@@ -427,7 +428,7 @@ const PresentationHeader = ({
           className={`w-full flex px-0 justify-start text-xs text-black hover:bg-transparent  ${mobile ? "bg-white py-6" : ""}`}
         >
           Video
-          <ArrowUpRight className="w-3.5 h-3.5" />
+          <MotionIcon name="ArrowUpRight" animation="bounce" trigger="hover" size={14} />
         </Button>
         <Button
           onClick={() => {
@@ -438,7 +439,7 @@ const PresentationHeader = ({
           className={`w-full flex px-0 justify-start text-xs text-black hover:bg-transparent  ${mobile ? "bg-white py-6" : ""}`}
         >
           JSON
-          <ArrowUpRight className="w-3.5 h-3.5" />
+          <MotionIcon name="ArrowUpRight" animation="bounce" trigger="hover" size={14} />
         </Button>
       </div>
       <div className="my-[18px] h-[1px] bg-[#E8E8E8]" />
@@ -452,7 +453,7 @@ const PresentationHeader = ({
           className={`w-full flex px-0 justify-start text-xs text-black hover:bg-transparent  ${mobile ? "bg-white py-6" : ""}`}
         >
           Embed
-          <Link2 className="w-3.5 h-3.5" />
+          <MotionIcon name="Link2" animation="bounce" trigger="hover" size={14} />
         </Button>
       </div>
 
@@ -561,7 +562,7 @@ const PresentationHeader = ({
 
             <ToolTip content="Regenerate Presentation">
               <button onClick={handleReGenerate} className="group">
-                <RotateCcw className="w-3.5 h-3.5 text-[#101323] group-hover:text-primary duration-300" />
+                <MotionIcon name="RotateCcw" animation="spin" trigger="hover" size={14} />
               </button>
             </ToolTip>
             <Separator orientation="vertical" className="h-4" />
@@ -570,7 +571,7 @@ const PresentationHeader = ({
                 onUndo();
               }}>
 
-                <Undo2 className="w-3.5 h-3.5 text-[#101323] group-hover:text-primary duration-300" />
+                <MotionIcon name="Undo2" animation="swing" trigger="hover" size={14} />
 
               </button>
             </ToolTip>
@@ -581,7 +582,7 @@ const PresentationHeader = ({
 
                 onRedo();
               }}>
-                <Redo2 className="w-3.5 h-3.5 text-[#101323] group-hover:text-primary duration-300" />
+                <MotionIcon name="Redo2" animation="swing" trigger="hover" size={14} />
 
               </button>
             </ToolTip>
@@ -600,7 +601,7 @@ const PresentationHeader = ({
                   router.push(to);
                 }}
                 disabled={isStreaming || !presentationData?.slides || presentationData?.slides.length === 0} className="cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group">
-                <Play className="w-3.5 h-3.5 text-[#101323] group-hover:text-primary duration-300" />
+                <MotionIcon name="Play" animation="pulse" trigger="hover" size={14} />
               </button>
             </ToolTip>
           </div>

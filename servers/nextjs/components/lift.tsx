@@ -1,0 +1,24 @@
+"use client";
+import { motion, type HTMLMotionProps } from "motion/react";
+import { useHoverLift } from "@/lib/use-hover-lift";
+interface LiftButtonProps extends Omit<HTMLMotionProps<"button">, "animate"> {
+  children: React.ReactNode;
+  liftHeight?: number;
+  shadow?: boolean;
+}
+export function LiftButton({
+  children,
+  liftHeight = 8,
+  shadow = true,
+  ...props
+}: LiftButtonProps) {
+  const liftProps = useHoverLift({
+    liftDistance: liftHeight,
+    addShadow: shadow,
+  });
+  return (
+    <motion.button {...liftProps} {...props}>
+      {children}
+    </motion.button>
+  );
+}

@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { BadgeCheck, Info, Loader2, ShieldAlert } from "lucide-react"
+import { Info } from "lucide-react"
+import { MotionIcon } from "motion-icons-react"
 import { Toaster as Sonner, toast as sonnerToast } from "sonner"
 
 /** Blue circle for neutral / informational toasts (matches web `servers/nextjs` Toaster). */
@@ -34,11 +35,11 @@ type ToasterProps = React.ComponentProps<typeof Sonner>
 
 const Toaster = ({ icons, ...props }: ToasterProps) => {
   const defaultIcons: NonNullable<ToasterProps["icons"]> = {
-    success: <BadgeCheck aria-hidden="true" />,
-    error: <ShieldAlert aria-hidden="true" />,
+    success: <MotionIcon name="BadgeCheck" entrance="zoomIn" size={20} color="rgb(22, 163, 74)" />,
+    error: <MotionIcon name="ShieldAlert" entrance="zoomIn" animation="shake" size={20} color="rgb(220, 38, 38)" />,
     info: <Info className="fill-[#1880F6] stroke-white" />,
-    warning: <ShieldAlert aria-hidden="true" />,
-    loading: <Loader2 aria-hidden="true" className="animate-spin" />,
+    warning: <MotionIcon name="ShieldAlert" entrance="zoomIn" size={20} color="rgb(217, 119, 6)" />,
+    loading: <MotionIcon name="Loader2" animation="spin" size={20} />,
     close: <span aria-hidden="true">Got it!</span>,
   }
 

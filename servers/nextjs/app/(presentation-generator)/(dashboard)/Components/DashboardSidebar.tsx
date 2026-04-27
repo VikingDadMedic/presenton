@@ -2,6 +2,7 @@
 
 import React from "react";
 import { LayoutDashboard, Star, Brain, Settings, Palette, HelpCircle } from "lucide-react";
+import { MotionIcon } from "motion-icons-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
@@ -55,7 +56,7 @@ const DashboardSidebar = () => {
                             aria-label="Dashboard"
                             title="Dashboard"
                         >
-                            <LayoutDashboard className={["h-4 w-4", pathname === "/dashboard" ? "text-primary" : "text-slate-600"].join(" ")} />
+                            <MotionIcon name="LayoutDashboard" animation="bounce" trigger="hover" size={16} className={pathname === "/dashboard" ? "text-primary" : "text-slate-600"} />
                             <span className="text-[11px] text-slate-800">Dashboard</span>
                         </Link>
                         <Link
@@ -84,7 +85,7 @@ const DashboardSidebar = () => {
                             title="Theme"
                         >
                             <div className="flex flex-col cursor-pointer tex-center items-center gap-2  transition-colors">
-                                <Palette className={`h-4 w-4 ${pathname === "/theme" ? "text-primary" : "text-slate-600"}`} />
+                                <MotionIcon name="Palette" animation="bounce" trigger="hover" size={16} className={pathname === "/theme" ? "text-primary" : "text-slate-600"} />
                                 <span className="text-[11px] text-slate-800">Themes</span>
                             </div>
                         </Link>

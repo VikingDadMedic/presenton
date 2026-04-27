@@ -6,11 +6,15 @@ from llmai import get_client
 from llmai.shared import JSONSchemaResponse, Message, SystemMessage, UserMessage
 from models.presentation_layout import SlideLayoutModel
 from models.sql.slide import SlideModel
-from utils.llm_config import get_llm_config
+from utils.llm_config import get_content_model_config, has_content_model_override
 from utils.llm_client_error_handler import handle_llm_client_exceptions
 from utils.llm_utils import extract_structured_content, get_generate_kwargs
-from utils.llm_provider import get_model
-from utils.schema_utils import add_field_in_schema, remove_fields_from_schema
+from utils.schema_utils import (
+    add_field_in_schema,
+    remove_fields_from_schema,
+    strip_length_constraints,
+    validate_length_constraints,
+)
 
 
 def _resolve_prompt_language(language: Optional[str]) -> str:
@@ -119,7 +123,9 @@ async def get_edited_slide_content(
     memory_context: Optional[str] = None,
     template: str = "",
 ):
-    model = get_model()
+    config, model, extra_body = get_content_model_config()
+    client = get_client(config=config)
+    use_override = has_content_model_override()
 
     response_schema = remove_fields_from_schema(
         slide_layout.json_schema, ["__image_url__", "__icon_url__"]
@@ -137,12 +143,19 @@ async def get_edited_slide_content(
         True,
     )
 
-    client = get_client(config=get_llm_config())
+    original_schema = response_schema
+    if use_override:
+        llm_schema = strip_length_constraints(response_schema)
+        strict = True
+    else:
+        llm_schema = response_schema
+        strict = False
+
     try:
         response_format = JSONSchemaResponse(
             name="response",
-            json_schema=response_schema,
-            strict=False,
+            json_schema=llm_schema,
+            strict=strict,
         )
         messages = get_messages(
             prompt,
@@ -156,16 +169,21 @@ async def get_edited_slide_content(
         )
 
         for attempt in range(3):
-            response = await asyncio.to_thread(
-                client.generate,
-                **get_generate_kwargs(
-                    model=model,
-                    messages=messages,
-                    response_format=response_format,
-                ),
+            kwargs = get_generate_kwargs(
+                model=model,
+                messages=messages,
+                response_format=response_format,
             )
+            if extra_body:
+                kwargs["extra_body"] = extra_body
+
+            response = await asyncio.to_thread(client.generate, **kwargs)
             content = extract_structured_content(response.content)
             if content is not None:
+                if use_override:
+                    violations = validate_length_constraints(content, original_schema)
+                    if violations and attempt < 2:
+                        continue
                 return content
 
             if attempt < 2:
@@ -182,7 +200,7 @@ async def get_edited_field_value(
     current_value: Any,
     language: str = "English",
 ) -> str:
-    model = get_model()
+    config, model, extra_body = get_content_model_config()
     type_name = type(current_value).__name__
 
     messages: list[Message] = [
@@ -205,7 +223,7 @@ async def get_edited_field_value(
         ),
     ]
 
-    client = get_client(config=get_llm_config())
+    client = get_client(config=config)
     try:
         response = await asyncio.to_thread(
             client.generate,

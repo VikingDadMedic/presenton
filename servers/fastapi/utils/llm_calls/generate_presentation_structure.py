@@ -6,11 +6,11 @@ from llmai import get_client
 from llmai.shared import JSONSchemaResponse, Message, SystemMessage, UserMessage
 from models.presentation_layout import PresentationLayoutModel
 from models.presentation_outline_model import PresentationOutlineModel
-from utils.llm_config import get_llm_config
+from utils.llm_config import get_structure_model_config, has_structure_model_override
 from utils.llm_client_error_handler import handle_llm_client_exceptions
 from utils.llm_utils import extract_structured_content, get_generate_kwargs
-from utils.llm_provider import get_model
 from utils.get_dynamic_models import get_presentation_structure_model_with_n_slides
+from utils.schema_utils import strip_length_constraints
 from models.presentation_structure_model import PresentationStructureModel
 
 
@@ -139,8 +139,10 @@ async def generate_presentation_structure(
     instructions: Optional[str] = None,
     using_slides_markdown: bool = False,
 ) -> PresentationStructureModel:
-    client = get_client(config=get_llm_config())
-    model = get_model()
+    config, model, extra_body = get_structure_model_config()
+    client = get_client(config=config)
+    use_override = has_structure_model_override()
+
     response_model = get_presentation_structure_model_with_n_slides(
         len(presentation_outline.slides)
     )
@@ -161,21 +163,26 @@ async def generate_presentation_structure(
                 instructions,
             )
         )
+
+        raw_schema = response_model.model_json_schema()
+        llm_schema = strip_length_constraints(raw_schema) if use_override else raw_schema
+
         response_format = JSONSchemaResponse(
             name="response",
-            json_schema=response_model.model_json_schema(),
+            json_schema=llm_schema,
             strict=True,
         )
 
         for attempt in range(3):
-            response = await asyncio.to_thread(
-                client.generate,
-                **get_generate_kwargs(
-                    model=model,
-                    messages=messages,
-                    response_format=response_format,
-                ),
+            kwargs = get_generate_kwargs(
+                model=model,
+                messages=messages,
+                response_format=response_format,
             )
+            if extra_body:
+                kwargs["extra_body"] = extra_body
+
+            response = await asyncio.to_thread(client.generate, **kwargs)
             content = extract_structured_content(response.content)
             if content is not None:
                 return PresentationStructureModel(**content)

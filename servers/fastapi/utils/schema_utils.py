@@ -350,6 +350,71 @@ def remove_titles_from_schema(schema: dict) -> dict[str, Any]:
     return _strip_titles(deepcopy(schema))
 
 
+_LENGTH_CONSTRAINT_KEYS = {"minLength", "maxLength", "minItems", "maxItems"}
+
+
+def strip_length_constraints(schema: dict) -> dict:
+    """Remove minLength/maxLength/minItems/maxItems recursively for providers
+    that don't support these JSON Schema keywords in constrained decoding."""
+    schema = deepcopy(schema)
+
+    def _strip(node: Any) -> Any:
+        if isinstance(node, dict):
+            for key in list(node.keys()):
+                if key in _LENGTH_CONSTRAINT_KEYS:
+                    del node[key]
+                else:
+                    _strip(node[key])
+        elif isinstance(node, list):
+            for item in node:
+                _strip(item)
+        return node
+
+    return _strip(schema)
+
+
+def validate_length_constraints(data: Any, schema: dict, path: str = "") -> list[str]:
+    """Validate minLength/maxLength/minItems/maxItems on generated data.
+    Returns a list of human-readable violation strings (empty = valid)."""
+    violations: list[str] = []
+    if not isinstance(schema, dict) or not isinstance(data, dict):
+        return violations
+
+    props = schema.get("properties", {})
+    for field_name, field_schema in props.items():
+        if field_name not in data:
+            continue
+        val = data[field_name]
+        fp = f"{path}.{field_name}" if path else field_name
+
+        if isinstance(val, str):
+            mn = field_schema.get("minLength")
+            mx = field_schema.get("maxLength")
+            if mn is not None and len(val) < mn:
+                violations.append(f"{fp}: length {len(val)} < minLength {mn}")
+            if mx is not None and len(val) > mx:
+                violations.append(f"{fp}: length {len(val)} > maxLength {mx}")
+
+        if isinstance(val, list):
+            mn = field_schema.get("minItems")
+            mx = field_schema.get("maxItems")
+            if mn is not None and len(val) < mn:
+                violations.append(f"{fp}: {len(val)} items < minItems {mn}")
+            if mx is not None and len(val) > mx:
+                violations.append(f"{fp}: {len(val)} items > maxItems {mx}")
+            items_schema = field_schema.get("items", {})
+            if isinstance(items_schema, dict) and items_schema.get("type") == "object":
+                for i, item in enumerate(val):
+                    violations.extend(
+                        validate_length_constraints(item, items_schema, f"{fp}[{i}]")
+                    )
+
+        if isinstance(val, dict) and field_schema.get("type") == "object":
+            violations.extend(validate_length_constraints(val, field_schema, fp))
+
+    return violations
+
+
 # ? Not used
 def generate_constraint_sentences(schema: dict) -> str:
     """

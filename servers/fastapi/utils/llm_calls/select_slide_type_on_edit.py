@@ -5,10 +5,9 @@ from llmai.shared import JSONSchemaResponse, Message, SystemMessage, UserMessage
 from models.presentation_layout import PresentationLayoutModel, SlideLayoutModel
 from models.slide_layout_index import SlideLayoutIndex
 from models.sql.slide import SlideModel
-from utils.llm_config import get_llm_config
+from utils.llm_config import get_structure_model_config
 from utils.llm_client_error_handler import handle_llm_client_exceptions
 from utils.llm_utils import extract_structured_content, get_generate_kwargs
-from utils.llm_provider import get_model
 
 
 def get_messages(
@@ -54,8 +53,8 @@ async def get_slide_layout_from_prompt(
     slide: SlideModel,
     memory_context: str = "",
 ) -> SlideLayoutModel:
-    client = get_client(config=get_llm_config())
-    model = get_model()
+    config, model, extra_body = get_structure_model_config()
+    client = get_client(config=config)
 
     slide_layout_index = layout.get_slide_layout_index(slide.layout)
 
@@ -74,14 +73,15 @@ async def get_slide_layout_from_prompt(
         )
 
         for attempt in range(3):
-            response = await asyncio.to_thread(
-                client.generate,
-                **get_generate_kwargs(
-                    model=model,
-                    messages=messages,
-                    response_format=response_format,
-                ),
+            kwargs = get_generate_kwargs(
+                model=model,
+                messages=messages,
+                response_format=response_format,
             )
+            if extra_body:
+                kwargs["extra_body"] = extra_body
+
+            response = await asyncio.to_thread(client.generate, **kwargs)
             content = extract_structured_content(response.content)
             if content is not None:
                 index = SlideLayoutIndex(**content).index

@@ -61,3 +61,16 @@ class UserConfig(BaseModel):
     CODEX_USERNAME: Optional[str] = None
     CODEX_EMAIL: Optional[str] = None
     CODEX_IS_PRO: Optional[bool] = None
+
+    # Per-call model routing (Mercury / alternative fast models)
+    CONTENT_MODEL_PROVIDER: Optional[str] = None
+    CONTENT_MODEL_NAME: Optional[str] = None
+    CONTENT_MODEL_API_KEY: Optional[str] = None
+    CONTENT_MODEL_BASE_URL: Optional[str] = None
+    CONTENT_MODEL_REASONING_EFFORT: Optional[str] = None
+
+    STRUCTURE_MODEL_PROVIDER: Optional[str] = None
+    STRUCTURE_MODEL_NAME: Optional[str] = None
+    STRUCTURE_MODEL_API_KEY: Optional[str] = None
+    STRUCTURE_MODEL_BASE_URL: Optional[str] = None
+    STRUCTURE_MODEL_REASONING_EFFORT: Optional[str] = None

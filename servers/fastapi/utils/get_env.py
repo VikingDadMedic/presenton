@@ -169,3 +169,43 @@ def get_open_webui_image_url_env():
 
 def get_open_webui_image_api_key_env():
     return os.getenv("OPEN_WEBUI_IMAGE_API_KEY")
+
+
+def get_content_model_provider_env():
+    return os.getenv("CONTENT_MODEL_PROVIDER")
+
+
+def get_content_model_name_env():
+    return os.getenv("CONTENT_MODEL_NAME")
+
+
+def get_content_model_api_key_env():
+    return os.getenv("CONTENT_MODEL_API_KEY")
+
+
+def get_content_model_base_url_env():
+    return os.getenv("CONTENT_MODEL_BASE_URL")
+
+
+def get_content_model_reasoning_effort_env():
+    return os.getenv("CONTENT_MODEL_REASONING_EFFORT")
+
+
+def get_structure_model_provider_env():
+    return os.getenv("STRUCTURE_MODEL_PROVIDER")
+
+
+def get_structure_model_name_env():
+    return os.getenv("STRUCTURE_MODEL_NAME")
+
+
+def get_structure_model_api_key_env():
+    return os.getenv("STRUCTURE_MODEL_API_KEY")
+
+
+def get_structure_model_base_url_env():
+    return os.getenv("STRUCTURE_MODEL_BASE_URL")
+
+
+def get_structure_model_reasoning_effort_env():
+    return os.getenv("STRUCTURE_MODEL_REASONING_EFFORT")

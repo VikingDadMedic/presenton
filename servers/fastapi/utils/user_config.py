@@ -7,6 +7,11 @@ from utils.get_env import (
     get_anthropic_model_env,
     get_comfyui_url_env,
     get_comfyui_workflow_env,
+    get_content_model_api_key_env,
+    get_content_model_base_url_env,
+    get_content_model_name_env,
+    get_content_model_provider_env,
+    get_content_model_reasoning_effort_env,
     get_custom_llm_api_key_env,
     get_custom_llm_url_env,
     get_custom_model_env,
@@ -26,6 +31,11 @@ from utils.get_env import (
     get_image_provider_env,
     get_pixabay_api_key_env,
     get_extended_reasoning_env,
+    get_structure_model_api_key_env,
+    get_structure_model_base_url_env,
+    get_structure_model_name_env,
+    get_structure_model_provider_env,
+    get_structure_model_reasoning_effort_env,
     get_web_grounding_env,
     get_codex_access_token_env,
     get_codex_refresh_token_env,
@@ -44,6 +54,11 @@ from utils.set_env import (
     set_anthropic_model_env,
     set_comfyui_url_env,
     set_comfyui_workflow_env,
+    set_content_model_api_key_env,
+    set_content_model_base_url_env,
+    set_content_model_name_env,
+    set_content_model_provider_env,
+    set_content_model_reasoning_effort_env,
     set_custom_llm_api_key_env,
     set_custom_llm_url_env,
     set_custom_model_env,
@@ -62,6 +77,11 @@ from utils.set_env import (
     set_pexels_api_key_env,
     set_image_provider_env,
     set_pixabay_api_key_env,
+    set_structure_model_api_key_env,
+    set_structure_model_base_url_env,
+    set_structure_model_name_env,
+    set_structure_model_provider_env,
+    set_structure_model_reasoning_effort_env,
     set_web_grounding_env,
     set_codex_access_token_env,
     set_codex_refresh_token_env,
@@ -145,6 +165,16 @@ def get_user_config():
         ),
         OPEN_WEBUI_IMAGE_URL=existing_config.OPEN_WEBUI_IMAGE_URL or get_open_webui_image_url_env(),
         OPEN_WEBUI_IMAGE_API_KEY=existing_config.OPEN_WEBUI_IMAGE_API_KEY or get_open_webui_image_api_key_env(),
+        CONTENT_MODEL_PROVIDER=existing_config.CONTENT_MODEL_PROVIDER or get_content_model_provider_env(),
+        CONTENT_MODEL_NAME=existing_config.CONTENT_MODEL_NAME or get_content_model_name_env(),
+        CONTENT_MODEL_API_KEY=existing_config.CONTENT_MODEL_API_KEY or get_content_model_api_key_env(),
+        CONTENT_MODEL_BASE_URL=existing_config.CONTENT_MODEL_BASE_URL or get_content_model_base_url_env(),
+        CONTENT_MODEL_REASONING_EFFORT=existing_config.CONTENT_MODEL_REASONING_EFFORT or get_content_model_reasoning_effort_env(),
+        STRUCTURE_MODEL_PROVIDER=existing_config.STRUCTURE_MODEL_PROVIDER or get_structure_model_provider_env(),
+        STRUCTURE_MODEL_NAME=existing_config.STRUCTURE_MODEL_NAME or get_structure_model_name_env(),
+        STRUCTURE_MODEL_API_KEY=existing_config.STRUCTURE_MODEL_API_KEY or get_structure_model_api_key_env(),
+        STRUCTURE_MODEL_BASE_URL=existing_config.STRUCTURE_MODEL_BASE_URL or get_structure_model_base_url_env(),
+        STRUCTURE_MODEL_REASONING_EFFORT=existing_config.STRUCTURE_MODEL_REASONING_EFFORT or get_structure_model_reasoning_effort_env(),
     )
 
 
@@ -216,6 +246,26 @@ def update_env_with_user_config():
         set_open_webui_image_url_env(user_config.OPEN_WEBUI_IMAGE_URL)
     if user_config.OPEN_WEBUI_IMAGE_API_KEY:
         set_open_webui_image_api_key_env(user_config.OPEN_WEBUI_IMAGE_API_KEY)
+    if user_config.CONTENT_MODEL_PROVIDER:
+        set_content_model_provider_env(user_config.CONTENT_MODEL_PROVIDER)
+    if user_config.CONTENT_MODEL_NAME:
+        set_content_model_name_env(user_config.CONTENT_MODEL_NAME)
+    if user_config.CONTENT_MODEL_API_KEY:
+        set_content_model_api_key_env(user_config.CONTENT_MODEL_API_KEY)
+    if user_config.CONTENT_MODEL_BASE_URL:
+        set_content_model_base_url_env(user_config.CONTENT_MODEL_BASE_URL)
+    if user_config.CONTENT_MODEL_REASONING_EFFORT:
+        set_content_model_reasoning_effort_env(user_config.CONTENT_MODEL_REASONING_EFFORT)
+    if user_config.STRUCTURE_MODEL_PROVIDER:
+        set_structure_model_provider_env(user_config.STRUCTURE_MODEL_PROVIDER)
+    if user_config.STRUCTURE_MODEL_NAME:
+        set_structure_model_name_env(user_config.STRUCTURE_MODEL_NAME)
+    if user_config.STRUCTURE_MODEL_API_KEY:
+        set_structure_model_api_key_env(user_config.STRUCTURE_MODEL_API_KEY)
+    if user_config.STRUCTURE_MODEL_BASE_URL:
+        set_structure_model_base_url_env(user_config.STRUCTURE_MODEL_BASE_URL)
+    if user_config.STRUCTURE_MODEL_REASONING_EFFORT:
+        set_structure_model_reasoning_effort_env(user_config.STRUCTURE_MODEL_REASONING_EFFORT)
 
 
 def save_codex_tokens_to_user_config() -> None:

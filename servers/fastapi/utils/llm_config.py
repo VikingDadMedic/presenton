@@ -18,15 +18,25 @@ from utils.get_env import (
     get_codex_account_id_env,
     get_codex_refresh_token_env,
     get_codex_token_expires_env,
+    get_content_model_api_key_env,
+    get_content_model_base_url_env,
+    get_content_model_name_env,
+    get_content_model_provider_env,
+    get_content_model_reasoning_effort_env,
     get_custom_llm_api_key_env,
     get_custom_llm_url_env,
     get_disable_thinking_env,
     get_google_api_key_env,
     get_ollama_url_env,
     get_openai_api_key_env,
+    get_structure_model_api_key_env,
+    get_structure_model_base_url_env,
+    get_structure_model_name_env,
+    get_structure_model_provider_env,
+    get_structure_model_reasoning_effort_env,
     get_web_grounding_env,
 )
-from utils.llm_provider import get_llm_provider
+from utils.llm_provider import get_llm_provider, get_model
 from utils.parsers import parse_bool_or_none
 from utils.set_env import (
     set_codex_access_token_env,
@@ -144,3 +154,67 @@ def get_extra_body() -> Optional[dict]:
     if get_llm_provider() == LLMProvider.CUSTOM and disable_thinking():
         return {"enable_thinking": False}
     return None
+
+
+def _resolve_per_call_model(
+    provider_getter, name_getter, key_getter, url_getter, effort_getter,
+) -> Optional[tuple[ClientConfig, str, Optional[dict]]]:
+    """Resolve a per-call model override. Returns (config, model_name, extra_body) or None."""
+    provider = provider_getter()
+    if not provider:
+        return None
+    model_name = name_getter()
+    if not model_name:
+        return None
+    base_url = url_getter()
+    api_key = key_getter() or get_openai_api_key_env() or "null"
+
+    config = OpenAIClientConfig(
+        base_url=base_url or "https://api.openai.com/v1",
+        api_key=api_key,
+    )
+
+    extra_body = None
+    reasoning_effort = effort_getter()
+    if reasoning_effort:
+        extra_body = {"reasoning_effort": reasoning_effort}
+
+    return config, model_name, extra_body
+
+
+def get_content_model_config() -> tuple[ClientConfig, str, Optional[dict]]:
+    """Returns (client_config, model_name, extra_body) for Call 3 / edit.
+    Falls back to global model if CONTENT_MODEL_* env vars are not set."""
+    result = _resolve_per_call_model(
+        get_content_model_provider_env,
+        get_content_model_name_env,
+        get_content_model_api_key_env,
+        get_content_model_base_url_env,
+        get_content_model_reasoning_effort_env,
+    )
+    if result:
+        return result
+    return get_llm_config(), get_model(), get_extra_body()
+
+
+def get_structure_model_config() -> tuple[ClientConfig, str, Optional[dict]]:
+    """Returns (client_config, model_name, extra_body) for Call 2 / layout selection.
+    Falls back to global model if STRUCTURE_MODEL_* env vars are not set."""
+    result = _resolve_per_call_model(
+        get_structure_model_provider_env,
+        get_structure_model_name_env,
+        get_structure_model_api_key_env,
+        get_structure_model_base_url_env,
+        get_structure_model_reasoning_effort_env,
+    )
+    if result:
+        return result
+    return get_llm_config(), get_model(), get_extra_body()
+
+
+def has_content_model_override() -> bool:
+    return bool(get_content_model_provider_env() and get_content_model_name_env())
+
+
+def has_structure_model_override() -> bool:
+    return bool(get_structure_model_provider_env() and get_structure_model_name_env())

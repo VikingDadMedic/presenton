@@ -1,15 +1,15 @@
 """
-Mercury 2 (Inception Labs) Evaluation for Call 3 Schema Filling
+Mercury 2 Retest -- 6-Tier Structured Output Evaluation
 
-Standalone test harness comparing Mercury 2 diffusion LLM against GPT-4.1
-for the slide content generation step (Call 3). Tests JSON schema compliance,
-speed, quality, instant mode, and cascade viability.
+Isolates variables systematically to determine Mercury 2's actual
+structured output capabilities for TripStory's Call 3 pipeline.
+
+The original test used strict:false and schemas with minLength/maxLength,
+which likely prevented Mercury's constrained-decoding engine from activating.
 
 Usage:
     cd servers/fastapi
-    INCEPTION_API_KEY=sk_... python tests/test_mercury_eval.py
-
-Requires: INCEPTION_API_KEY and OPENAI_API_KEY in environment.
+    INCEPTION_API_KEY=sk_... OPENAI_API_KEY=sk-... .venv/bin/python tests/test_mercury_eval.py
 """
 
 import asyncio
@@ -17,7 +17,8 @@ import json
 import os
 import sys
 import time
-from copy import deepcopy
+import copy
+import requests as http_requests
 from datetime import datetime
 from typing import Any, Optional
 
@@ -27,272 +28,206 @@ MERCURY_BASE_URL = "https://api.inceptionlabs.ai/v1"
 MERCURY_MODEL = "mercury-2"
 BASELINE_MODEL = "gpt-4.1"
 
-SLIDE_CONTENT_SYSTEM_PROMPT = """
-You will be given slide content and response schema.
-You need to generate structured content json based on the schema.
+SYSTEM_PROMPT = """You will be given slide content and response schema.
+Generate structured content JSON based on the schema.
 
-# Steps
-1. Analyze the content.
-2. Analyze the response schema.
-3. Generate structured content json based on the schema.
-4. Generate speaker note if required.
-5. Provide structured content json as output.
-
-# General Rules
-- Make sure to follow language guidelines.
+# Rules
+- Follow the schema exactly. Return ONLY valid JSON matching the schema.
 - Speaker note should be normal text, not markdown.
-- Never ever go over the max character limit.
-- Do not add emoji in the content.
-- Don't provide $schema field in content json.
-- Strictly use markdown to emphasize important points, by bolding or italicizing the part of text.
+- Do not add emoji.
+- Prices must include currency symbols.
+- Image prompts should describe scenic travel photography."""
 
-{user_instructions}
+USER_PROMPT_TEMPLATE = """# Slide Language: English
 
-{tone_instructions}
-
-# Verbosity Instructions:
-Make slide as standard as possible.
-
-# Output Fields:
-- Follow this response schema exactly: {schema_text}
-"""
-
-SLIDE_CONTENT_USER_PROMPT = """
-# Current Date and Time:
-{current_date_time}
-
-# Icon Query And Image Prompt Language:
-English
-
-# Slide Language:
-English
-
-# SLIDE CONTENT: START
-{content}
-# SLIDE CONTENT: END
-"""
-
-TRAVEL_RULES = (
-    "\n# Travel-Specific Rules\n"
-    "- Metrics should be in abbreviated form with least possible characters.\n"
-    '- Star ratings must be numeric (1-5).\n'
-    '- Prices must include currency code or symbol (e.g., "$2,499 pp" or "EUR 1,899").\n'
-    '- Activity times in 24h or contextual format (e.g., "Morning", "09:00").\n'
-    "- Image prompts should describe scenic travel photography, NOT generic stock images.\n"
-    "- Weather temperatures should include units (C or F).\n"
-    '- Duration formats: "3 nights / 4 days", "2h 30m flight".\n'
-)
+# SLIDE CONTENT:
+{content}"""
 
 # ---------------------------------------------------------------------------
-# Test schemas (matching production Zod->JSONSchema output after transformation)
+# Schemas at different constraint levels
 # ---------------------------------------------------------------------------
 
-SCHEMA_DESTINATION_HERO = {
+SCHEMA_INCEPTION_DOC_EXAMPLE = {
     "type": "object",
     "properties": {
-        "title": {"type": "string", "minLength": 3, "maxLength": 40,
-                  "description": "Destination name or headline displayed prominently over the hero image"},
-        "tagline": {"type": "string", "minLength": 5, "maxLength": 80,
-                    "description": "Short inspirational tagline beneath the title"},
-        "country": {"type": "string", "minLength": 2, "maxLength": 30,
-                    "description": "Country or region badge displayed at the bottom of the slide"},
-        "image": {"type": "object", "properties": {
-            "__image_prompt__": {"type": "string", "minLength": 10, "maxLength": 50,
-                                "description": "Prompt used to generate the image"}
-        }},
-        "__speaker_note__": {"type": "string", "minLength": 100, "maxLength": 250,
-                             "description": "Speaker note for the slide"},
+        "sentiment": {"type": "string", "enum": ["positive", "negative", "neutral"]},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "key_phrases": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["title", "tagline", "country", "image", "__speaker_note__"],
+    "required": ["sentiment", "confidence", "key_phrases"],
 }
 
-SCHEMA_CUISINE_DISCOVERY = {
+SCHEMA_HERO_STRIPPED = {
     "type": "object",
     "properties": {
-        "title": {"type": "string", "minLength": 3, "maxLength": 50,
-                  "description": "Main heading for the cuisine discovery slide"},
-        "description": {"type": "string", "minLength": 10, "maxLength": 120,
-                        "description": "Brief intro to the local food scene"},
+        "title": {"type": "string", "description": "Destination headline"},
+        "tagline": {"type": "string", "description": "Inspirational tagline"},
+        "country": {"type": "string", "description": "Country name"},
+        "image": {"type": "object", "properties": {
+            "__image_prompt__": {"type": "string", "description": "Image generation prompt"},
+        }},
+        "__speaker_note__": {"type": "string", "description": "Speaker note for the slide"},
+    },
+    "required": ["title", "tagline", "country", "image", "__speaker_note__"],
+    "additionalProperties": False,
+}
+
+SCHEMA_HERO_WITH_LENGTHS = {
+    "type": "object",
+    "properties": {
+        "title": {"type": "string", "minLength": 3, "maxLength": 40, "description": "Destination headline"},
+        "tagline": {"type": "string", "minLength": 5, "maxLength": 80, "description": "Inspirational tagline"},
+        "country": {"type": "string", "minLength": 2, "maxLength": 30, "description": "Country name"},
+        "image": {"type": "object", "properties": {
+            "__image_prompt__": {"type": "string", "minLength": 10, "maxLength": 50},
+        }},
+        "__speaker_note__": {"type": "string", "minLength": 100, "maxLength": 250, "description": "Speaker note"},
+    },
+    "required": ["title", "tagline", "country", "image", "__speaker_note__"],
+    "additionalProperties": False,
+}
+
+SCHEMA_CUISINE_STRIPPED = {
+    "type": "object",
+    "properties": {
+        "title": {"type": "string", "description": "Heading for cuisine slide"},
+        "description": {"type": "string", "description": "Intro to local food"},
+        "dishes": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Dish name in English"},
+                    "local_name": {"type": "string", "description": "Dish name in local language"},
+                    "description": {"type": "string", "description": "Brief dish description"},
+                    "price_range": {"type": "string", "description": "Price range like $5-12"},
+                    "spice_level": {"type": "number", "minimum": 0, "maximum": 5, "description": "0=mild, 5=extreme"},
+                    "image": {"type": "object", "properties": {
+                        "__image_prompt__": {"type": "string", "description": "Image prompt"},
+                    }},
+                },
+                "required": ["name", "local_name", "description", "price_range", "spice_level", "image"],
+            },
+        },
+        "__speaker_note__": {"type": "string", "description": "Speaker note"},
+    },
+    "required": ["title", "description", "dishes", "__speaker_note__"],
+    "additionalProperties": False,
+}
+
+SCHEMA_CUISINE_FULL = {
+    "type": "object",
+    "properties": {
+        "title": {"type": "string", "minLength": 3, "maxLength": 50, "description": "Heading"},
+        "description": {"type": "string", "minLength": 10, "maxLength": 120, "description": "Intro"},
         "dishes": {
             "type": "array", "minItems": 3, "maxItems": 6,
             "items": {
                 "type": "object",
                 "properties": {
-                    "name": {"type": "string", "minLength": 2, "maxLength": 30,
-                             "description": "Dish name in English"},
-                    "local_name": {"type": "string", "minLength": 2, "maxLength": 30,
-                                   "description": "Dish name in the local language"},
-                    "description": {"type": "string", "minLength": 10, "maxLength": 80,
-                                    "description": "Brief description of the dish"},
-                    "price_range": {"type": "string", "minLength": 1, "maxLength": 15,
-                                    "description": "Typical price range such as $5-12"},
-                    "spice_level": {"type": "number", "minimum": 0, "maximum": 5,
-                                    "description": "Spice level from 0 (mild) to 5 (extreme)"},
+                    "name": {"type": "string", "minLength": 2, "maxLength": 30},
+                    "local_name": {"type": "string", "minLength": 2, "maxLength": 30},
+                    "description": {"type": "string", "minLength": 10, "maxLength": 80},
+                    "price_range": {"type": "string", "minLength": 1, "maxLength": 15},
+                    "spice_level": {"type": "number", "minimum": 0, "maximum": 5},
                     "image": {"type": "object", "properties": {
-                        "__image_prompt__": {"type": "string", "minLength": 10, "maxLength": 50,
-                                            "description": "Prompt used to generate the image"}
+                        "__image_prompt__": {"type": "string", "minLength": 10, "maxLength": 50},
                     }},
                 },
+                "required": ["name", "local_name", "description", "price_range", "spice_level", "image"],
             },
         },
-        "__speaker_note__": {"type": "string", "minLength": 100, "maxLength": 250,
-                             "description": "Speaker note for the slide"},
+        "__speaker_note__": {"type": "string", "minLength": 100, "maxLength": 250},
     },
     "required": ["title", "description", "dishes", "__speaker_note__"],
+    "additionalProperties": False,
 }
 
-SCHEMA_ACCOMMODATION = {
-    "type": "object",
-    "properties": {
-        "title": {"type": "string", "minLength": 3, "maxLength": 40},
-        "hotel_name": {"type": "string", "minLength": 3, "maxLength": 40},
-        "star_rating": {"type": "number", "minimum": 1, "maximum": 5},
-        "location": {"type": "string", "minLength": 3, "maxLength": 40},
-        "price_per_night": {"type": "string", "minLength": 1, "maxLength": 15},
-        "description": {"type": "string", "minLength": 10, "maxLength": 150},
-        "amenities": {"type": "array", "minItems": 3, "maxItems": 6,
-                      "items": {"type": "string", "minLength": 2, "maxLength": 25}},
-        "image": {"type": "object", "properties": {
-            "__image_prompt__": {"type": "string", "minLength": 10, "maxLength": 50}
-        }},
-        "__speaker_note__": {"type": "string", "minLength": 100, "maxLength": 250},
-    },
-    "required": ["title", "hotel_name", "star_rating", "location", "price_per_night",
-                  "description", "amenities", "image", "__speaker_note__"],
-}
+OUTLINE_HERO = "## Discover Bali\nBali is a tropical paradise in Indonesia known for lush rice terraces, ancient temples, and world-class beaches. From Ubud to Uluwatu, it blends adventure, relaxation, and spiritual discovery."
 
-SCHEMA_FLIGHT_INFO = {
-    "type": "object",
-    "properties": {
-        "title": {"type": "string", "minLength": 3, "maxLength": 40},
-        "flights": {
-            "type": "array", "minItems": 1, "maxItems": 3,
-            "items": {
-                "type": "object",
-                "properties": {
-                    "departure": {"type": "string", "minLength": 3, "maxLength": 30},
-                    "arrival": {"type": "string", "minLength": 3, "maxLength": 30},
-                    "airline": {"type": "string", "minLength": 2, "maxLength": 25},
-                    "duration": {"type": "string", "minLength": 2, "maxLength": 15},
-                    "departure_time": {"type": "string", "minLength": 3, "maxLength": 10},
-                    "icon": {"type": "object", "properties": {
-                        "__icon_query__": {"type": "string", "minLength": 5, "maxLength": 20}
-                    }},
-                },
-            },
+OUTLINE_CUISINE = "## Taste of Bali\nBalinese cuisine features bold spices. Must-try: Nasi Goreng ($2-4), Babi Guling ($5-10), Sate Lilit ($3-5), Lawar ($2-4), Bebek Betutu ($8-15). Street warungs offer the most authentic experience."
+
+ITINERARY_SCHEMAS_STRIPPED = [
+    ("DestinationHero", SCHEMA_HERO_STRIPPED, OUTLINE_HERO),
+    ("CuisineDiscovery", SCHEMA_CUISINE_STRIPPED, OUTLINE_CUISINE),
+    ("Accommodation", {
+        "type": "object",
+        "properties": {
+            "title": {"type": "string"}, "hotel_name": {"type": "string"},
+            "star_rating": {"type": "number", "minimum": 1, "maximum": 5},
+            "location": {"type": "string"}, "price_per_night": {"type": "string"},
+            "description": {"type": "string"},
+            "amenities": {"type": "array", "items": {"type": "string"}},
+            "image": {"type": "object", "properties": {"__image_prompt__": {"type": "string"}}},
+            "__speaker_note__": {"type": "string"},
         },
-        "__speaker_note__": {"type": "string", "minLength": 100, "maxLength": 250},
-    },
-    "required": ["title", "flights", "__speaker_note__"],
-}
-
-SCHEMA_PRICING = {
-    "type": "object",
-    "properties": {
-        "title": {"type": "string", "minLength": 3, "maxLength": 50},
-        "description": {"type": "string", "minLength": 5, "maxLength": 100},
-        "tiers": {
-            "type": "array", "minItems": 2, "maxItems": 3,
-            "items": {
-                "type": "object",
-                "properties": {
-                    "name": {"type": "string", "minLength": 2, "maxLength": 20},
-                    "price": {"type": "string", "minLength": 1, "maxLength": 15},
-                    "currency": {"type": "string", "minLength": 1, "maxLength": 5},
-                    "duration": {"type": "string", "minLength": 2, "maxLength": 20},
-                    "inclusions": {"type": "array", "minItems": 2, "maxItems": 5,
-                                   "items": {"type": "string"}},
-                    "badge": {"type": "string", "maxLength": 15},
-                },
-            },
+        "required": ["title", "hotel_name", "star_rating", "location", "price_per_night", "description", "amenities", "image", "__speaker_note__"],
+        "additionalProperties": False,
+    }, "## Stay at AYANA Resort\nAYANA Resort Jimbaran, 5-star beachfront, $350/night. Infinity pool, Rock Bar, spa, private beach. Rated 4.8/5."),
+    ("FlightInfo", {
+        "type": "object",
+        "properties": {
+            "title": {"type": "string"},
+            "flights": {"type": "array", "items": {"type": "object", "properties": {
+                "departure": {"type": "string"}, "arrival": {"type": "string"},
+                "airline": {"type": "string"}, "duration": {"type": "string"},
+                "departure_time": {"type": "string"},
+            }, "required": ["departure", "arrival", "airline", "duration", "departure_time"]}},
+            "__speaker_note__": {"type": "string"},
         },
-        "__speaker_note__": {"type": "string", "minLength": 100, "maxLength": 250},
-    },
-    "required": ["title", "description", "tiers", "__speaker_note__"],
-}
-
-SCHEMA_HIGHLIGHTS = {
-    "type": "object",
-    "properties": {
-        "title": {"type": "string", "minLength": 3, "maxLength": 50},
-        "description": {"type": "string", "minLength": 5, "maxLength": 120},
-        "highlights": {
-            "type": "array", "minItems": 3, "maxItems": 6,
-            "items": {
-                "type": "object",
-                "properties": {
-                    "title": {"type": "string", "minLength": 2, "maxLength": 30},
-                    "description": {"type": "string", "minLength": 5, "maxLength": 80},
-                    "image": {"type": "object", "properties": {
-                        "__image_prompt__": {"type": "string", "minLength": 10, "maxLength": 50}
-                    }},
-                },
-            },
+        "required": ["title", "flights", "__speaker_note__"],
+        "additionalProperties": False,
+    }, "## Getting There\nDirect flights: Sydney to Bali, Jetstar 6h15m dep 08:45, Qantas 6h30m dep 10:20. Best prices March-May."),
+    ("Pricing", {
+        "type": "object",
+        "properties": {
+            "title": {"type": "string"}, "description": {"type": "string"},
+            "tiers": {"type": "array", "items": {"type": "object", "properties": {
+                "name": {"type": "string"}, "price": {"type": "string"},
+                "currency": {"type": "string"}, "duration": {"type": "string"},
+                "inclusions": {"type": "array", "items": {"type": "string"}},
+            }, "required": ["name", "price", "currency", "duration", "inclusions"]}},
+            "__speaker_note__": {"type": "string"},
         },
-        "__speaker_note__": {"type": "string", "minLength": 100, "maxLength": 250},
-    },
-    "required": ["title", "description", "highlights", "__speaker_note__"],
-}
-
-SCHEMA_BOOKING_CTA = {
-    "type": "object",
-    "properties": {
-        "agency_name": {"type": "string", "minLength": 3, "maxLength": 40},
-        "tagline": {"type": "string", "minLength": 5, "maxLength": 80},
-        "agent_name": {"type": "string", "minLength": 2, "maxLength": 40},
-        "phone": {"type": "string", "minLength": 5, "maxLength": 20},
-        "email": {"type": "string", "minLength": 5, "maxLength": 40},
-        "booking_url": {"type": "string", "minLength": 5, "maxLength": 60},
-        "image": {"type": "object", "properties": {
-            "__image_prompt__": {"type": "string", "minLength": 10, "maxLength": 50}
-        }},
-        "__speaker_note__": {"type": "string", "minLength": 100, "maxLength": 250},
-    },
-    "required": ["agency_name", "tagline", "agent_name", "phone", "email",
-                  "booking_url", "image", "__speaker_note__"],
-}
-
-ITINERARY_SCHEMAS = [
-    ("DestinationHero", SCHEMA_DESTINATION_HERO),
-    ("DestinationHighlights", SCHEMA_HIGHLIGHTS),
-    ("CuisineDiscovery", SCHEMA_CUISINE_DISCOVERY),
-    ("AccommodationCard", SCHEMA_ACCOMMODATION),
-    ("FlightInfo", SCHEMA_FLIGHT_INFO),
-    ("PricingComparison", SCHEMA_PRICING),
-    ("BookingCTA", SCHEMA_BOOKING_CTA),
+        "required": ["title", "description", "tiers", "__speaker_note__"],
+        "additionalProperties": False,
+    }, "## Package Pricing\nEconomy $1,899pp 7N 3-star, Premium $2,899pp 7N 4-star private transfers, Luxury $4,499pp 7N 5-star villa butler."),
+    ("Highlights", {
+        "type": "object",
+        "properties": {
+            "title": {"type": "string"}, "description": {"type": "string"},
+            "highlights": {"type": "array", "items": {"type": "object", "properties": {
+                "title": {"type": "string"}, "description": {"type": "string"},
+                "image": {"type": "object", "properties": {"__image_prompt__": {"type": "string"}}},
+            }, "required": ["title", "description", "image"]}},
+            "__speaker_note__": {"type": "string"},
+        },
+        "required": ["title", "description", "highlights", "__speaker_note__"],
+        "additionalProperties": False,
+    }, "## Bali Highlights\nTegallalang Rice Terraces, Uluwatu Temple sunset, Nusa Penida snorkeling, Ubud Monkey Forest, Balinese cooking class, Seminyak Beach clubs."),
+    ("BookingCTA", {
+        "type": "object",
+        "properties": {
+            "agency_name": {"type": "string"}, "tagline": {"type": "string"},
+            "agent_name": {"type": "string"}, "phone": {"type": "string"},
+            "email": {"type": "string"}, "booking_url": {"type": "string"},
+            "image": {"type": "object", "properties": {"__image_prompt__": {"type": "string"}}},
+            "__speaker_note__": {"type": "string"},
+        },
+        "required": ["agency_name", "tagline", "agent_name", "phone", "email", "booking_url", "image", "__speaker_note__"],
+        "additionalProperties": False,
+    }, "## Book Your Bali Escape\nTripStory Travel. Contact Sarah Mitchell. Phone: +1(555)234-5678. Email: sarah@tripstory.travel. Web: tripstory.travel/bali"),
 ]
 
-SAMPLE_OUTLINES = [
-    "## Discover Bali\nBali is a tropical paradise in Indonesia known for its lush rice terraces, ancient temples, and world-class beaches. From the cultural heart of Ubud to the surf breaks of Uluwatu, this island offers a blend of adventure, relaxation, and spiritual discovery. Perfect for honeymooners seeking luxury and culture.",
-    "## Bali Highlights\nTop experiences include visiting Tegallalang Rice Terraces, exploring Uluwatu Temple at sunset, snorkeling at Nusa Penida, wandering Ubud Monkey Forest, experiencing a traditional Balinese cooking class, and relaxing at Seminyak Beach clubs.",
-    "## Taste of Bali\nBalinese cuisine features bold flavors with fresh spices. Must-try dishes include Nasi Goreng (fried rice, $2-4), Babi Guling (suckling pig, $5-10), Sate Lilit (minced seafood satay, $3-5), Lawar (spiced vegetable salad, $2-4), and Bebek Betutu (slow-cooked duck, $8-15). Street food stalls and warungs offer the most authentic experience.",
-    "## Stay at AYANA Resort\nThe AYANA Resort and Spa in Jimbaran is a 5-star beachfront property with stunning ocean views. Rooms from $350/night. Amenities include infinity pool, Rock Bar, spa, private beach, multiple restaurants, and complimentary shuttle to Seminyak. Consistently rated 4.8/5 by travelers.",
-    "## Getting There\nDirect flights available from Sydney (SYD) to Bali (DPS) with Jetstar (6h 15m, departing 08:45) and Qantas (6h 30m, departing 10:20). Connecting options via Singapore Airlines through Changi. Best prices found March-May.",
-    "## Package Pricing\nThree tiers available: Economy ($1,899 pp, 7 nights, 3-star hotel, shared transfers), Premium ($2,899 pp, 7 nights, 4-star resort, private transfers, 2 tours), and Luxury ($4,499 pp, 7 nights, 5-star villa, private butler, all tours included, spa credits).",
-    "## Book Your Bali Escape\nTripStory Travel Agency. Your dream vacation is one click away. Contact Sarah Mitchell, Senior Travel Advisor. Phone: +1 (555) 234-5678. Email: sarah@tripstory.travel. Website: tripstory.travel/bali-packages.",
-]
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
-
-def build_system_prompt(schema: dict) -> str:
-    schema_text = json.dumps(schema, ensure_ascii=False)
-    return SLIDE_CONTENT_SYSTEM_PROMPT.format(
-        user_instructions=TRAVEL_RULES,
-        tone_instructions="# Tone Instructions:\nMake slide as luxury as possible.",
-        schema_text=schema_text,
-    )
-
-
-def build_user_prompt(outline: str) -> str:
-    return SLIDE_CONTENT_USER_PROMPT.format(
-        current_date_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        content=outline,
-    )
-
-
-def validate_json_response(text: str, schema: dict) -> dict:
-    """Parse response and validate against schema. Returns a report dict."""
-    report = {"valid_json": False, "fields_present": False, "length_compliance": 0, "total_fields": 0, "content": None}
-
+def validate(text: str, schema: dict) -> dict:
+    report = {"valid_json": False, "fields_ok": False, "content": None, "error": None}
+    if not text or text.startswith("ERROR:"):
+        report["error"] = text
+        return report
     try:
         data = json.loads(text)
     except json.JSONDecodeError:
@@ -300,244 +235,261 @@ def validate_json_response(text: str, schema: dict) -> dict:
             import dirtyjson
             data = dict(dirtyjson.loads(text))
         except Exception:
+            report["error"] = f"JSON parse failed. First 200 chars: {text[:200]}"
             return report
-
     report["valid_json"] = True
     report["content"] = data
-
     required = schema.get("required", [])
-    present = sum(1 for f in required if f in data)
-    report["fields_present"] = present == len(required)
-    report["fields_present_count"] = f"{present}/{len(required)}"
-
-    compliant = 0
-    total = 0
-    props = schema.get("properties", {})
-    for field_name, field_schema in props.items():
-        if field_name not in data:
-            continue
-        val = data[field_name]
-        if field_schema.get("type") == "string" and isinstance(val, str):
-            total += 1
-            mn = field_schema.get("minLength", 0)
-            mx = field_schema.get("maxLength", 999999)
-            if mn <= len(val) <= mx:
-                compliant += 1
-        elif field_schema.get("type") == "array" and isinstance(val, list):
-            total += 1
-            mn = field_schema.get("minItems", 0)
-            mx = field_schema.get("maxItems", 999)
-            if mn <= len(val) <= mx:
-                compliant += 1
-
-    report["length_compliance"] = compliant
-    report["total_fields"] = total
+    present = [f for f in required if f in data]
+    report["fields_ok"] = len(present) == len(required)
+    report["fields_detail"] = f"{len(present)}/{len(required)}"
     return report
 
 
-def call_model(client: OpenAI, model: str, system: str, user: str,
-               schema: Optional[dict] = None, extra_body: Optional[dict] = None) -> tuple[str, float, int]:
-    """Call a model and return (response_text, latency_seconds, token_count)."""
-    messages = [
-        {"role": "system", "content": system},
-        {"role": "user", "content": user},
-    ]
-
-    kwargs: dict[str, Any] = {"model": model, "messages": messages}
-    if schema:
-        kwargs["response_format"] = {"type": "json_schema", "json_schema": {"name": "response", "schema": schema, "strict": False}}
-    else:
-        kwargs["response_format"] = {"type": "json_object"}
-
+def call_sdk(client: OpenAI, model: str, system: str, user: str,
+             schema: dict, strict: bool, max_tokens: int = 1000,
+             extra_body: Optional[dict] = None) -> tuple[str, float, int]:
+    messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
+    kwargs: dict[str, Any] = {
+        "model": model, "messages": messages, "max_tokens": max_tokens,
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {"name": "response", "strict": strict, "schema": schema},
+        },
+    }
     if extra_body:
         kwargs["extra_body"] = extra_body
-
     start = time.perf_counter()
     try:
-        response = client.chat.completions.create(**kwargs)
+        resp = client.chat.completions.create(**kwargs)
     except Exception as e:
-        elapsed = time.perf_counter() - start
-        return f"ERROR: {e}", elapsed, 0
+        return f"ERROR: {e}", time.perf_counter() - start, 0
     elapsed = time.perf_counter() - start
-
-    text = response.choices[0].message.content or ""
-    tokens = getattr(response.usage, "completion_tokens", 0) if response.usage else 0
+    text = resp.choices[0].message.content or ""
+    tokens = getattr(resp.usage, "completion_tokens", 0) if resp.usage else 0
     return text, elapsed, tokens
 
 
-async def call_model_async(client: OpenAI, model: str, system: str, user: str,
-                           schema: Optional[dict] = None, extra_body: Optional[dict] = None) -> tuple[str, float, int]:
-    """Async wrapper around the sync call."""
-    return await asyncio.to_thread(call_model, client, model, system, user, schema, extra_body)
+def call_raw(api_key: str, base_url: str, model: str, system: str, user: str,
+             schema: dict, strict: bool, max_tokens: int = 1000,
+             extra_body: Optional[dict] = None) -> tuple[str, float, int]:
+    payload: dict[str, Any] = {
+        "model": model, "max_tokens": max_tokens, "stream": False,
+        "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {"name": "response", "strict": strict, "schema": schema},
+        },
+    }
+    if extra_body:
+        payload.update(extra_body)
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+    start = time.perf_counter()
+    try:
+        r = http_requests.post(f"{base_url}/chat/completions", headers=headers, json=payload, timeout=60)
+        data = r.json()
+    except Exception as e:
+        return f"ERROR: {e}", time.perf_counter() - start, 0
+    elapsed = time.perf_counter() - start
+    if "error" in data:
+        return f"ERROR: {data['error']}", elapsed, 0
+    try:
+        text = data["choices"][0]["message"]["content"] or ""
+        tokens = data.get("usage", {}).get("completion_tokens", 0)
+    except (KeyError, IndexError):
+        return f"ERROR: unexpected response: {json.dumps(data)[:300]}", elapsed, 0
+    return text, elapsed, tokens
 
 
-def print_header(title: str):
-    print(f"\n{'='*70}")
-    print(f"  {title}")
-    print(f"{'='*70}")
+async def call_sdk_async(client, model, system, user, schema, strict, max_tokens=1000, extra_body=None):
+    return await asyncio.to_thread(call_sdk, client, model, system, user, schema, strict, max_tokens, extra_body)
 
 
-def print_result(label: str, text: str, elapsed: float, tokens: int, report: dict):
-    status = "PASS" if report["valid_json"] and report["fields_present"] else "FAIL"
-    compliance = f"{report['length_compliance']}/{report['total_fields']}" if report["total_fields"] else "N/A"
-    print(f"\n  [{status}] {label}")
-    print(f"    Latency:      {elapsed:.2f}s")
-    print(f"    Tokens:       {tokens}")
+def pr(label: str, text: str, elapsed: float, tokens: int, report: dict):
+    status = "PASS" if report["valid_json"] and report["fields_ok"] else "FAIL"
     tps = tokens / elapsed if elapsed > 0 and tokens > 0 else 0
-    print(f"    Tokens/sec:   {tps:.1f}")
-    print(f"    Valid JSON:   {report['valid_json']}")
-    print(f"    Fields:       {report.get('fields_present_count', 'N/A')}")
-    print(f"    Length OK:    {compliance}")
-    if report["content"]:
-        preview = json.dumps(report["content"], ensure_ascii=False)[:200]
-        print(f"    Preview:      {preview}...")
+    print(f"  [{status}] {label}: {elapsed:.2f}s, {tokens} tok, {tps:.1f} tok/s, fields={report.get('fields_detail','?')}")
+    if report.get("error"):
+        print(f"         Error: {report['error'][:200]}")
+    elif report["content"]:
+        print(f"         Preview: {json.dumps(report['content'], ensure_ascii=False)[:200]}...")
 
 
-def run_test_schema_compliance(mercury: OpenAI, baseline: OpenAI):
-    """Test 1+2: Schema compliance for simple and complex schemas."""
-
-    tests = [
-        ("Test 1: DestinationHero (simple)", SCHEMA_DESTINATION_HERO, SAMPLE_OUTLINES[0]),
-        ("Test 2: CuisineDiscovery (complex)", SCHEMA_CUISINE_DISCOVERY, SAMPLE_OUTLINES[2]),
-    ]
-
-    for test_name, schema, outline in tests:
-        print_header(test_name)
-        system = build_system_prompt(schema)
-        user = build_user_prompt(outline)
-
-        print("  Running Mercury 2...")
-        m_text, m_time, m_tokens = call_model(mercury, MERCURY_MODEL, system, user, schema)
-        m_report = validate_json_response(m_text, schema)
-        print_result("Mercury 2", m_text, m_time, m_tokens, m_report)
-
-        print("\n  Running GPT-4.1 (baseline)...")
-        b_text, b_time, b_tokens = call_model(baseline, BASELINE_MODEL, system, user, schema)
-        b_report = validate_json_response(b_text, schema)
-        print_result("GPT-4.1", b_text, b_time, b_tokens, b_report)
-
-        speedup = b_time / m_time if m_time > 0 else 0
-        print(f"\n  Speedup: {speedup:.1f}x faster" if speedup > 1 else f"\n  Speedup: {1/speedup:.1f}x slower" if speedup > 0 else "")
+def header(title: str):
+    print(f"\n{'='*72}\n  {title}\n{'='*72}")
 
 
-def run_test_speed_sequential(mercury: OpenAI, baseline: OpenAI):
-    """Test 3: Sequential 7-slide benchmark."""
-    print_header("Test 3: Sequential 7-Slide Speed Benchmark")
+# ---------------------------------------------------------------------------
+# Tiers
+# ---------------------------------------------------------------------------
 
-    for label, client, model in [("Mercury 2", mercury, MERCURY_MODEL), ("GPT-4.1", baseline, BASELINE_MODEL)]:
-        print(f"\n  --- {label} (7 slides sequential) ---")
-        total_time = 0
-        total_tokens = 0
-        passes = 0
+def tier1(mercury_key: str):
+    header("TIER 1: Inception doc-exact reproduction (strict:true)")
+    schema = SCHEMA_INCEPTION_DOC_EXAMPLE
+    content = "Analyze: 'I absolutely love this feature! It works perfectly and saves me so much time.'"
 
-        for i, (name, schema) in enumerate(ITINERARY_SCHEMAS):
-            system = build_system_prompt(schema)
-            user = build_user_prompt(SAMPLE_OUTLINES[i])
-            text, elapsed, tokens = call_model(client, model, system, user, schema)
-            report = validate_json_response(text, schema)
-            status = "OK" if report["valid_json"] and report["fields_present"] else "FAIL"
-            print(f"    Slide {i+1} ({name}): {elapsed:.2f}s, {tokens} tok [{status}]")
-            total_time += elapsed
-            total_tokens += tokens
-            if report["valid_json"]:
-                passes += 1
+    print("\n  [raw requests.post]")
+    text, elapsed, tokens = call_raw(mercury_key, MERCURY_BASE_URL, MERCURY_MODEL,
+                                     "Analyze the sentiment of the given text.", content,
+                                     schema, strict=True, max_tokens=200)
+    report = validate(text, schema)
+    pr("Mercury raw strict:true", text, elapsed, tokens, report)
 
-        print(f"    TOTAL: {total_time:.2f}s, {total_tokens} tokens, {passes}/7 valid")
+    mercury = OpenAI(base_url=MERCURY_BASE_URL, api_key=mercury_key)
+    print("\n  [OpenAI SDK]")
+    text2, elapsed2, tokens2 = call_sdk(mercury, MERCURY_MODEL,
+                                        "Analyze the sentiment of the given text.", content,
+                                        schema, strict=True, max_tokens=200)
+    report2 = validate(text2, schema)
+    pr("Mercury SDK strict:true", text2, elapsed2, tokens2, report2)
+
+    return report["valid_json"] or report2["valid_json"]
 
 
-def run_test_speed_parallel(mercury: OpenAI, baseline: OpenAI):
-    """Test 4: Parallel 7-slide benchmark."""
-    print_header("Test 4: Parallel 7-Slide Speed Benchmark")
+def tier2(mercury: OpenAI, baseline: OpenAI):
+    header("TIER 2: DestinationHero STRIPPED (no minLength/maxLength), strict:true vs strict:false")
+    schema = SCHEMA_HERO_STRIPPED
+    system = SYSTEM_PROMPT
+    user = USER_PROMPT_TEMPLATE.format(content=OUTLINE_HERO)
 
-    async def run_parallel(label: str, client: OpenAI, model: str):
-        print(f"\n  --- {label} (7 slides parallel) ---")
+    results = {}
+    for strict_val in [True, False]:
+        label = f"strict:{strict_val}"
+        print(f"\n  --- Mercury {label} ---")
+        text, elapsed, tokens = call_sdk(mercury, MERCURY_MODEL, system, user, schema, strict=strict_val)
+        report = validate(text, schema)
+        pr(f"Mercury {label}", text, elapsed, tokens, report)
+        results[f"mercury_{label}"] = report
+
+    print(f"\n  --- GPT-4.1 baseline (strict:false) ---")
+    text, elapsed, tokens = call_sdk(baseline, BASELINE_MODEL, system, user, schema, strict=False)
+    report = validate(text, schema)
+    pr("GPT-4.1", text, elapsed, tokens, report)
+
+    return results.get("mercury_strict:True", {}).get("valid_json", False)
+
+
+def tier3(mercury: OpenAI, baseline: OpenAI):
+    header("TIER 3: DestinationHero WITH minLength/maxLength, strict:true vs strict:false")
+    schema = SCHEMA_HERO_WITH_LENGTHS
+    system = SYSTEM_PROMPT
+    user = USER_PROMPT_TEMPLATE.format(content=OUTLINE_HERO)
+
+    results = {}
+    for strict_val in [True, False]:
+        label = f"strict:{strict_val}"
+        print(f"\n  --- Mercury {label} ---")
+        text, elapsed, tokens = call_sdk(mercury, MERCURY_MODEL, system, user, schema, strict=strict_val)
+        report = validate(text, schema)
+        pr(f"Mercury {label}", text, elapsed, tokens, report)
+        results[f"mercury_{label}"] = report
+
+    print(f"\n  --- GPT-4.1 baseline ---")
+    text, elapsed, tokens = call_sdk(baseline, BASELINE_MODEL, system, user, schema, strict=False)
+    report = validate(text, schema)
+    pr("GPT-4.1", text, elapsed, tokens, report)
+
+    return results
+
+
+def tier4(mercury: OpenAI, baseline: OpenAI):
+    header("TIER 4: CuisineDiscovery STRIPPED (nested arrays, no length constraints), strict:true")
+    schema = SCHEMA_CUISINE_STRIPPED
+    system = SYSTEM_PROMPT
+    user = USER_PROMPT_TEMPLATE.format(content=OUTLINE_CUISINE)
+
+    print("\n  --- Mercury strict:true ---")
+    text, elapsed, tokens = call_sdk(mercury, MERCURY_MODEL, system, user, schema, strict=True)
+    report = validate(text, schema)
+    pr("Mercury strict:true", text, elapsed, tokens, report)
+
+    print(f"\n  --- GPT-4.1 baseline ---")
+    text, elapsed, tokens = call_sdk(baseline, BASELINE_MODEL, system, user, schema, strict=False)
+    report_b = validate(text, schema)
+    pr("GPT-4.1", text, elapsed, tokens, report_b)
+
+    return report["valid_json"]
+
+
+def tier5(mercury: OpenAI, baseline: OpenAI):
+    header("TIER 5: CuisineDiscovery FULL (all constraints), strict:true vs strict:false")
+    schema = SCHEMA_CUISINE_FULL
+    system = SYSTEM_PROMPT
+    user = USER_PROMPT_TEMPLATE.format(content=OUTLINE_CUISINE)
+
+    results = {}
+    for strict_val in [True, False]:
+        label = f"strict:{strict_val}"
+        print(f"\n  --- Mercury {label} ---")
+        text, elapsed, tokens = call_sdk(mercury, MERCURY_MODEL, system, user, schema, strict=strict_val)
+        report = validate(text, schema)
+        pr(f"Mercury {label}", text, elapsed, tokens, report)
+        results[label] = report
+
+    print(f"\n  --- GPT-4.1 baseline ---")
+    text, elapsed, tokens = call_sdk(baseline, BASELINE_MODEL, system, user, schema, strict=False)
+    report_b = validate(text, schema)
+    pr("GPT-4.1", text, elapsed, tokens, report_b)
+
+    return results
+
+
+def tier6(mercury: OpenAI, baseline: OpenAI, use_strict: bool):
+    header(f"TIER 6: 7-slide PARALLEL batch (strict:{use_strict})")
+
+    async def run_batch(label, client, model, strict_val):
+        print(f"\n  --- {label} (7 slides parallel, strict:{strict_val}) ---")
         tasks = []
-        for i, (name, schema) in enumerate(ITINERARY_SCHEMAS):
-            system = build_system_prompt(schema)
-            user = build_user_prompt(SAMPLE_OUTLINES[i])
-            tasks.append(call_model_async(client, model, system, user, schema))
+        for name, schema, outline in ITINERARY_SCHEMAS_STRIPPED:
+            system = SYSTEM_PROMPT
+            user = USER_PROMPT_TEMPLATE.format(content=outline)
+            tasks.append(call_sdk_async(client, model, system, user, schema, strict=strict_val))
 
         start = time.perf_counter()
         results = await asyncio.gather(*tasks)
-        wall_clock = time.perf_counter() - start
+        wall = time.perf_counter() - start
 
         passes = 0
         total_tokens = 0
         for i, (text, elapsed, tokens) in enumerate(results):
-            report = validate_json_response(text, ITINERARY_SCHEMAS[i][1])
-            status = "OK" if report["valid_json"] and report["fields_present"] else "FAIL"
-            print(f"    Slide {i+1} ({ITINERARY_SCHEMAS[i][0]}): {elapsed:.2f}s, {tokens} tok [{status}]")
+            name = ITINERARY_SCHEMAS_STRIPPED[i][0]
+            schema = ITINERARY_SCHEMAS_STRIPPED[i][1]
+            report = validate(text, schema)
+            status = "OK" if report["valid_json"] and report["fields_ok"] else "FAIL"
+            print(f"    {name}: {elapsed:.2f}s, {tokens} tok [{status}]")
             total_tokens += tokens
-            if report["valid_json"]:
+            if report["valid_json"] and report["fields_ok"]:
                 passes += 1
 
-        print(f"    WALL CLOCK: {wall_clock:.2f}s, {total_tokens} total tokens, {passes}/7 valid")
-        return wall_clock
+        print(f"    WALL: {wall:.2f}s, {total_tokens} tok, {passes}/7 valid")
+        return wall, passes
 
-    m_wall = asyncio.run(run_parallel("Mercury 2", mercury, MERCURY_MODEL))
-    b_wall = asyncio.run(run_parallel("GPT-4.1", baseline, BASELINE_MODEL))
+    m_wall, m_passes = asyncio.run(run_batch("Mercury 2", mercury, MERCURY_MODEL, use_strict))
+    b_wall, b_passes = asyncio.run(run_batch("GPT-4.1", baseline, BASELINE_MODEL, False))
 
-    speedup = b_wall / m_wall if m_wall > 0 else 0
-    print(f"\n  Parallel speedup: Mercury is {speedup:.1f}x {'faster' if speedup > 1 else 'slower'}")
-
-
-def run_test_instant_mode(mercury: OpenAI):
-    """Test 5: Mercury instant mode (reasoning_effort=instant)."""
-    print_header("Test 5: Mercury Instant Mode")
-
-    tests = [
-        ("DestinationHero", SCHEMA_DESTINATION_HERO, SAMPLE_OUTLINES[0]),
-        ("CuisineDiscovery", SCHEMA_CUISINE_DISCOVERY, SAMPLE_OUTLINES[2]),
-    ]
-
-    for name, schema, outline in tests:
-        system = build_system_prompt(schema)
-        user = build_user_prompt(outline)
-
-        print(f"\n  {name} -- Default mode:")
-        text_d, time_d, tok_d = call_model(mercury, MERCURY_MODEL, system, user, schema)
-        rep_d = validate_json_response(text_d, schema)
-        print_result("Default", text_d, time_d, tok_d, rep_d)
-
-        print(f"\n  {name} -- Instant mode:")
-        text_i, time_i, tok_i = call_model(mercury, MERCURY_MODEL, system, user, schema,
-                                            extra_body={"reasoning_effort": "instant"})
-        rep_i = validate_json_response(text_i, schema)
-        print_result("Instant", text_i, time_i, tok_i, rep_i)
-
-        if time_d > 0:
-            print(f"\n  Instant vs Default: {time_d/time_i:.1f}x speed gain" if time_i > 0 else "")
+    if m_wall > 0 and b_wall > 0:
+        ratio = b_wall / m_wall
+        faster = "faster" if ratio > 1 else "slower"
+        print(f"\n  Mercury vs GPT-4.1: {ratio:.1f}x {faster} ({m_passes}/7 vs {b_passes}/7 valid)")
 
 
-def run_test_cascade(mercury: OpenAI, baseline: OpenAI):
-    """Test 6: Full cascade -- baseline outline, Mercury fill vs baseline fill."""
-    print_header("Test 6: Cascade Quality (same outlines, different fillers)")
+def tier_reasoning(mercury: OpenAI):
+    header("BONUS: reasoning_effort variants on DestinationHero (strict:true)")
+    schema = SCHEMA_HERO_STRIPPED
+    system = SYSTEM_PROMPT
+    user = USER_PROMPT_TEMPLATE.format(content=OUTLINE_HERO)
 
-    test_idx = 2
-    name, schema = ITINERARY_SCHEMAS[test_idx]
-    outline = SAMPLE_OUTLINES[test_idx]
-    system = build_system_prompt(schema)
-    user = build_user_prompt(outline)
+    for effort in ["instant", "low", "medium", "high"]:
+        print(f"\n  --- reasoning_effort={effort} ---")
+        text, elapsed, tokens = call_sdk(mercury, MERCURY_MODEL, system, user, schema,
+                                         strict=True, extra_body={"reasoning_effort": effort})
+        report = validate(text, schema)
+        pr(f"Mercury {effort}", text, elapsed, tokens, report)
 
-    print(f"\n  Schema: {name}")
-    print(f"  Outline: {outline[:80]}...")
 
-    print("\n  Mercury 2 fill:")
-    m_text, m_time, m_tok = call_model(mercury, MERCURY_MODEL, system, user, schema)
-    m_rep = validate_json_response(m_text, schema)
-    print_result("Mercury 2", m_text, m_time, m_tok, m_rep)
-
-    print("\n  GPT-4.1 fill (reference):")
-    b_text, b_time, b_tok = call_model(baseline, BASELINE_MODEL, system, user, schema)
-    b_rep = validate_json_response(b_text, schema)
-    print_result("GPT-4.1", b_text, b_time, b_tok, b_rep)
-
-    print("\n  --- Full Content Comparison ---")
-    if m_rep["content"]:
-        print(f"\n  Mercury output:\n{json.dumps(m_rep['content'], indent=2, ensure_ascii=False)[:800]}")
-    if b_rep["content"]:
-        print(f"\n  Baseline output:\n{json.dumps(b_rep['content'], indent=2, ensure_ascii=False)[:800]}")
-
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
 def main():
     inception_key = os.getenv("INCEPTION_API_KEY")
@@ -553,22 +505,51 @@ def main():
     mercury = OpenAI(base_url=MERCURY_BASE_URL, api_key=inception_key)
     baseline = OpenAI(api_key=openai_key)
 
-    print("\n" + "=" * 70)
-    print("  MERCURY 2 vs GPT-4.1 — Call 3 Evaluation")
-    print(f"  Mercury model: {MERCURY_MODEL}")
-    print(f"  Baseline model: {BASELINE_MODEL}")
+    print("\n" + "=" * 72)
+    print("  MERCURY 2 RETEST -- 6-Tier Structured Output Evaluation")
+    print(f"  Mercury: {MERCURY_MODEL} | Baseline: {BASELINE_MODEL}")
     print(f"  Timestamp: {datetime.now().isoformat()}")
-    print("=" * 70)
+    print("=" * 72)
 
-    run_test_schema_compliance(mercury, baseline)
-    run_test_speed_sequential(mercury, baseline)
-    run_test_speed_parallel(mercury, baseline)
-    run_test_instant_mode(mercury)
-    run_test_cascade(mercury, baseline)
+    t1_ok = tier1(inception_key)
+    print(f"\n  >> Tier 1 result: {'PASS' if t1_ok else 'FAIL'}")
+    if not t1_ok:
+        print("  >> STOPPING: Mercury API not working at all. Check key/network.")
+        return
 
-    print("\n" + "=" * 70)
+    t2_ok = tier2(mercury, baseline)
+    print(f"\n  >> Tier 2 result (stripped, strict:true): {'PASS' if t2_ok else 'FAIL'}")
+
+    t3_results = tier3(mercury, baseline)
+    t3_strict = t3_results.get("mercury_strict:True", {}).get("valid_json", False)
+    t3_loose = t3_results.get("mercury_strict:False", {}).get("valid_json", False)
+    print(f"\n  >> Tier 3 result: strict:true={'PASS' if t3_strict else 'FAIL'}, strict:false={'PASS' if t3_loose else 'FAIL'}")
+
+    t4_ok = tier4(mercury, baseline)
+    print(f"\n  >> Tier 4 result (nested stripped, strict:true): {'PASS' if t4_ok else 'FAIL'}")
+
+    t5_results = tier5(mercury, baseline)
+    t5_strict = t5_results.get("strict:True", {}).get("valid_json", False)
+    t5_loose = t5_results.get("strict:False", {}).get("valid_json", False)
+    print(f"\n  >> Tier 5 result: strict:true={'PASS' if t5_strict else 'FAIL'}, strict:false={'PASS' if t5_loose else 'FAIL'}")
+
+    best_strict = t2_ok or t4_ok
+    tier6(mercury, baseline, use_strict=best_strict)
+
+    tier_reasoning(mercury)
+
+    header("SUMMARY")
+    print(f"  Tier 1 (doc example):              {'PASS' if t1_ok else 'FAIL'}")
+    print(f"  Tier 2 (flat stripped strict:true): {'PASS' if t2_ok else 'FAIL'}")
+    print(f"  Tier 3 (flat + lengths strict:true):{'PASS' if t3_strict else 'FAIL'}")
+    print(f"  Tier 3 (flat + lengths strict:false):{'PASS' if t3_loose else 'FAIL'}")
+    print(f"  Tier 4 (nested stripped strict:true):{'PASS' if t4_ok else 'FAIL'}")
+    print(f"  Tier 5 (nested full strict:true):   {'PASS' if t5_strict else 'FAIL'}")
+    print(f"  Tier 5 (nested full strict:false):  {'PASS' if t5_loose else 'FAIL'}")
+
+    print("\n" + "=" * 72)
     print("  EVALUATION COMPLETE")
-    print("=" * 70)
+    print("=" * 72)
 
 
 if __name__ == "__main__":

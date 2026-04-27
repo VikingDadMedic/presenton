@@ -141,3 +141,43 @@ def set_open_webui_image_url_env(value: str):
 
 def set_open_webui_image_api_key_env(value: str):
     os.environ["OPEN_WEBUI_IMAGE_API_KEY"] = value
+
+
+def set_content_model_provider_env(value: str):
+    os.environ["CONTENT_MODEL_PROVIDER"] = value
+
+
+def set_content_model_name_env(value: str):
+    os.environ["CONTENT_MODEL_NAME"] = value
+
+
+def set_content_model_api_key_env(value: str):
+    os.environ["CONTENT_MODEL_API_KEY"] = value
+
+
+def set_content_model_base_url_env(value: str):
+    os.environ["CONTENT_MODEL_BASE_URL"] = value
+
+
+def set_content_model_reasoning_effort_env(value: str):
+    os.environ["CONTENT_MODEL_REASONING_EFFORT"] = value
+
+
+def set_structure_model_provider_env(value: str):
+    os.environ["STRUCTURE_MODEL_PROVIDER"] = value
+
+
+def set_structure_model_name_env(value: str):
+    os.environ["STRUCTURE_MODEL_NAME"] = value
+
+
+def set_structure_model_api_key_env(value: str):
+    os.environ["STRUCTURE_MODEL_API_KEY"] = value
+
+
+def set_structure_model_base_url_env(value: str):
+    os.environ["STRUCTURE_MODEL_BASE_URL"] = value
+
+
+def set_structure_model_reasoning_effort_env(value: str):
+    os.environ["STRUCTURE_MODEL_REASONING_EFFORT"] = value

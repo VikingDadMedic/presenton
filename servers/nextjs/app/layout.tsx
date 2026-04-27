@@ -65,6 +65,15 @@ export const metadata: Metadata = {
       "TripStory is a visual travel experience builder that helps travel advisors and agents craft immersive destination presentations for their clients. Upload your content, choose a template, and let AI build a stunning visual story that sells trips.",
     images: ["https://presenton.ai/presenton-feature-graphics.png"],
   },
+  icons: {
+    icon: [
+      { url: "/favicon/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+      { url: "/favicon/favicon.ico", sizes: "48x48" },
+    ],
+    apple: "/favicon/apple-touch-icon.png",
+  },
+  manifest: "/favicon/site.webmanifest",
 };
 
 export default function RootLayout({

@@ -168,7 +168,7 @@ export default function AuthGate() {
         />
         <div className="relative z-10 w-full max-w-md">
           <div className="rounded-2xl border border-white/40 bg-card p-8 text-center shadow-xl backdrop-blur-sm">
-            <img src="/Logo.png" alt="Presenton" className="mx-auto mb-5 h-12 opacity-95" />
+            <img src="/Logo.png" alt="TripStory" className="mx-auto mb-5 h-12 opacity-95" />
             <div className="mx-auto mb-4 h-1 w-16 rounded-full bg-gradient-to-r from-primary to-primary" />
             <h1 className="font-syne text-lg font-semibold text-black">Presenton</h1>
             <p className="mt-3 font-syne text-sm text-[#000000CC]">Preparing your workspace…</p>

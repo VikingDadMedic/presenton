@@ -2,7 +2,7 @@
 
 **Title:** Create enricher status API endpoint
 
-**Status:** pending
+**Status:** done
 
 **Dependencies:** 3, 5
 

@@ -2,7 +2,7 @@
 
 **Title:** Extend TravelUploadPage with origin and currency fields
 
-**Status:** pending
+**Status:** done
 
 **Dependencies:** 6
 

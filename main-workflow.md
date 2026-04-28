@@ -281,6 +281,8 @@ English
 }
 ```
 
+> **Per-Call Model Routing**: Since April 2026, the pipeline supports different models per call via `utils/llm_config.py`. Default production config: Call 1 uses GPT-5.5, Calls 2-3 use Mercury 2 (Inception Labs diffusion LLM) with `strict=True` and length constraints stripped via `utils/schema_utils.py` (validated client-side). Mercury 2 is 2.9-14.6x faster than GPT-4.1 for structured output.
+
 ---
 
 ## 3. Enrichment Pipeline
@@ -306,6 +308,11 @@ flowchart LR
         V[Videos]
         M[Maps]
         DL[Deals]
+        VH[Visa/Health]
+        TR[Transport]
+        CO[Connectivity]
+        LA[Language]
+        CU[Cuisine]
     end
 
     subgraph pass2 [Pass 2: Derived -- Sequential]
@@ -461,7 +468,7 @@ TIME ─────────────────────────
    │   [User edits outlines, picks template]  │                                │
    │                                          │                                │
    │                                ██ ENRICHMENT (parallel) ██                │
-   │                                ├─ 12 primary enrichers ─┐                 │
+   │                                ├─ 17 primary enrichers ─┐                 │
    │                                │  (asyncio.gather)      │                 │
    │                                ├─ derived enrichers ────┘                 │
    │                                ├─ itinerary scheduling                    │
@@ -494,7 +501,7 @@ TIME ─────────────────────────
 
 | Phase | Duration | Bottleneck |
 |-------|----------|------------|
-| Enrichment (12 parallel API calls) | 2-5s | Slowest external API |
+| Enrichment (17 parallel API calls) | 2-5s | Slowest external API |
 | Call 1: Outlines (streaming) | 10-30s | LLM generation speed |
 | Call 2: Structure | 2-5s | Single LLM call |
 | Call 3 x 8 slides (sequential) | 40-80s | **Biggest bottleneck** -- sequential LLM calls |

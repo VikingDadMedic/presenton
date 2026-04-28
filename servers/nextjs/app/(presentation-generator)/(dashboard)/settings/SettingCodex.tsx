@@ -272,7 +272,7 @@ export default function CodexConfig({
                         <button
                             onClick={handleManualExchange}
                             disabled={isExchanging || !manualCode.trim()}
-                            className="px-3 py-2 bg-[#EDEEEF] hover:bg-[#E4E5E6] disabled:opacity-40 rounded-lg text-xs font-medium text-[#101323] transition-colors"
+                            className="px-3 py-2 bg-[#EDEEEF] hover:bg-[#E4E5E6] disabled:opacity-40 rounded-lg text-xs font-medium text-foreground transition-colors"
                         >
                             {isExchanging ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -399,7 +399,7 @@ export default function CodexConfig({
     return (
         <button
             onClick={handleSignIn}
-            className="mt-8 py-2.5 px-3.5 bg-[#EDEEEF] hover:bg-[#E4E5E6] rounded-md text-xs font-semibold text-[#101323] transition-colors"
+            className="mt-8 py-2.5 px-3.5 bg-[#EDEEEF] hover:bg-[#E4E5E6] rounded-md text-xs font-semibold text-foreground transition-colors"
         >
             Sign in with ChatGPT
         </button>

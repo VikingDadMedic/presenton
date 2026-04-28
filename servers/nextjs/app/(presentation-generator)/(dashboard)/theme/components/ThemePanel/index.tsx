@@ -1045,7 +1045,7 @@ const ThemePanel: React.FC = () => {
                     <div className='flex justify-end px-5 gap-2'>
                       {currentStep > 1 && <button
 
-                        className='px-3.5 py-2.5 bg-[#F7F6F9] rounded-md text-xs font-semibold text-[#101323]'
+                        className='px-3.5 py-2.5 bg-[#F7F6F9] rounded-md text-xs font-semibold text-foreground'
                         onClick={() => setCurrentStep(currentStep - 1)}
                       >Back</button>}
 

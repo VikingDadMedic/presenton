@@ -2,7 +2,7 @@
 
 **Title:** Create stub destination_intel enricher
 
-**Status:** pending
+**Status:** done
 
 **Dependencies:** 2, 3
 

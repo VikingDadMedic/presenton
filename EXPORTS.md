@@ -301,7 +301,7 @@ Check which travel data enrichers have API keys configured.
 
 ```json
 {
-  "available": ["activities", "deals", "destination_intel", "dining", "events", "flights", "hotels", "images", "maps", "pricing", "reviews", "videos", "weather"],
+  "available": ["activities", "connectivity", "cuisine", "deals", "destination_intel", "dining", "events", "flights", "hotels", "images", "language", "maps", "pricing", "reviews", "transport", "videos", "visa_health", "weather"],
   "unavailable": []
 }
 ```
@@ -314,14 +314,19 @@ Each available enricher pulls real-world data during travel presentation generat
 | `weather` | Visual Crossing | Forecast for travel dates |
 | `hotels` | SerpAPI | Real hotel names, prices, ratings |
 | `flights` | SerpAPI | Flight routes, prices, airlines |
-| `activities` | SerpAPI | Tours, excursions, experiences |
+| `activities` | Viator | Bookable tours, excursions, experiences with pricing and availability |
 | `dining` | SerpAPI | Restaurant recommendations |
 | `events` | SerpAPI | Local events during travel dates |
 | `reviews` | SerpAPI | Traveler reviews and ratings |
 | `images` | Unsplash/Pexels | Destination photography |
 | `maps` | Google Maps | Location maps and distances |
 | `videos` | SerpAPI | Destination video content |
-| `pricing` | Internal | Budget/comfort/luxury tier pricing |
+| `visa_health` | Tavily | Visa requirements, vaccinations, travel advisories |
+| `transport` | Tavily | Local transit options, airport transfers, ride-hailing |
+| `connectivity` | Tavily | SIM/eSIM, power outlets, public Wi-Fi |
+| `language` | Tavily | Key phrases, etiquette, tipping customs |
+| `cuisine` | SerpAPI | Signature dishes, street food, food culture |
+| `pricing` | Internal | Budget/comfort/luxury tier pricing (derived) |
 | `deals` | Tavily/Firecrawl | Current travel deals and offers |
 
 ---

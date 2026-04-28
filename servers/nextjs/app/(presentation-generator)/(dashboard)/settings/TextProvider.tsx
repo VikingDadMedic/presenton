@@ -360,7 +360,7 @@ const TextProvider = ({
                                                         onInputChange('http://localhost:11434', 'OLLAMA_URL');
                                                     }
                                                 }}
-                                                className="mt-8 py-2.5 bg-[#EDEEEF] px-3.5 w-fit rounded-md text-xs font-semibold text-[#101323] transition-all duration-200 border border-[#EDEEEF] hover:bg-[#E8F0FF]/90 focus:ring-2 focus:ring-blue-500/20"
+                                                className="mt-8 py-2.5 bg-[#EDEEEF] px-3.5 w-fit rounded-md text-xs font-semibold text-foreground transition-all duration-200 border border-[#EDEEEF] hover:bg-[#E8F0FF]/90 focus:ring-2 focus:ring-blue-500/20"
                                             >
                                                 Use Ollama URL
                                             </button>
@@ -448,9 +448,9 @@ const TextProvider = ({
                                         (selectedProvider === 'anthropic' && !currentApiKey) ||
                                         (selectedProvider === 'custom' && !currentCustomUrl)
                                     }
-                                    className={`mt-4 py-2.5 bg-[#EDEEEF] px-3.5 w-fit  rounded-md text-xs font-semibold text-[#101323] transition-all duration-200 border ${modelsLoading
+                                    className={`mt-4 py-2.5 bg-[#EDEEEF] px-3.5 w-fit  rounded-md text-xs font-semibold text-foreground transition-all duration-200 border ${modelsLoading
                                         ? " border-gray-300 cursor-not-allowed text-gray-500"
-                                        : " border-[#EDEEEF] text-[#101323] hover:bg-[#E8F0FF]/90 focus:ring-2 focus:ring-blue-500/20"
+                                        : " border-[#EDEEEF] text-foreground hover:bg-[#E8F0FF]/90 focus:ring-2 focus:ring-blue-500/20"
                                         }`}
                                 >
                                     {modelsLoading ? (

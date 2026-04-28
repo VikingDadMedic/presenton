@@ -380,9 +380,9 @@ const PresentationHeader = ({
   };
 
   const ExportOptions = ({ mobile }: { mobile: boolean }) => (
-    <div className={` rounded-[18px] max-md:mt-4 ${mobile ? "" : "bg-white"}  p-5`}>
-      <p className="text-sm font-medium text-[#19001F]">Export as</p>
-      <div className="my-[18px] h-[1px] bg-[#E8E8E8]" />
+    <div className={` rounded-xl max-md:mt-4 ${mobile ? "" : "bg-card"}  p-5`}>
+      <p className="text-sm font-medium text-foreground">Export as</p>
+      <div className="my-[18px] h-[1px] bg-border" />
       <div className="space-y-3">
 
         <Button
@@ -391,7 +391,7 @@ const PresentationHeader = ({
             setOpen(false);
           }}
           variant="ghost"
-          className={`  rounded-none px-0 w-full text-xs flex justify-start text-black hover:bg-transparent ${mobile ? "bg-white py-6 border-none rounded-lg" : ""}`} >
+          className={`  rounded-none px-0 w-full text-xs flex justify-start text-foreground hover:bg-transparent ${mobile ? "bg-card py-6 border-none rounded-lg" : ""}`} >
 
           PDF
           <MotionIcon name="ArrowUpRight" animation="bounce" trigger="hover" size={14} />
@@ -402,7 +402,7 @@ const PresentationHeader = ({
             setOpen(false);
           }}
           variant="ghost"
-          className={`w-full flex px-0 justify-start text-xs text-black hover:bg-transparent  ${mobile ? "bg-white py-6" : ""}`}
+          className={`w-full flex px-0 justify-start text-xs text-foreground hover:bg-transparent  ${mobile ? "bg-card py-6" : ""}`}
         >
 
           PPTX
@@ -414,7 +414,7 @@ const PresentationHeader = ({
             setOpen(false);
           }}
           variant="ghost"
-          className={`w-full flex px-0 justify-start text-xs text-black hover:bg-transparent  ${mobile ? "bg-white py-6" : ""}`}
+          className={`w-full flex px-0 justify-start text-xs text-foreground hover:bg-transparent  ${mobile ? "bg-card py-6" : ""}`}
         >
           HTML
           <MotionIcon name="ArrowUpRight" animation="bounce" trigger="hover" size={14} />
@@ -425,7 +425,7 @@ const PresentationHeader = ({
             setOpen(false);
           }}
           variant="ghost"
-          className={`w-full flex px-0 justify-start text-xs text-black hover:bg-transparent  ${mobile ? "bg-white py-6" : ""}`}
+          className={`w-full flex px-0 justify-start text-xs text-foreground hover:bg-transparent  ${mobile ? "bg-card py-6" : ""}`}
         >
           Video
           <MotionIcon name="ArrowUpRight" animation="bounce" trigger="hover" size={14} />
@@ -436,13 +436,13 @@ const PresentationHeader = ({
             setOpen(false);
           }}
           variant="ghost"
-          className={`w-full flex px-0 justify-start text-xs text-black hover:bg-transparent  ${mobile ? "bg-white py-6" : ""}`}
+          className={`w-full flex px-0 justify-start text-xs text-foreground hover:bg-transparent  ${mobile ? "bg-card py-6" : ""}`}
         >
           JSON
           <MotionIcon name="ArrowUpRight" animation="bounce" trigger="hover" size={14} />
         </Button>
       </div>
-      <div className="my-[18px] h-[1px] bg-[#E8E8E8]" />
+      <div className="my-[18px] h-[1px] bg-border" />
       <div>
         <Button
           onClick={() => {
@@ -450,7 +450,7 @@ const PresentationHeader = ({
             setOpen(false);
           }}
           variant="ghost"
-          className={`w-full flex px-0 justify-start text-xs text-black hover:bg-transparent  ${mobile ? "bg-white py-6" : ""}`}
+          className={`w-full flex px-0 justify-start text-xs text-foreground hover:bg-transparent  ${mobile ? "bg-card py-6" : ""}`}
         >
           Embed
           <MotionIcon name="Link2" animation="bounce" trigger="hover" size={14} />
@@ -468,7 +468,7 @@ const PresentationHeader = ({
       )}
     >
       {isEditingTitle ? (
-        <div className="flex items-stretch w-[450px]  gap-0.5 rounded-[14px] border border-[#E4E2EB] bg-white pl-3.5 pr-1 py-1 shadow-[0_2px_12px_rgba(17,3,31,0.06)] ring-2 ring-primary/15">
+        <div className="flex items-stretch w-[450px]  gap-0.5 rounded-lg border border-border bg-card pl-3.5 pr-1 py-1 shadow-sm ring-2 ring-primary/15">
           <input
             ref={titleInputRef}
             value={draftTitle}
@@ -486,10 +486,10 @@ const PresentationHeader = ({
               }
             }}
             placeholder="Presentation title"
-            className="min-w-0 flex-1 bg-transparent py-2 pr-2 font-display text-base leading-tight text-[#101323] placeholder:text-[#101323]/35 outline-none border-0 focus:ring-0"
+            className="min-w-0 flex-1 bg-transparent py-2 pr-2 font-display text-base leading-tight text-foreground placeholder:text-foreground/35 outline-none border-0 focus:ring-0"
             aria-label="Presentation title"
           />
-          <div className="flex shrink-0 items-center gap-0.5 border-l border-[#EDECEC] pl-1 ml-0.5">
+          <div className="flex shrink-0 items-center gap-0.5 border-l border-border pl-1 ml-0.5">
             <ToolTip content="Save · Enter">
               <button
                 type="button"
@@ -506,7 +506,7 @@ const PresentationHeader = ({
                 type="button"
                 onMouseDown={onTitleCancelMouseDown}
                 onClick={cancelTitleEdit}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#101323]/55 hover:bg-[#F6F6F9] hover:text-[#101323] transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                 aria-label="Cancel editing title"
               >
                 <X className="h-4 w-4" strokeWidth={2.25} />
@@ -520,20 +520,20 @@ const PresentationHeader = ({
           onClick={beginTitleEdit}
           disabled={isStreaming || !presentationData}
           className={cn(
-            "group/title flex w-full min-w-0 items-center gap-2.5 rounded-[14px] px-3 py-2 text-left -mx-3 transition-colors",
-            "hover:bg-[#F6F6F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+            "group/title flex w-full min-w-0 items-center gap-2.5 rounded-lg px-3 py-2 text-left -mx-3 transition-colors",
+            "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
             "disabled:pointer-events-none disabled:opacity-100 disabled:hover:bg-transparent"
           )}
         >
-          <h2 className="min-w-0 flex-1 font-display text-lg w-[450px] leading-snug text-[#101323]">
+          <h2 className="min-w-0 flex-1 font-display text-lg w-[450px] leading-snug text-foreground">
             <MarkdownRenderer
               content={presentationData?.title || "Presentation"}
-              className="mb-0 min-w-0 overflow-hidden text-ellipsis line-clamp-1 text-sm text-[#101323] prose-p:my-0 prose-headings:my-0"
+              className="mb-0 min-w-0 overflow-hidden text-ellipsis line-clamp-1 text-sm text-foreground prose-p:my-0 prose-headings:my-0"
             />
           </h2>
           {presentationData && !isStreaming && (
             <Pencil
-              className="h-3.5 w-3.5 shrink-0 text-[#101323]/40 transition-all duration-200 group-hover/title:text-primary opacity-80 sm:opacity-0 sm:group-hover/title:opacity-100 group-hover/title:opacity-100"
+              className="h-3.5 w-3.5 shrink-0 text-foreground/40 transition-all duration-200 group-hover/title:text-primary opacity-80 sm:opacity-0 sm:group-hover/title:opacity-100 group-hover/title:opacity-100"
               aria-hidden
             />
           )}
@@ -544,7 +544,7 @@ const PresentationHeader = ({
 
   return (
     <>
-      <div className="py-7 sticky top-0 bg-white z-50 mb-[17px] font-display flex justify-between items-center gap-4">
+      <div className="py-7 sticky top-0 bg-background z-50 mb-[17px] font-display flex justify-between items-center gap-4">
         {presentationData && !isStreaming && !isEditingTitle ? (
           <ToolTip content="Rename presentation">{titleBlock}</ToolTip>
         ) : (
@@ -614,7 +614,7 @@ const PresentationHeader = ({
                 {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Export"} <ArrowRightFromLine className="w-3.5 h-3.5" />
               </button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-[200px] rounded-[18px] space-y-2 p-0  ">
+            <PopoverContent align="end" className="w-[200px] rounded-xl space-y-2 p-0  ">
               <ExportOptions mobile={false} />
             </PopoverContent>
           </Popover>

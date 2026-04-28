@@ -1,6 +1,6 @@
 # FEAT-EXPANSION.md -- Enrichment Pipeline
 
-## Status: Phases A-D Complete (All 13 Enrichers Implemented)
+## Status: Phases A-E Complete (17 Enrichers + 1 Derived Implemented)
 
 ---
 
@@ -118,7 +118,7 @@ Currently `additional_context` comes from uploaded documents. With enrichers, it
 
 ---
 
-## 3. The 13 Enricher Modules
+## 3. The 18 Enricher Modules (17 + 1 Derived)
 
 ### Tier 1 -- Core (always run if keys available)
 
@@ -260,11 +260,11 @@ This enricher is unique: instead of injecting into `additional_context`, it prov
 | Field | Value |
 |-------|-------|
 | File | `enrichers/activities.py` |
-| APIs | SERPER (Tripadvisor Search, Google Local, Yelp) |
-| API Keys | `SERPAPI_API_KEY` |
+| APIs | Viator Partner API (via `viator_destination_resolver` with 7-day cache + freetext fallback) |
+| API Keys | `VIATOR_API_KEY` |
 | Required Context | `destination` |
 | Optional Context | `interests`, `trip_type`, `budget` |
-| Output Schema | `{ activities[]{name, category, description, duration, price_range, rating, review_count, image_url} }` |
+| Output Schema | `{ activities[]{name, product_code, description, duration_minutes, rating, review_count, price_from, currency, image_url, product_url, flags[], cancellation_type, confirmation_type} }` |
 | Feeds Layouts | ItineraryDay, DestinationHighlights |
 
 #### 7. Dining
@@ -362,6 +362,70 @@ This is a **derived enricher** -- it doesn't call external APIs. It takes the ou
 | Optional Context | `dates` |
 | Output Schema | `{ deals[]{title, original_price, sale_price, savings_pct, valid_until, url, provider} }` |
 | Feeds Layouts | DealCountdown |
+
+---
+
+### Tier 5 -- Practical & Cultural
+
+#### 14. Visa & Health
+
+| Field | Value |
+|-------|-------|
+| File | `enrichers/visa_health.py` |
+| APIs | Tavily (web search) |
+| API Keys | `TAVILY_API_KEY` |
+| Required Context | `destination` |
+| Optional Context | -- |
+| Output Schema | `{ visa_info[]{title, content}, health_info[]{title, content}, destination }` |
+| Feeds Layouts | VisaEntry, HealthSafety |
+
+#### 15. Transportation
+
+| Field | Value |
+|-------|-------|
+| File | `enrichers/transport.py` |
+| APIs | Tavily (web search) |
+| API Keys | `TAVILY_API_KEY` |
+| Required Context | `destination` |
+| Optional Context | -- |
+| Output Schema | `{ transport_info[]{title, content}, destination }` |
+| Feeds Layouts | TransportationInfo |
+
+#### 16. Connectivity
+
+| Field | Value |
+|-------|-------|
+| File | `enrichers/connectivity.py` |
+| APIs | Tavily (web search) |
+| API Keys | `TAVILY_API_KEY` |
+| Required Context | `destination` |
+| Optional Context | -- |
+| Output Schema | `{ connectivity_info[]{title, content}, destination }` |
+| Feeds Layouts | ConnectivityCard |
+
+#### 17. Language Survival
+
+| Field | Value |
+|-------|-------|
+| File | `enrichers/language.py` |
+| APIs | Tavily (web search) |
+| API Keys | `TAVILY_API_KEY` |
+| Required Context | `destination` |
+| Optional Context | -- |
+| Output Schema | `{ language_info[]{title, content}, destination }` |
+| Feeds Layouts | LanguageSurvival |
+
+#### 18. Cuisine Discovery
+
+| Field | Value |
+|-------|-------|
+| File | `enrichers/cuisine.py` |
+| APIs | SerpAPI (Google Search) |
+| API Keys | `SERPAPI_API_KEY` |
+| Required Context | `destination` |
+| Optional Context | `budget` |
+| Output Schema | `{ popular_dishes[]{title, snippet}, street_food[]{title, snippet}, destination }` |
+| Feeds Layouts | CuisineDiscovery |
 
 ---
 
@@ -465,6 +529,21 @@ Bug fixes applied during Phase D:
 | D.4 | Pipeline post-processing | After LLM generates slide content, overlay `to_slide_data()` results onto factual fields |
 | D.5 | Auto-itinerary algorithm | Schedule activities optimally across trip days (proximity, category diversity, opening hours) |
 
+### Phase E -- Tier 5 Enrichers + Viator Integration
+
+**Status: COMPLETE**
+
+Added 5 practical/cultural enrichers and swapped SerpAPI for Viator Partner API:
+
+| Task | File | Description |
+|------|------|-------------|
+| E.1 | `enrichers/visa_health.py` | Tavily: visa requirements, vaccinations, travel advisories |
+| E.2 | `enrichers/transport.py` | Tavily: local transit, airport transfers, ride-hailing costs |
+| E.3 | `enrichers/connectivity.py` | Tavily: SIM/eSIM, power outlets, public Wi-Fi |
+| E.4 | `enrichers/language.py` | Tavily: key phrases, pronunciation, etiquette |
+| E.5 | `enrichers/cuisine.py` | SerpAPI: signature dishes, street food, food culture |
+| E.6 | `enrichers/activities.py` | Replaced SerpAPI with Viator Partner API; added `services/viator_client.py` + `viator_destination_resolver.py` (7-day cache + freetext fallback); output includes booking URLs, pricing, flags (free cancellation, likely to sell out, private, skip the line), duration, reviews |
+
 ---
 
 ## 6. API Key Configuration
@@ -480,6 +559,7 @@ Bug fixes applied during Phase D:
 | `PEXELS_API_KEY` | Images (existing, already supported) | `.env` / Docker env |
 | `GOOGLE_MAPS_API_KEY` | Maps | `.env` / Docker env |
 | `FIRECRAWL_API_KEY` | Deals | `.env` / Docker env |
+| `VIATOR_API_KEY` | Activities | `.env` / Docker env |
 
 ### Discovery Pattern
 
@@ -526,6 +606,11 @@ class EnricherRegistry:
 | Maps | REQ | -- | -- | -- | -- | -- | -- | -- |
 | Pricing | -- | -- | -- | OPT | -- | OPT | -- | OPT |
 | Deals | REQ | -- | OPT | -- | -- | -- | -- | -- |
+| Visa & Health | REQ | -- | -- | -- | -- | -- | -- | -- |
+| Transport | REQ | -- | -- | -- | -- | -- | -- | -- |
+| Connectivity | REQ | -- | -- | -- | -- | -- | -- | -- |
+| Language | REQ | -- | -- | -- | -- | -- | -- | -- |
+| Cuisine | REQ | -- | -- | OPT | -- | -- | -- | -- |
 
 REQ = required, OPT = optional, -- = not used
 
@@ -552,3 +637,14 @@ Note: `destination` is required for every external enricher. Pricing is derived 
 | CompareDestinations | Destination Intel | Hotels, Images |
 | PackageInclusions | Pricing | -- |
 | BookingCTA | -- (user-provided agency info) | -- |
+| ExperienceCards | Activities (Viator) | Images |
+| GoldenHourMoodBoard | Images | Destination Intel |
+| DayNightSplit | Destination Intel | Images |
+| BeforeAfterArrival | Destination Intel | Images |
+| CuisineDiscovery | Cuisine | Dining, Images |
+| AmbientSounds | Destination Intel | -- |
+| VisaEntry | Visa & Health | -- |
+| TransportationInfo | Transport | -- |
+| HealthSafety | Visa & Health | -- |
+| LanguageSurvival | Language | -- |
+| ConnectivityCard | Connectivity | -- |

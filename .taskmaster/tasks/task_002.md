@@ -2,7 +2,7 @@
 
 **Title:** Create BaseEnricher abstract class
 
-**Status:** pending
+**Status:** done
 
 **Dependencies:** 1
 

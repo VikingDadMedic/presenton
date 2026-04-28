@@ -2,7 +2,7 @@
 
 **Title:** Create TravelContext data model
 
-**Status:** pending
+**Status:** done
 
 **Dependencies:** None
 

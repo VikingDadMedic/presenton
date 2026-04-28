@@ -1,28 +1,20 @@
-# Contributing to Presenton
+# Contributing to TripStory
 
-Welcome! 🚀  
-Thanks for helping improve **Presenton — the open-source AI presentation generator.**
+Welcome!
+Thanks for helping improve **TripStory -- the open-source AI travel presentation builder.**
 
-## Quick Links
-
-- **GitHub:** https://github.com/presenton/presenton
-- **Docs:** https://docs.presenton.ai
-- **Website:** https://presenton.ai
-- **Discord:** https://discord.gg/9ZsKKxudNE
-- **X:** https://x.com/presentonai
+> TripStory is a travel-specialized fork of the upstream [Presenton](https://github.com/presenton/presenton) project (Apache 2.0).
 
 ---
 
-# Current Contribution Scope
+# Architecture
 
-The Electron application contains:
+TripStory is a **web-only** application (the Electron desktop app lives on the separate `electron-desktop` branch). The two servers:
 
-- Desktop application
-- FastAPI backend
-- Next.js frontend
-- Local runtime integrations
+- **FastAPI backend** (`servers/fastapi/`) -- Python 3.12, LLM pipeline, enrichers, export engine
+- **Next.js frontend** (`servers/nextjs/`) -- Node 22, React 19, Next.js 16, Tailwind v4
 
-Contributions outside `electron/` may not be accepted at this time.
+Behind Nginx in Docker; local dev runs them directly.
 
 ---
 
@@ -51,66 +43,60 @@ Start a **GitHub Issue** or **Discussion** explaining:
 Example branch names:
 
 ```
-
 feature/add-template-support
 fix/export-pptx-error
 docs/update-readme
-
 ```
 
 ---
 
-# Development Setup (Electron)
+# Development Setup
 
 ### Prerequisites
 
-- Node.js (LTS)
+- Node.js 22 (LTS)
 - npm
-- Python
-- `uv` (Python package manager)
+- Python 3.12
+- [`uv`](https://docs.astral.sh/uv/) (Python package manager)
 
-# Setup Environment
+### Backend (FastAPI)
 
-From the `electron` directory:
-
-```
-cd electron
-npm run setup:env
+```bash
+cd servers/fastapi
+uv sync
 ```
 
-This installs:
+### Frontend (Next.js)
 
-- Node dependencies
-- FastAPI dependencies
-- Next.js dependencies
-
----
-
-# Run the Electron App (Development)
-
+```bash
+cd servers/nextjs
+npm install --legacy-peer-deps
 ```
 
+### Running Locally
+
+Start both servers in separate terminals:
+
+```bash
+# Terminal 1 -- Backend
+cd servers/fastapi
+uv run uvicorn main:app --host 0.0.0.0 --port 8000
+
+# Terminal 2 -- Frontend
+cd servers/nextjs
 npm run dev
-
 ```
 
-This will:
+The Next.js dev server proxies `/api/v1/*` to `http://localhost:8000` via `next.config.ts` rewrites. Set `USER_CONFIG_PATH` and `CONTAINER_DB_PATH` environment variables for both services (see README.md).
 
-- compile TypeScript
-- start the Electron app
-- run the backend and UI locally
+### Running Tests
 
----
-
-# Build the Electron App
-
-To build all components:
-
+```bash
+cd servers/fastapi
+uv run pytest tests/ -v
 ```
 
-npm run build:all
-
-```
+The test suite includes 47 enricher tests and 4 API validation tests.
 
 ---
 
@@ -118,12 +104,10 @@ npm run build:all
 
 Please ensure:
 
-- Changes are **inside `electron/`**
-- Code runs locally on development as well as build environment both
+- Code runs locally in both dev and build environments
 - PRs are **small and focused**
 - You explain **what and why**
-
-For UI changes, include screenshots.
+- For UI changes, include screenshots
 
 ---
 
@@ -141,37 +125,14 @@ Please mention:
 
 # Good First Issues
 
-Look for issues labeled:
-
-```
-
-good first issue
-help wanted
-
-```
-
----
-
-# Community
-
-Questions or discussions:
-
-💬 Discord  
-https://discord.gg/9ZsKKxudNE
+Look for issues labeled `good first issue` or `help wanted`.
 
 ---
 
 # Code of Conduct
 
-Please follow our community guidelines:
-
-```
-
-CODE_OF_CONDUCT.md
-
-```
+Please follow the community guidelines in `CODE_OF_CONDUCT.md`.
 
 ---
 
-Thanks for helping make **Presenton better for everyone.**
-```
+Thanks for helping make **TripStory better for everyone.**

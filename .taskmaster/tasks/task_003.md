@@ -2,7 +2,7 @@
 
 **Title:** Create EnricherRegistry
 
-**Status:** pending
+**Status:** done
 
 **Dependencies:** 1, 2
 

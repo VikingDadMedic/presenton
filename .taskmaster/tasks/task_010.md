@@ -2,7 +2,7 @@
 
 **Title:** Extend frontend API client with origin and currency
 
-**Status:** pending
+**Status:** done
 
 **Dependencies:** 6
 

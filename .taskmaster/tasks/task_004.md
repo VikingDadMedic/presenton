@@ -2,7 +2,7 @@
 
 **Title:** Create EnricherRunner parallel orchestrator
 
-**Status:** pending
+**Status:** done
 
 **Dependencies:** 3
 

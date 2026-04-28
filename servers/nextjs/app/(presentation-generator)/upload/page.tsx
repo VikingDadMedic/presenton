@@ -53,7 +53,7 @@ const page = async ({
     <div className="relative min-h-screen">
       <Header />
       <div className="flex flex-col items-center justify-center  mb-8 ">
-        <h1 className="text-[64px] relative leading-[112%] font-semibold font-display text-[#101323] ">
+        <h1 className="text-[64px] relative leading-[112%] font-semibold font-display text-foreground ">
           {isTravel ? "Travel Presentation" : <TextShimmer as="span" colors={["transparent", "#c9a84c", "transparent"]}>Generate</TextShimmer>}
 
           {!isTravel && (

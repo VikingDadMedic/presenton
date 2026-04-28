@@ -2,7 +2,7 @@
 
 **Title:** Wire enricher pipeline into presentation handler
 
-**Status:** pending
+**Status:** done
 
 **Dependencies:** 4, 5, 6
 

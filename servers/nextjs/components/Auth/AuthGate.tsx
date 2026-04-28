@@ -170,7 +170,7 @@ export default function AuthGate() {
           <div className="rounded-2xl border border-white/40 bg-card p-8 text-center shadow-xl backdrop-blur-sm">
             <img src="/Logo.png" alt="TripStory" className="mx-auto mb-5 h-12 opacity-95" />
             <div className="mx-auto mb-4 h-1 w-16 rounded-full bg-gradient-to-r from-primary to-primary" />
-            <h1 className="font-syne text-lg font-semibold text-black">Presenton</h1>
+            <h1 className="font-syne text-lg font-semibold text-foreground">TripStory</h1>
             <p className="mt-3 font-syne text-sm text-[#000000CC]">Preparing your workspace…</p>
             <div className="mt-6 flex justify-center gap-1.5">
               <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
@@ -219,7 +219,7 @@ export default function AuthGate() {
               <p className="font-syne text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
                 Secure instance
               </p>
-              <h1 className="mt-1 font-syne text-2xl font-semibold leading-tight text-black sm:text-[26px]">
+              <h1 className="mt-1 font-syne text-2xl font-semibold leading-tight text-foreground sm:text-[26px]">
                 {isSetupMode ? "Create your admin login" : "Sign in to continue"}
               </h1>
             </div>
@@ -234,7 +234,7 @@ export default function AuthGate() {
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           <div className="space-y-2">
-            <label htmlFor="username" className="block font-syne text-sm font-medium text-black">
+            <label htmlFor="username" className="block font-syne text-sm font-medium text-foreground">
               Username
             </label>
             <input
@@ -243,13 +243,13 @@ export default function AuthGate() {
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               placeholder="your-admin-user"
-              className="w-full rounded-[11px] border border-[#EDEEEF] bg-white px-4 py-3 font-syne text-sm text-black outline-none transition placeholder:text-[#999999] focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-md border border-border bg-card px-4 py-3 font-syne text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
               disabled={isSubmitting}
             />
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="block font-syne text-sm font-medium text-black">
+            <label htmlFor="password" className="block font-syne text-sm font-medium text-foreground">
               Password
             </label>
             <input
@@ -259,14 +259,14 @@ export default function AuthGate() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="At least 6 characters"
-              className="w-full rounded-[11px] border border-[#EDEEEF] bg-white px-4 py-3 font-syne text-sm text-black outline-none transition placeholder:text-[#999999] focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-md border border-border bg-card px-4 py-3 font-syne text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
               disabled={isSubmitting}
             />
           </div>
 
           {isSetupMode ? (
             <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="block font-syne text-sm font-medium text-black">
+              <label htmlFor="confirmPassword" className="block font-syne text-sm font-medium text-foreground">
                 Confirm password
               </label>
               <input
@@ -276,7 +276,7 @@ export default function AuthGate() {
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 placeholder="Re-enter your password"
-                className="w-full rounded-[11px] border border-[#EDEEEF] bg-white px-4 py-3 font-syne text-sm text-black outline-none transition placeholder:text-[#999999] focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="w-full rounded-md border border-border bg-card px-4 py-3 font-syne text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
                 disabled={isSubmitting}
               />
             </div>

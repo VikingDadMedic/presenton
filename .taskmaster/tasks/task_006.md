@@ -2,7 +2,7 @@
 
 **Title:** Extend GeneratePresentationRequest with origin and currency
 
-**Status:** pending
+**Status:** done
 
 **Dependencies:** 1
 

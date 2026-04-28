@@ -69,11 +69,11 @@ const GroupLayoutPreview = () => {
 
   if (isCustom && customLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-muted">
         <Header />
         <div className="flex items-center justify-center py-24">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          <span className="ml-3 text-gray-600">Compiling templates...</span>
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <span className="ml-3 text-muted-foreground">Compiling templates...</span>
         </div>
       </div>
     );
@@ -81,11 +81,11 @@ const GroupLayoutPreview = () => {
 
   if (isCustom && customError) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-muted">
         <Header />
         <div className="flex flex-col items-center justify-center py-24">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Error loading template</h2>
-          <p className="text-gray-600 mb-4">{customError}</p>
+          <h2 className="text-2xl font-bold text-destructive mb-4">Error loading template</h2>
+          <p className="text-muted-foreground mb-4">{customError}</p>
           <Button onClick={() => router.push("/templates")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Templates
@@ -100,10 +100,10 @@ const GroupLayoutPreview = () => {
     (isCustom && !customTemplate)
   ) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-muted">
         <Header />
         <div className="flex flex-col items-center justify-center py-24">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <h2 className="text-2xl font-bold text-foreground mb-4">
             Template not found
           </h2>
           <Button onClick={() => router.push("/templates")}>
@@ -124,7 +124,7 @@ const GroupLayoutPreview = () => {
     : staticTemplates.length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <Header />
 
       <header className=" z-30">
@@ -142,7 +142,7 @@ const GroupLayoutPreview = () => {
                     trackEvent(MixpanelEvent.TemplatePreview_Delete_Templates_API_Call);
                     handleDeleteCustomTemplate();
                   }}
-                  className="flex items-center gap-2 border-red-200 text-red-700 hover:bg-red-50"
+                  className="flex items-center gap-2 border-destructive/20 text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="w-4 h-4" />
                   Delete Template
@@ -153,14 +153,14 @@ const GroupLayoutPreview = () => {
 
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <h1 className="text-[64px] font-bold text-gray-900">{templateName}</h1>
+              <h1 className="text-[64px] font-bold text-foreground">{templateName}</h1>
               {isCustom && (
                 <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-sm">
                   Custom
                 </span>
               )}
             </div>
-            <p className="text-gray-600 text-xl">
+            <p className="text-muted-foreground text-xl">
               {/* {layoutCount} layout{layoutCount !== 1 ? "s" : ""} •{" "} */}
               {templateDescription}
             </p>
@@ -183,23 +183,23 @@ const GroupLayoutPreview = () => {
                 <div
                   key={`${templateParams}-${template.layoutId}-${index}`}
                   id={template.layoutId}
-                  className="overflow-hidden   rounded-tl-[10px] border border-[#EDEEEF] rounded-tr-[10px]"
+                  className="overflow-hidden   rounded-tl-[10px] border border-border rounded-tr-[10px]"
                 >
-                  <div className=" px-4 py-6 bg-white border-b border-[#EDEEEF] ">
+                  <div className=" px-4 py-6 bg-card border-b border-border ">
                     <div className="flex items-center justify-between">
                       <div>
                         <span className="px-3 py-1 bg-primary text-white  font-display  rounded-md text-sm font-medium">
                           {index + 1 < 10 ? `0${index + 1}` : index + 1}
                         </span>
-                        <h3 className="text-xl font-semibold text-gray-900 mt-3">
+                        <h3 className="text-xl font-semibold text-foreground mt-3">
                           {template.layoutName}
                         </h3>
-                        <p className="text-sm text-gray-500 mt-1 ">
+                        <p className="text-sm text-muted-foreground mt-1 ">
                           {template.layoutDescription}
                         </p>
                       </div>
                       {/* <div className="flex items-center gap-3">
-                        <span className="px-3 py-1  text-gray-600 rounded text-sm font-mono">
+                        <span className="px-3 py-1  text-muted-foreground rounded text-sm font-mono">
                           {template.layoutId}
                         </span>
                         <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
@@ -233,19 +233,19 @@ const GroupLayoutPreview = () => {
                   id={layout.layoutId}
                   className="overflow-hidden shadow-md"
                 >
-                  <div className="bg-white px-6 py-4 border-b">
+                  <div className="bg-card px-6 py-4 border-b">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="text-xl font-semibold text-gray-900">
+                        <h3 className="text-xl font-semibold text-foreground">
                           {layout.rawLayoutName}
                         </h3>
-                        <p className="text-sm text-gray-500 mt-1 max-w-2xl">
+                        <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
                           {layout.layoutDescription}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-end justify-end ">
-                      <span className="px-3 py-1  text-gray-600 rounded text-sm font-mono">
+                      <span className="px-3 py-1  text-muted-foreground rounded text-sm font-mono">
                         {templateParams}:{layout.layoutId}
                       </span>
                     </div>

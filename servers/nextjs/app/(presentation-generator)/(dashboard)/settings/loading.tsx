@@ -28,7 +28,7 @@ export default function LoadingSettings() {
                     </div>
                     <div className="mt-6 flex-1 min-h-0">
                         <Shimmer className="h-3 w-24 mb-2.5" />
-                        <div className="p-0.5 rounded-[40px] bg-white w-full max-w-[210px] border border-[#EDEEEF] flex items-center mb-[34px] h-[30px]">
+                        <div className="p-0.5 rounded-[40px] bg-card w-full max-w-[210px] border border-border flex items-center mb-[34px] h-[30px]">
                             <Shimmer className="h-[26px] flex-1 rounded-[70px] mx-0.5" />
                             <Shimmer className="h-[26px] flex-1 rounded-[70px] mx-0.5 opacity-70" />
                         </div>
@@ -37,7 +37,7 @@ export default function LoadingSettings() {
                             {[0, 1].map((i) => (
                                 <div
                                     key={i}
-                                    className="w-full rounded-[6px] px-3 py-4 flex items-center gap-1.5 border border-[#EDEEEF] bg-white"
+                                    className="w-full rounded-[6px] px-3 py-4 flex items-center gap-1.5 border border-border bg-card"
                                 >
                                     <Shimmer className="h-[18px] w-[18px] rounded-full shrink-0" />
                                     <Shimmer className="h-3 flex-1 max-w-[100px]" />
@@ -47,7 +47,7 @@ export default function LoadingSettings() {
                     </div>
                     <div className="border-t border-[#E1E1E5] py-5">
                         <Shimmer className="h-3 w-12 mb-2.5" />
-                        <div className="w-full rounded-[6px] p-3 py-4 flex items-center gap-1.5 border border-[#EDEEEF] bg-white">
+                        <div className="w-full rounded-[6px] p-3 py-4 flex items-center gap-1.5 border border-border bg-card">
                             <Shimmer className="h-6 w-6 rounded-full shrink-0" />
                             <Shimmer className="h-3 w-16" />
                         </div>
@@ -65,7 +65,7 @@ export default function LoadingSettings() {
 
                     <div className="space-y-6 bg-[#F9F8F8] p-7 rounded-[12px] pr-4 sm:pr-7">
                         {/* TextProvider top card: white panel, icon + copy left, controls right */}
-                        <div className="mb-4 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 rounded-[12px] bg-white pt-5 pb-10 px-6 sm:px-10">
+                        <div className="mb-4 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 rounded-[12px] bg-card pt-5 pb-10 px-6 sm:px-10">
                             <div className="max-w-[290px] shrink-0">
                                 <Shimmer className="w-[60px] h-[60px] rounded-[4px]" />
                                 <Shimmer className="h-6 w-48 mt-2.5 mb-2" />
@@ -91,7 +91,7 @@ export default function LoadingSettings() {
                         </div>
 
                         {/* TextProvider “Advanced” card */}
-                        <div className="bg-white flex flex-col sm:flex-row sm:justify-between sm:items-center gap-6 p-6 sm:p-10 rounded-[12px]">
+                        <div className="bg-card flex flex-col sm:flex-row sm:justify-between sm:items-center gap-6 p-6 sm:p-10 rounded-[12px]">
                             <div className="max-w-[290px] shrink-0">
                                 <Shimmer className="h-6 w-28 mb-2" />
                                 <Shimmer className="h-4 w-52" />

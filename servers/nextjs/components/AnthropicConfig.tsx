@@ -87,24 +87,24 @@ export default function AnthropicConfig({
   return (
     <div className="space-y-6 ">
       {/* API Key Input */}
-      <div className="mb-4 flex items-center justify-between bg-white p-10">
+      <div className="mb-4 flex items-center justify-between bg-card p-10">
         <div className="">
           <h3 className="text-xl font-normal text-[#191919]">Anthropic API key</h3>
-          <p className="mt-2 text-sm max-w-[205px] text-gray-500">
+          <p className="mt-2 text-sm max-w-[205px] text-muted-foreground">
             Your API key will be stored locally and never shared
           </p>
         </div>
         <div className="flex items-center gap-4">
           <div className="relative  w-[275px] ">
             <div className="flex flex-col justify-start gap-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Anthropic API Key
               </label>
               <input
                 type="text"
                 value={anthropicApiKey}
                 onChange={(e) => onApiKeyChange(e.target.value)}
-                className="w-full px-2 py-3 outline-none border  border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                className="w-full px-2 py-3 outline-none border  border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                 placeholder="Enter your Anthropic API key"
               />
             </div>
@@ -115,8 +115,8 @@ export default function AnthropicConfig({
                 onClick={fetchAvailableModels}
                 disabled={modelsLoading || !anthropicApiKey}
                 className={` mt-7 py-2.5 bg-[#F7F6F9] px-3.5 rounded-md text-xs font-semibold text-foreground transition-all duration-200 border ${modelsLoading || !anthropicApiKey
-                  ? " border-gray-300 cursor-not-allowed text-gray-500"
-                  : " border-[#EDEEEF] text-blue-600 hover:bg-[#E8F0FF]/90 focus:ring-2 focus:ring-blue-500/20"
+                  ? " border-border cursor-not-allowed text-muted-foreground"
+                  : " border-border text-primary hover:bg-[#E8F0FF]/90 focus:ring-2 focus:ring-blue-500/20"
                   }`}
               >
                 {modelsLoading ? (
@@ -143,7 +143,7 @@ export default function AnthropicConfig({
             {/* Model Selection - only show if models are available */}
             {modelsChecked && availableModels.length > 0 ? (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-foreground mb-3">
                   Select Anthropic Model
                 </label>
                 <div className="w-full">
@@ -156,16 +156,16 @@ export default function AnthropicConfig({
                         variant="outline"
                         role="combobox"
                         aria-expanded={openModelSelect}
-                        className="w-full h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between"
+                        className="w-full h-12 px-4 py-4 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between"
                       >
                         <div className="flex gap-3 items-center">
-                          <span className="text-sm font-medium text-gray-900">
+                          <span className="text-sm font-medium text-foreground">
                             {anthropicModel
                               ? availableModels.find(model => model === anthropicModel) || anthropicModel
                               : "Select a model"}
                           </span>
                         </div>
-                        <ChevronsUpDown className="w-4 h-4 text-gray-500" />
+                        <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent
@@ -198,7 +198,7 @@ export default function AnthropicConfig({
                                 <div className="flex gap-3 items-center">
                                   <div className="flex flex-col space-y-1 flex-1">
                                     <div className="flex items-center justify-between gap-2">
-                                      <span className="text-sm font-medium text-gray-900">
+                                      <span className="text-sm font-medium text-foreground">
                                         {model}
                                       </span>
                                     </div>
@@ -219,10 +219,10 @@ export default function AnthropicConfig({
       </div>
 
       {/* Web Grounding Toggle - show at the end, below models dropdown */}
-      <div className="bg-white flex justify-between items-center p-10 rounded-[12px]">
+      <div className="bg-card flex justify-between items-center p-10 rounded-[12px]">
         <div>
           <h4 className="text-xl font-normal text-[#191919]">Model Controls</h4>
-          <p className="mt-2 text-sm max-w-[205px] text-gray-500">
+          <p className="mt-2 text-sm max-w-[205px] text-muted-foreground">
             Configure web access and advanced AI features.
           </p>
         </div>
@@ -233,7 +233,7 @@ export default function AnthropicConfig({
                 checked={!!webGrounding}
                 onCheckedChange={(checked) => onInputChange(checked, "web_grounding")}
               />
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium text-foreground">
                 Enable Web Grounding
               </label>
             </div>
@@ -243,7 +243,7 @@ export default function AnthropicConfig({
                 checked={extendedReasoning}
                 onCheckedChange={(checked) => onInputChange(checked, "extended_reasoning")}
               />
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium text-foreground">
                 Extended Reasoning
               </label>
             </div> */}

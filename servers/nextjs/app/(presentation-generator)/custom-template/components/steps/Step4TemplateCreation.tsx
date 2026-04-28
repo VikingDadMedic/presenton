@@ -61,7 +61,7 @@ export const Step4TemplateCreation: React.FC<Step4TemplateCreationProps> = ({
             {/* Schema Editor Panel (Right Sidebar) */}
             {isSchemaEditorOpen && schemaEditorSlide && (
               <div className="w-[520px] sticky top-20 self-start">
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
+                <div className="bg-card rounded-2xl border border-border shadow-lg overflow-hidden">
                   <SchemaEditorPanel
                     slide={schemaEditorSlide}
                     slideIndex={schemaEditorSlideIndex}

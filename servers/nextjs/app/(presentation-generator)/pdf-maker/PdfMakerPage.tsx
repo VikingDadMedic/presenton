@@ -125,9 +125,9 @@ const PresentationPage = ({ presentation_id }: { presentation_id: string }) => {
   return (
     <div className="flex overflow-hidden flex-col">
       {error ? (
-        <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
+        <div className="flex flex-col items-center justify-center h-screen bg-muted">
           <div
-            className="bg-white border border-red-300 text-red-700 px-6 py-8 rounded-lg shadow-lg flex flex-col items-center"
+            className="bg-card border border-red-300 text-red-700 px-6 py-8 rounded-lg shadow-lg flex flex-col items-center"
             role="alert"
           >
             <AlertCircle className="w-16 h-16 mb-4 text-red-500" />
@@ -165,7 +165,7 @@ const PresentationPage = ({ presentation_id }: { presentation_id: string }) => {
                   {Array.from({ length: 2 }).map((_, index) => (
                     <Skeleton
                       key={index}
-                      className="aspect-video bg-gray-400 my-4 w-full mx-auto max-w-[1280px]"
+                      className="aspect-video bg-border my-4 w-full mx-auto max-w-[1280px]"
                     />
                   ))}
                 </div>

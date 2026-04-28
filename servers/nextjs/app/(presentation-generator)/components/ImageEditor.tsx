@@ -284,7 +284,7 @@ const ImageEditor = ({
 
           <div className="mt-6">
             <Tabs defaultValue="generate" className="w-full" onValueChange={handleTabChange}>
-              <TabsList className="grid bg-blue-100 border border-blue-300 w-full grid-cols-3 mx-auto">
+              <TabsList className="grid bg-primary/10 border border-primary/30 w-full grid-cols-3 mx-auto">
                 <TabsTrigger className="font-medium" value="generate">
                   AI Generate
                 </TabsTrigger>
@@ -300,7 +300,7 @@ const ImageEditor = ({
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-sm font-medium mb-1">Current Prompt</h3>
-                    <p className="text-sm text-gray-500">{promptContent}</p>
+                    <p className="text-sm text-muted-foreground">{promptContent}</p>
                   </div>
 
                   <div>
@@ -337,7 +337,7 @@ const ImageEditor = ({
                     ) : (
                       <div
                         onClick={() => handleImageChange(previewImages)}
-                        className="aspect-[4/3] w-full overflow-hidden rounded-lg border cursor-pointer hover:border-blue-500 transition-colors"
+                        className="aspect-[4/3] w-full overflow-hidden rounded-lg border cursor-pointer hover:border-primary transition-colors"
                       >
                         {previewImages && (
                           <img
@@ -361,7 +361,7 @@ const ImageEditor = ({
                               handleImageChange(image.file_url || image.path)
                             }
                             key={image.id}
-                            className="aspect-[4/3] w-full overflow-hidden rounded-lg border cursor-pointer hover:border-blue-500 transition-colors"
+                            className="aspect-[4/3] w-full overflow-hidden rounded-lg border cursor-pointer hover:border-primary transition-colors"
                           >
                             <img
                               src={image.file_url || image.path}
@@ -383,8 +383,8 @@ const ImageEditor = ({
                     className={cn(
                       "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
                       isUploading
-                        ? "border-gray-400 bg-gray-50"
-                        : "border-gray-300 hover:border-blue-400"
+                        ? "border-border bg-muted"
+                        : "border-border hover:border-primary"
                     )}
                   >
                     <input
@@ -403,16 +403,16 @@ const ImageEditor = ({
                       )}
                     >
                       {isUploading ? (
-                        <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mb-2" />
+                        <div className="w-8 h-8 border-2 border-border border-t-transparent rounded-full animate-spin mb-2" />
                       ) : (
-                        <Upload className="w-8 h-8 text-gray-500 mb-2" />
+                        <Upload className="w-8 h-8 text-muted-foreground mb-2" />
                       )}
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-muted-foreground">
                         {isUploading
                           ? "Uploading your image..."
                           : "Click to upload an image"}
                       </span>
-                      <span className="text-xs text-gray-500 mt-1">
+                      <span className="text-xs text-muted-foreground mt-1">
                         Maximum file size: 5MB
                       </span>
                     </label>
@@ -429,12 +429,12 @@ const ImageEditor = ({
                       <h3 className="text-sm font-medium mb-2">
                         Uploaded Image Preview
                       </h3>
-                      <div className="aspect-[4/3] relative rounded-lg overflow-hidden border border-gray-200">
+                      <div className="aspect-[4/3] relative rounded-lg overflow-hidden border border-border">
                         {isUploading ? (
-                          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                          <div className="w-full h-full bg-muted flex items-center justify-center">
                             <div className="flex flex-col items-center">
-                              <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mb-2" />
-                              <span className="text-sm text-gray-500">
+                              <div className="w-8 h-8 border-2 border-border border-t-transparent rounded-full animate-spin mb-2" />
+                              <span className="text-sm text-muted-foreground">
                                 Processing...
                               </span>
                             </div>
@@ -452,7 +452,7 @@ const ImageEditor = ({
                                 alt="Uploaded preview"
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                               />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200" />
+                              <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/20 transition-all duration-200" />
                               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                 <span className="bg-white/90 px-3 py-1 rounded-full text-sm font-medium">
                                   Click to use this image
@@ -478,7 +478,7 @@ const ImageEditor = ({
                               onClick={() =>
                                 handleImageChange(image.file_url || image.path)
                               }
-                              className="cursor-pointer group aspect-[4/3] rounded-lg overflow-hidden relative border border-gray-200"
+                              className="cursor-pointer group aspect-[4/3] rounded-lg overflow-hidden relative border border-border"
                             >
                               <Trash className="absolute group-hover:opacity-100 opacity-0 transition-opacity z-10 w-4 h-4 top-2 right-2 text-red-500" onClick={(e) =>{
                                 e.stopPropagation();
@@ -489,7 +489,7 @@ const ImageEditor = ({
                                 alt="Uploaded preview"
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                               />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200" />
+                              <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/20 transition-all duration-200" />
                               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                 <span className="bg-white/90 px-3 py-1 rounded-full text-xs font-medium">
                                   Use
@@ -514,9 +514,9 @@ const ImageEditor = ({
                       } else {
                       }
                     }}
-                    className="aspect-[4/3] group  rounded-lg overflow-hidden relative border border-gray-200"
+                    className="aspect-[4/3] group  rounded-lg overflow-hidden relative border border-border"
                   >
-                    <p className="group-hover:opacity-100 opacity-0 transition-opacity absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-sm text-center font-medium bg-black/50 text-white px-2 py-1 rounded">
+                    <p className="group-hover:opacity-100 opacity-0 transition-opacity absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-sm text-center font-medium bg-foreground/50 text-white px-2 py-1 rounded">
                       Click to Change Focus Point
                     </p>
                     {previewImages && (
@@ -535,13 +535,13 @@ const ImageEditor = ({
                       />
                     )}
                     {isFocusPointMode && (
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                        <div className="text-white text-center p-2 bg-black/50 rounded">
+                      <div className="absolute inset-0 bg-foreground/20 flex items-center justify-center">
+                        <div className="text-white text-center p-2 bg-foreground/50 rounded">
                           <p className="text-sm font-medium pointer-events-none">
                             Click anywhere to set focus point
                           </p>
                           <button
-                            className="mt-2 px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                            className="mt-2 px-3 py-1 bg-primary text-white text-xs rounded hover:bg-primary/90"
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleFocusPointMode();
@@ -578,7 +578,7 @@ const ImageEditor = ({
                           variant="outline"
                           className={cn(
                             objectFit === "cover" &&
-                              "bg-blue-50 border-blue-500"
+                              "bg-primary/10 border-primary"
                           )}
                           onClick={() => handleFitChange("cover")}
                         >
@@ -588,7 +588,7 @@ const ImageEditor = ({
                           variant="outline"
                           className={cn(
                             objectFit === "contain" &&
-                              "bg-blue-50 border-blue-500"
+                              "bg-primary/10 border-primary"
                           )}
                           onClick={() => handleFitChange("contain")}
                         >
@@ -597,7 +597,7 @@ const ImageEditor = ({
                         <Button
                           variant="outline"
                           className={cn(
-                            objectFit === "fill" && "bg-blue-50 border-blue-500"
+                            objectFit === "fill" && "bg-primary/10 border-primary"
                           )}
                           onClick={() => handleFitChange("fill")}
                         >

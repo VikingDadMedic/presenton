@@ -33,12 +33,12 @@ const DashboardSidebar = () => {
 
     return (
         <aside
-            className="sticky top-0 h-screen w-[115px] flex flex-col justify-between bg-[#F6F6F9] backdrop-blur border-r border-[#E1E1E5] px-4  py-8"
+            className="sticky top-0 h-screen w-[115px] flex flex-col justify-between bg-muted backdrop-blur border-r border-border px-4  py-8"
             aria-label="Dashboard sidebar"
         >
             <div>
 
-                <Link href={`/dashboard`} className="flex items-center  pb-6 border-b border-[#E1E1E5]   gap-2    ">
+                <Link href={`/dashboard`} className="flex items-center  pb-6 border-b border-border   gap-2    ">
                     <div className="bg-primary rounded-lg cursor-pointer p-1 flex justify-center items-center mx-auto">
                         <img src="/logo-with-bg.png" alt="TripStory logo" className="h-[40px] object-contain w-full" />
                     </div>
@@ -57,8 +57,8 @@ const DashboardSidebar = () => {
                             aria-label="Dashboard"
                             title="Dashboard"
                         >
-                            <MotionIcon name="LayoutDashboard" animation="bounce" trigger="hover" size={16} className={pathname === "/dashboard" ? "text-primary" : "text-slate-600"} />
-                            <span className="text-[11px] text-slate-800">Dashboard</span>
+                            <MotionIcon name="LayoutDashboard" animation="bounce" trigger="hover" size={16} className={pathname === "/dashboard" ? "text-primary" : "text-muted-foreground"} />
+                            <span className="text-[11px] text-foreground">Dashboard</span>
                         </Link>
                         <Link
                             prefetch={false}
@@ -72,7 +72,7 @@ const DashboardSidebar = () => {
                         >
                             <div className="flex flex-col cursor-pointer tex-center items-center gap-2  transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={`${pathname === "/templates" ? "var(--primary)" : "#475569"}`} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M4 14h6" /><path d="M4 2h10" /><rect x="4" y="18" width="16" height="4" rx="1" /><rect x="4" y="6" width="16" height="4" rx="1" /></svg>
-                                <span className="text-[11px] text-slate-800">Templates</span>
+                                <span className="text-[11px] text-foreground">Templates</span>
                             </div>
                         </Link>
                         <Link
@@ -86,8 +86,8 @@ const DashboardSidebar = () => {
                             title="Theme"
                         >
                             <div className="flex flex-col cursor-pointer tex-center items-center gap-2  transition-colors">
-                                <MotionIcon name="Palette" animation="bounce" trigger="hover" size={16} className={pathname === "/theme" ? "text-primary" : "text-slate-600"} />
-                                <span className="text-[11px] text-slate-800">Themes</span>
+                                <MotionIcon name="Palette" animation="bounce" trigger="hover" size={16} className={pathname === "/theme" ? "text-primary" : "text-muted-foreground"} />
+                                <span className="text-[11px] text-foreground">Themes</span>
                             </div>
                         </Link>
                     </div>

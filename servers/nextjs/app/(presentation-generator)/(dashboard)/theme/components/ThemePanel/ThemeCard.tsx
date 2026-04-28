@@ -20,12 +20,12 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({ theme, onSelect, onDelete,
 
 
   return (<div
-    className={` group rounded-xl border w-[305px] cursor-pointer transition-all relative bg-white border-[#EDEEEF]   hover:shadow-md`}
+    className={` group rounded-xl border w-[305px] cursor-pointer transition-all relative bg-card border-border   hover:shadow-md`}
     onClick={() => onSelect(theme)}
 
   >
     {showDeleteButton && <button
-      className="absolute hidden group-hover:block duration-300 transition-all -top-3 -right-3 z-10 bg-white rounded-lg p-2  border border-[#EDEEEF] hover:bg-gray-100 hover:text-gray-700"
+      className="absolute hidden group-hover:block duration-300 transition-all -top-3 -right-3 z-10 bg-card rounded-lg p-2  border border-border hover:bg-muted hover:text-foreground"
       style={{ boxShadow: '0 6.6px 13.2px 0 rgba(0, 0, 0, 0.10)' }}
       onClick={(e) => {
         e.stopPropagation()
@@ -46,7 +46,7 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({ theme, onSelect, onDelete,
       >
         <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
         <div
-          className="relative bg-white rounded-2xl w-[340px] shadow-2xl animate-[scaleIn_200ms_ease-out] "
+          className="relative bg-card rounded-2xl w-[340px] shadow-2xl animate-[scaleIn_200ms_ease-out] "
           onClick={(e) => e.stopPropagation()}
         >
           <div className="p-6 pb-4 flex flex-col items-center text-center">
@@ -54,14 +54,14 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({ theme, onSelect, onDelete,
               <AlertTriangle className="h-6 w-6 text-red-500" />
             </div>
             <h3 className="text-lg font-semibold text-[#191919] mb-2">Delete Theme?</h3>
-            <p className="text-sm text-gray-500 leading-relaxed">
-              You're about to delete <span className="font-medium text-gray-700">"{theme.name}"</span>. This action cannot be undone.
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              You're about to delete <span className="font-medium text-foreground">"{theme.name}"</span>. This action cannot be undone.
             </p>
           </div>
-          <div className="flex border-t border-gray-100">
+          <div className="flex border-t border-border">
             <button
               onClick={() => setShowDeleteDialog(false)}
-              className="flex-1 px-4 py-3.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-3.5 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
             >
               Cancel
             </button>
@@ -70,7 +70,7 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({ theme, onSelect, onDelete,
                 onDelete(theme.id)
                 setShowDeleteDialog(false)
               }}
-              className="flex-1 px-4 py-3.5 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors border-l border-gray-100"
+              className="flex-1 px-4 py-3.5 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors border-l border-border"
             >
               Delete
             </button>
@@ -146,17 +146,17 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({ theme, onSelect, onDelete,
     </div>
 
 
-    <div className='px-5 border-t rounded-b-xl border-[#EDEEEF] w-full py-2.5 h-[80px] bg-white flex items-center justify-between'>
+    <div className='px-5 border-t rounded-b-xl border-border w-full py-2.5 h-[80px] bg-card flex items-center justify-between'>
       <div>
 
         <h4 className='text-sm font-semibold text-[#191919] pb-1'>{theme.name}</h4>
         <div className='flex items-center gap-1'>
 
-          <div className='w-4 h-4 rounded-full border border-[#EDEEEF] '
+          <div className='w-4 h-4 rounded-full border border-border '
             style={{ backgroundColor: theme.data.colors['primary'] }}
           />
           <div
-            className='w-4 h-4 rounded-full border border-[#EDEEEF]   '
+            className='w-4 h-4 rounded-full border border-border   '
             style={{ backgroundColor: theme.data.colors['background'] }}
           />
         </div>
@@ -170,7 +170,7 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({ theme, onSelect, onDelete,
             setTimeout(() => setCopied(false), 2000)
           }
         }}
-        className={copied ? "text-green-500" : "text-gray-500 hover:text-gray-700"}
+        className={copied ? "text-green-500" : "text-muted-foreground hover:text-foreground"}
         title={copied ? "Copied!" : "Copy ID"}
       >
         {copied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}

@@ -848,11 +848,11 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({
     const areAllCollapsed = expandedFields.size === 0;
 
     return (
-        <div className="w-full relative  pb-2     bg-white overflow-hidden flex flex-col">
+        <div className="w-full relative  pb-2     bg-card overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50 flex-shrink-0">
+            <div className="px-4 py-3 border-b border-border bg-muted/50 flex-shrink-0">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-gray-800 text-base font-semibold">
+                    <div className="flex items-center gap-2 text-foreground text-base font-semibold">
 
                         Schema Editor
                     </div>
@@ -873,9 +873,9 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({
                         </Button>
                         <button
                             onClick={handleCancel}
-                            className="w-6 h-6 rounded-md hover:bg-gray-200 flex items-center justify-center transition-colors"
+                            className="w-6 h-6 rounded-md hover:bg-muted flex items-center justify-center transition-colors"
                         >
-                            <X className="w-4 h-4 text-gray-500" />
+                            <X className="w-4 h-4 text-muted-foreground" />
                         </button>
                     </div>
                 </div>
@@ -890,10 +890,10 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({
                     <div className="mb-3">
                         <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
-                                <span className="text-lg font-medium text-[#111827]">
+                                <span className="text-lg font-medium text-foreground">
                                     Character Limits
                                 </span>
-                                <span className="text-sm px-1.5 py-0.5 bg-gray-50 text-gray-700 rounded">
+                                <span className="text-sm px-1.5 py-0.5 bg-muted text-foreground rounded">
                                     {fields.length}
                                 </span>
                             </div>
@@ -906,24 +906,24 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({
                                             setExpandedFields(new Set());
                                         }
                                     }}
-                                    className="text-[10px] font-medium text-gray-400 hover:text-primary transition-colors"
+                                    className="text-[10px] font-medium text-muted-foreground hover:text-primary transition-colors"
                                 >
                                     {areAllCollapsed ? 'Expand all' : 'Collapse all'}
                                 </button>
                             )}
                         </div>
-                        <p className="text-sm text-gray-600 py-1">
+                        <p className="text-sm text-muted-foreground py-1">
                             Set min/max character limits for each field. This controls how much text AI generates for your slide.
                         </p>
                     </div>
 
                     {parseError ? (
-                        <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-100 rounded-md text-red-600">
+                        <div className="flex items-center gap-2 p-2.5 bg-destructive/10 border border-destructive/10 rounded-md text-destructive">
                             <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                             <p className="text-[11px]">{parseError}</p>
                         </div>
                     ) : fields.length === 0 ? (
-                        <div className="text-center py-8 text-gray-400">
+                        <div className="text-center py-8 text-muted-foreground">
                             <Box className="w-8 h-8 mx-auto mb-2 opacity-30" />
                             <p className="text-xs">No editable fields</p>
                         </div>
@@ -952,8 +952,8 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({
                                                 : fModified
                                                     ? 'border-amber-200 bg-amber-50/40'
                                                     : isChild
-                                                        ? 'border-gray-200 bg-gray-50/50 hover:border-gray-400'
-                                                        : 'border-gray-300 hover:border-gray-600'
+                                                        ? 'border-border bg-muted/50 hover:border-gray-400'
+                                                        : 'border-border hover:border-gray-600'
                                                 }`}
                                         >
                                             <button
@@ -961,17 +961,17 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({
                                                 className="w-full flex items-center justify-between px-2.5 py-2 text-left "
                                             >
                                                 <div className="flex items-center gap-2 min-w-0">
-                                                    {f.type === 'string' && <Type className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />}
-                                                    {f.type === 'number' && <Hash className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />}
+                                                    {f.type === 'string' && <Type className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
+                                                    {f.type === 'number' && <Hash className="w-3.5 h-3.5 text-success flex-shrink-0" />}
                                                     {f.type === 'array' && <List className="w-3.5 h-3.5 text-primary/80 flex-shrink-0" />}
-                                                    {f.type === 'object' && <Box className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />}
-                                                    <span className={`text-sm font-medium truncate ${isChild ? 'text-gray-600' : 'text-gray-700'}`}>
+                                                    {f.type === 'object' && <Box className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />}
+                                                    <span className={`text-sm font-medium truncate ${isChild ? 'text-muted-foreground' : 'text-foreground'}`}>
                                                         {formatFieldName(f.name)}
                                                     </span>
                                                     {getConstraintSummary(f) && (
                                                         <span className={`text-xs px-1.5 py-0.5 rounded ${fModified
                                                             ? 'bg-amber-100 text-amber-600'
-                                                            : 'bg-gray-100 text-gray-700'
+                                                            : 'bg-muted text-foreground'
                                                             }`}>
                                                             {getConstraintSummary(f)}
                                                         </span>
@@ -984,13 +984,13 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({
                                                         </span>
                                                     )}
                                                 </div>
-                                                <ChevronRight className={`w-3.5 h-3.5 text-gray-300 flex-shrink-0 transition-transform ${fExpanded ? 'rotate-90' : ''}`} />
+                                                <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground/60 flex-shrink-0 transition-transform ${fExpanded ? 'rotate-90' : ''}`} />
                                             </button>
 
                                             {fExpanded && (
                                                 <div className="px-2.5 pb-2.5 pt-1.5 border-t border-gray-50">
                                                     {f.description && (
-                                                        <p className="text-xs text-gray-600 mb-2 italic">
+                                                        <p className="text-xs text-muted-foreground mb-2 italic">
                                                             {f.description}
                                                         </p>
                                                     )}
@@ -999,12 +999,12 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({
                                                     {(f.originalType === 'string' || f.originalType === 'number') && (
                                                         <div className="mb-2">
                                                             <div className="flex items-center gap-2">
-                                                                <Label className="text-xs text-gray-600">Type:</Label>
+                                                                <Label className="text-xs text-muted-foreground">Type:</Label>
                                                                 <Select
                                                                     value={f.type}
                                                                     onValueChange={(value) => handleTypeChange(f.path, value as 'string' | 'number')}
                                                                 >
-                                                                    <SelectTrigger className="h-7 w-24 text-[11px] bg-gray-50 border-gray-200">
+                                                                    <SelectTrigger className="h-7 w-24 text-[11px] bg-muted border-border">
                                                                         <SelectValue />
                                                                     </SelectTrigger>
                                                                     <SelectContent>
@@ -1013,7 +1013,7 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({
                                                                     </SelectContent>
                                                                 </Select>
                                                                 {isTypeChanged(f) && (
-                                                                    <span className="text-[9px] px-1 py-0.5 bg-blue-50 text-blue-500 rounded">changed</span>
+                                                                    <span className="text-[9px] px-1 py-0.5 bg-primary/10 text-primary rounded">changed</span>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -1023,25 +1023,25 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({
                                                     {f.type === 'string' && (
                                                         <div className="grid grid-cols-2 gap-2">
                                                             <div>
-                                                                <Label className="text-xs text-gray-600 mb-1 block">Min chars</Label>
+                                                                <Label className="text-xs text-muted-foreground mb-1 block">Min chars</Label>
                                                                 <Input
                                                                     type="number"
                                                                     min={0}
                                                                     value={f.minLength ?? ''}
                                                                     onChange={(e) => handleFieldChange(f.path, 'minLength', e.target.value ? parseInt(e.target.value) : undefined)}
                                                                     placeholder="—"
-                                                                    className="h-7 text-[11px] bg-gray-50"
+                                                                    className="h-7 text-[11px] bg-muted"
                                                                 />
                                                             </div>
                                                             <div>
-                                                                <Label className="text-xs text-gray-600 mb-1 block">Max chars</Label>
+                                                                <Label className="text-xs text-muted-foreground mb-1 block">Max chars</Label>
                                                                 <Input
                                                                     type="number"
                                                                     min={0}
                                                                     value={f.maxLength ?? ''}
                                                                     onChange={(e) => handleFieldChange(f.path, 'maxLength', e.target.value ? parseInt(e.target.value) : undefined)}
                                                                     placeholder="—"
-                                                                    className="h-7 text-[11px] bg-gray-50"
+                                                                    className="h-7 text-[11px] bg-muted"
                                                                 />
                                                             </div>
                                                         </div>
@@ -1050,23 +1050,23 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({
                                                     {f.type === 'number' && (
                                                         <div className="grid grid-cols-2 gap-2">
                                                             <div>
-                                                                <Label className="text-xs text-gray-600 mb-1 block">Min value</Label>
+                                                                <Label className="text-xs text-muted-foreground mb-1 block">Min value</Label>
                                                                 <Input
                                                                     type="number"
                                                                     value={f.minimum ?? ''}
                                                                     onChange={(e) => handleFieldChange(f.path, 'minimum', e.target.value ? parseInt(e.target.value) : undefined)}
                                                                     placeholder="—"
-                                                                    className="h-7 text-[11px] bg-gray-50"
+                                                                    className="h-7 text-[11px] bg-muted"
                                                                 />
                                                             </div>
                                                             <div>
-                                                                <Label className="text-xs text-gray-600 mb-1 block">Max value</Label>
+                                                                <Label className="text-xs text-muted-foreground mb-1 block">Max value</Label>
                                                                 <Input
                                                                     type="number"
                                                                     value={f.maximum ?? ''}
                                                                     onChange={(e) => handleFieldChange(f.path, 'maximum', e.target.value ? parseInt(e.target.value) : undefined)}
                                                                     placeholder="—"
-                                                                    className="h-7 text-[11px] bg-gray-50"
+                                                                    className="h-7 text-[11px] bg-muted"
                                                                 />
                                                             </div>
                                                         </div>
@@ -1075,25 +1075,25 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({
                                                     {f.type === 'array' && (
                                                         <div className="grid grid-cols-2 gap-2">
                                                             <div>
-                                                                <Label className="text-xs text-gray-600 mb-1 block">Min items</Label>
+                                                                <Label className="text-xs text-muted-foreground mb-1 block">Min items</Label>
                                                                 <Input
                                                                     type="number"
                                                                     min={0}
                                                                     value={f.minItems ?? ''}
                                                                     onChange={(e) => handleFieldChange(f.path, 'minItems', e.target.value ? parseInt(e.target.value) : undefined)}
                                                                     placeholder="—"
-                                                                    className="h-7 text-[11px] bg-gray-50"
+                                                                    className="h-7 text-[11px] bg-muted"
                                                                 />
                                                             </div>
                                                             <div>
-                                                                <Label className="text-xs text-gray-600 mb-1 block">Max items</Label>
+                                                                <Label className="text-xs text-muted-foreground mb-1 block">Max items</Label>
                                                                 <Input
                                                                     type="number"
                                                                     min={0}
                                                                     value={f.maxItems ?? ''}
                                                                     onChange={(e) => handleFieldChange(f.path, 'maxItems', e.target.value ? parseInt(e.target.value) : undefined)}
                                                                     placeholder="—"
-                                                                    className="h-7 text-[11px] bg-gray-50"
+                                                                    className="h-7 text-[11px] bg-muted"
                                                                 />
                                                             </div>
                                                         </div>
@@ -1101,8 +1101,8 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({
 
                                                     {f.default !== undefined && typeof f.default !== 'object' && (
                                                         <div className="mt-3">
-                                                            <Label className="text-xs text-gray-600 mb-1 block">Current value</Label>
-                                                            <div className="text-xs text-gray-700 bg-gray-50 px-2 py-1 rounded border border-gray-100 truncate font-mono">
+                                                            <Label className="text-xs text-muted-foreground mb-1 block">Current value</Label>
+                                                            <div className="text-xs text-foreground bg-muted px-2 py-1 rounded border border-border truncate font-mono">
                                                                 {String(f.default)}
                                                             </div>
                                                         </div>
@@ -1117,9 +1117,9 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({
                                 const isArrayParent = field.type === 'array';
                                 const borderColor = isArrayParent ? 'border-primary/20' : 'border-blue-200';
                                 const lineColor = isArrayParent ? 'bg-primary/20' : 'bg-blue-200';
-                                const textColor = isArrayParent ? 'text-primary' : 'text-blue-500';
-                                const bgColor = isArrayParent ? 'bg-primary/5' : 'bg-blue-50';
-                                const badgeTextColor = isArrayParent ? 'text-primary/80' : 'text-blue-400';
+                                const textColor = isArrayParent ? 'text-primary' : 'text-primary';
+                                const bgColor = isArrayParent ? 'bg-primary/5' : 'bg-primary/10';
+                                const badgeTextColor = isArrayParent ? 'text-primary/80' : 'text-primary';
                                 const headerLabel = isArrayParent ? 'Item Fields' : `${formatFieldName(field.name)} Properties`;
 
                                 return (
@@ -1159,13 +1159,13 @@ export const SchemaEditor: React.FC<SchemaEditorProps> = ({
             </div>
 
             {/* Footer */}
-            {/* <div className="absolute bottom-0 left-0 right-0 px-4 py-2.5 border-t border-gray-100 bg-gray-50/50 flex-shrink-0">
+            {/* <div className="absolute bottom-0 left-0 right-0 px-4 py-2.5 border-t border-border bg-muted/50 flex-shrink-0">
                 <div className="flex items-center justify-end w-full gap-2">
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={handleCancel}
-                        className="h-7 px-3 text-[11px] text-gray-500 hover:text-gray-700"
+                        className="h-7 px-3 text-[11px] text-muted-foreground hover:text-foreground"
                     >
                         Cancel
                     </Button>

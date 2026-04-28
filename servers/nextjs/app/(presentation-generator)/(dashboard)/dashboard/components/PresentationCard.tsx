@@ -111,7 +111,7 @@ export const PresentationCard = ({
     <Card
       suppressHydrationWarning={true}
       onClick={handlePreview}
-      className="bg-[#F8FBFB] font-display shadow-none sm:shadow-none  presentation-card rounded-[12px] p-0 group hover:shadow-md transition-all duration-500 slide-theme cursor-pointer overflow-hidden flex flex-col"
+      className="bg-card font-display shadow-none sm:shadow-none  presentation-card rounded-[12px] p-0 group hover:shadow-md transition-all duration-500 slide-theme cursor-pointer overflow-hidden flex flex-col"
     >
       <div
         id={`dashboard-presentation-card-${id}`}
@@ -122,33 +122,33 @@ export const PresentationCard = ({
         </p> */}
 
         <img src="/card_bg.svg" alt="" className="absolute top-0 left-0 w-full h-full object-cover" />
-        <div className="scale-[0.75] mt-4  border border-gray-300 rounded-lg overflow-hidden">
+        <div className="scale-[0.75] mt-4  border border-border rounded-lg overflow-hidden">
 
           <SlideScale slide={firstSlide} isClickable={false} />
         </div>
 
-        <div className="w-full py-3 px-5 mt-auto z-40 relative bg-white  border-t border-[#EDEEEF]">
+        <div className="w-full py-3 px-5 mt-auto z-40 relative bg-card  border-t border-border">
           <div className="flex items-center justify-between gap-7 w-full">
             <div className="flex flex-col items-start gap-1">
-              <div className="text-sm text-[#191919] font-semibold  overflow-hidden line-clamp-1">
-                <MarkdownRenderer content={title} className="text-sm mb-0  font-display text-[#191919] font-semibold  overflow-hidden line-clamp-1" />
+              <div className="text-sm text-foreground font-semibold  overflow-hidden line-clamp-1">
+                <MarkdownRenderer content={title} className="text-sm mb-0  font-display text-foreground font-semibold  overflow-hidden line-clamp-1" />
               </div>
-              <p className="text-[#808080] text-sm font-display">
+              <p className="text-muted-foreground text-sm font-display">
                 {new Date(presentation?.created_at).toLocaleDateString()}
               </p>
 
             </div>
             <Popover>
-              <PopoverTrigger className="w-6 h-6 hover:bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:text-gray-700" onClick={(e) => e.stopPropagation()}>
-                <EllipsisVertical className="w-6 h-6 text-gray-500" />
+              <PopoverTrigger className="w-6 h-6 hover:bg-muted rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground" onClick={(e) => e.stopPropagation()}>
+                <EllipsisVertical className="w-6 h-6 text-muted-foreground" />
               </PopoverTrigger>
-              <PopoverContent align="end" className="bg-white w-[200px]">
+              <PopoverContent align="end" className="bg-card w-[200px]">
                 <button
-                  className="flex items-center justify-between w-full px-2 py-1 hover:bg-gray-100"
+                  className="flex items-center justify-between w-full px-2 py-1 hover:bg-muted"
                   onClick={handleDelete}
                 >
                   <p>Delete</p>
-                  <Trash className="w- h-4 text-red-500" />
+                  <Trash className="w- h-4 text-destructive" />
                 </button>
               </PopoverContent>
             </Popover>

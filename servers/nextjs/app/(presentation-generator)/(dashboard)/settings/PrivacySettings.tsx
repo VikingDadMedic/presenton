@@ -59,7 +59,7 @@ const PrivacySettings = () => {
           Share anonymous usage data to help us improve TripStory. No personal information or presentation content is collected.
         </p>
 
-        <div className="flex items-center justify-between gap-4 rounded-[10px] bg-white border border-[#EDEEEF] p-4">
+        <div className="flex items-center justify-between gap-4 rounded-[10px] bg-card border border-border p-4">
           <div>
             <label
               htmlFor="tracking-toggle"

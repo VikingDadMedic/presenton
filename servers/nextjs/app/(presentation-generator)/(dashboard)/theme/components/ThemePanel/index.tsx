@@ -868,9 +868,9 @@ const ThemePanel: React.FC = () => {
         tabIndex={0}
       >
 
-        <div className="border-2 border-dashed  border-gray-300 rounded-lg p-6 text-center">
+        <div className="border-2 border-dashed  border-border rounded-lg p-6 text-center">
           {isLogoUploading ? (
-            <div className="flex flex-col items-center justify-center py-6 text-gray-500">
+            <div className="flex flex-col items-center justify-center py-6 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin mb-2" />
               <p className="text-sm">Uploading logo...</p>
             </div>
@@ -902,8 +902,8 @@ const ThemePanel: React.FC = () => {
               </div>
               <div className="mt-2">
                 <label htmlFor="logo-upload" className="cursor-pointer">
-                  <span className="text-blue-600 hover:text-blue-500">Click to upload</span>
-                  <span className="text-gray-500"> or drag and drop</span>
+                  <span className="text-primary hover:text-primary">Click to upload</span>
+                  <span className="text-muted-foreground"> or drag and drop</span>
                 </label>
                 <input
                   id="logo-upload"
@@ -1023,7 +1023,7 @@ const ThemePanel: React.FC = () => {
             {/* Left side - Editor */}
             <div
               onClick={handleClickOutside}
-              className="min-w-[530px]   border-r border-[#EDEEEF]">
+              className="min-w-[530px]   border-r border-border">
               <div className="flex items-center justify-between px-5 rounded-md py-3 mx-2.5 my-2.5 bg-[#F6F6F9]  ">
                 <input id="theme-name" name="theme-name" className="text-lg font-semibold text-[#4C4D50] bg-transparent w-full outline-none border-none px-2  rounded" autoFocus={false} defaultValue={selectedTheme.name} onBlur={(e) => setSelectedTheme({ ...selectedTheme, name: e.target.value })}>
 
@@ -1032,7 +1032,7 @@ const ThemePanel: React.FC = () => {
                   document.getElementById('theme-name')?.focus()
                 }} />
               </div>
-              <div className='flex h-full   border-t border-[#EDEEEF] '>
+              <div className='flex h-full   border-t border-border '>
                 <StepIndicator currentStep={currentStep} />
                 <div className='pt-7  w-full  h-[calc(90vh-120px)] flex flex-col justify-between  '>
                   {currentStep === 1 && renderColorStep(currentStep)}
@@ -1041,7 +1041,7 @@ const ThemePanel: React.FC = () => {
                   {currentStep === 4 && renderLogoStep()}
 
 
-                  <div className='border-t border-[#EDEEEF] py-6 '>
+                  <div className='border-t border-border py-6 '>
                     <div className='flex justify-end px-5 gap-2'>
                       {currentStep > 1 && <button
 
@@ -1104,12 +1104,12 @@ const ThemePanel: React.FC = () => {
                 }
               }}
               // ref={previewContainerRef}
-              className=" w-full p-3 bg-gray-50">
+              className=" w-full p-3 bg-muted">
               <div className="space-y-4">
                 <div
                   ref={slideContainerRef}
                   style={{ backgroundColor: 'var(--page-background-color)' }}
-                  className="overflow-y-auto overflow-x-hidden custom_scrollbar space-y-4 h-[90vh] rounded-lg shadow-lg border bg-white"
+                  className="overflow-y-auto overflow-x-hidden custom_scrollbar space-y-4 h-[90vh] rounded-lg shadow-lg border bg-card"
                 >
                   {template && template.map((layout) => {
                     const {

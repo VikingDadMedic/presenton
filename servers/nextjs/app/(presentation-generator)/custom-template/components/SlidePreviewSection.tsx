@@ -22,17 +22,17 @@ export const SlidePreviewSection: React.FC<SlidePreviewSectionProps> = ({
     return (
         <div className="my-8 max-w-[1440px] mx-auto">
             {/* Header Card */}
-            <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
+            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
                 {/* Header */}
-                <div className="px-6 py-5 border-b border-[#F3F4F6] bg-gradient-to-r from-[#FAFAFA] to-white">
+                <div className="px-6 py-5 border-b border-border bg-gradient-to-r from-muted to-card">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-primary/15 flex items-center justify-center shadow-sm">
                                 <Images className="w-6 h-6 text-primary" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-semibold text-[#111827]">Slide Preview</h2>
-                                <p className="text-sm text-[#6B7280] mt-0.5">
+                                <h2 className="text-xl font-semibold text-foreground">Slide Preview</h2>
+                                <p className="text-sm text-muted-foreground mt-0.5">
                                     {slideCount} slide{slideCount !== 1 ? 's' : ''} ready for template generation
                                 </p>
                             </div>
@@ -67,9 +67,9 @@ export const SlidePreviewSection: React.FC<SlidePreviewSectionProps> = ({
 
 
                 {/* Action Footer */}
-                <div className="px-6 py-5 border-t border-[#F3F4F6] bg-gradient-to-r from-[#FAFAFA] to-white">
+                <div className="px-6 py-5 border-t border-border bg-gradient-to-r from-muted to-card">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <p className="text-sm text-[#6B7280] max-w-md text-center sm:text-left">
+                        <p className="text-sm text-muted-foreground max-w-md text-center sm:text-left">
                             Ready to generate your template. Each slide will be converted to a reusable React component.
                         </p>
                         <Button

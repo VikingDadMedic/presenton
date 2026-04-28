@@ -56,12 +56,12 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
         if (llmConfig.IMAGE_PROVIDER === "dall-e-3") {
             return (
                 <div className="w-[205px] mr-0 ml-auto">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                         DALL·E 3 Image Quality
                     </label>
                     <div className="">
                         <Select value={llmConfig.DALL_E_3_QUALITY || 'standard'} onValueChange={(value) => input_field_changed(value, "DALL_E_3_QUALITY")}>
-                            <SelectTrigger className="w-full h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between">
+                            <SelectTrigger className="w-full h-12 px-4 py-4 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between">
                                 <SelectValue placeholder="Select a quality" />
                             </SelectTrigger>
                             <SelectContent>
@@ -79,7 +79,7 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
         if (llmConfig.IMAGE_PROVIDER === "gpt-image-1.5") {
             return (
                 <div className="w-[205px]">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                         GPT Image 1.5 Quality
                     </label>
                     <div className="">
@@ -89,7 +89,7 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                         >
                             <SelectTrigger
 
-                                className="w-full h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between">
+                                className="w-full h-12 px-4 py-4 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between">
                                 <SelectValue placeholder="Select a quality" />
                             </SelectTrigger>
                             <SelectContent>
@@ -113,7 +113,7 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
     return (
         <div className="space-y-6 bg-[#F9F8F8] p-7 rounded-[12px] ">
             {/* API Key Input */}
-            <div className="mb-4  bg-white p-10 pt-5 rounded-[12px]">
+            <div className="mb-4  bg-card p-10 pt-5 rounded-[12px]">
                 <ToolTip content="Enable/Disable Image Generation" className='flex justify-end items-center'>
                     <div className='flex justify-end items-center'>
                         <Switch
@@ -134,7 +134,7 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                             <img src="/image-markup.svg" className='w-full h-full object-cover' alt='image-markup' />
                         </div>
                         <h3 className="text-xl font-normal text-[#191919] py-2.5">Image Generation Settings</h3>
-                        <p className=" text-sm  text-gray-500">
+                        <p className=" text-sm  text-muted-foreground">
                             Choosing where images come from
                         </p>
                     </div>
@@ -146,7 +146,7 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                 <>
                                     {/* Image Provider Selection */}
                                     <div className="">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-foreground mb-2">
                                             Select Image Provider
                                         </label>
                                         <div className="w-full">
@@ -159,17 +159,17 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                                         variant="outline"
                                                         role="combobox"
                                                         aria-expanded={openImageProviderSelect}
-                                                        className="w-[205px] h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between"
+                                                        className="w-[205px] h-12 px-4 py-4 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between"
                                                     >
                                                         <div className="flex gap-3 items-center">
-                                                            <span className="text-sm font-medium text-gray-900">
+                                                            <span className="text-sm font-medium text-foreground">
                                                                 {llmConfig.IMAGE_PROVIDER
                                                                     ? IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER]
                                                                         ?.label || llmConfig.IMAGE_PROVIDER
                                                                     : "Select image provider"}
                                                             </span>
                                                         </div>
-                                                        <ChevronUp className="w-4 h-4 text-gray-500" />
+                                                        <ChevronUp className="w-4 h-4 text-muted-foreground" />
                                                     </Button>
                                                 </PopoverTrigger>
                                                 <PopoverContent
@@ -203,11 +203,11 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                                                             <div className="flex gap-3 items-center">
                                                                                 <div className="flex flex-col space-y-1 flex-1">
                                                                                     <div className="flex items-center justify-between gap-2">
-                                                                                        <span className="text-sm font-medium text-gray-900 capitalize">
+                                                                                        <span className="text-sm font-medium text-foreground capitalize">
                                                                                             {provider.label}
                                                                                         </span>
                                                                                     </div>
-                                                                                    <span className="text-xs text-gray-600 leading-relaxed">
+                                                                                    <span className="text-xs text-muted-foreground leading-relaxed">
                                                                                         {provider.description}
                                                                                     </span>
                                                                                 </div>
@@ -238,14 +238,14 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                                 return (
                                                     <div className=" space-y-4">
                                                         <div className='w-[205px]'>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                            <label className="block text-sm font-medium text-foreground mb-2">
                                                                 ComfyUI Server URL
                                                             </label>
                                                             <div className="relative">
                                                                 <input
                                                                     type="text"
                                                                     placeholder="http://192.168.1.7:8188"
-                                                                    className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                                                                    className="w-full px-4 py-2.5 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                                                                     value={llmConfig.COMFYUI_URL || ""}
                                                                     onChange={(e) => {
                                                                         input_field_changed(
@@ -267,14 +267,14 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                                 return (
                                                     <div className="space-y-4">
                                                         <div className='w-[205px]'>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                            <label className="block text-sm font-medium text-foreground mb-2">
                                                                 Open WebUI URL
                                                             </label>
                                                             <div className="relative">
                                                                 <input
                                                                     type="text"
                                                                     placeholder="http://localhost:3000/api/v1"
-                                                                    className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                                                                    className="w-full px-4 py-2.5 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                                                                     value={llmConfig.OPEN_WEBUI_IMAGE_URL || ""}
                                                                     onChange={(e) => {
                                                                         input_field_changed(
@@ -292,14 +292,14 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                             // Show API key input for other providers
                                             return (
                                                 <div className=" w-[205px]">
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    <label className="block text-sm font-medium text-foreground mb-2">
                                                         {provider.apiKeyFieldLabel}
                                                     </label>
                                                     <div className="relative">
                                                         <input
                                                             type={showApiKey ? 'text' : 'password'}
                                                             placeholder={`Enter your ${provider.apiKeyFieldLabel}`}
-                                                            className="w-full px-4 py-2.5 h-12 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                                                            className="w-full px-4 py-2.5 h-12 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                                                             value={getFieldValue(provider.apiKeyField)}
                                                             onChange={(e) =>
                                                                 updateFieldValue(
@@ -311,9 +311,9 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                                         <button
                                                             type="button"
                                                             onClick={() => setShowApiKey((prev) => !prev)}
-                                                            className='absolute right-2 top-1/2 -translate-y-1/2 bg-white px-2 py-1 cursor-pointer'
+                                                            className='absolute right-2 top-1/2 -translate-y-1/2 bg-card px-2 py-1 cursor-pointer'
                                                         >
-                                                            {showApiKey ? <Eye className='w-4 h-4 text-gray-500' /> : <EyeOff className='w-4 h-4 text-gray-500' />}
+                                                            {showApiKey ? <Eye className='w-4 h-4 text-muted-foreground' /> : <EyeOff className='w-4 h-4 text-muted-foreground' />}
                                                         </button>
                                                     </div>
 
@@ -329,14 +329,14 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                             {renderQualitySelector(llmConfig, input_field_changed)}
                             {llmConfig.IMAGE_PROVIDER === "open_webui" && (
                                 <div className='w-[205px]'>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="block text-sm font-medium text-foreground mb-2">
                                         API Key (optional)
                                     </label>
                                     <div className="relative">
                                         <input
                                             type={showApiKey ? 'text' : 'password'}
                                             placeholder="API key"
-                                            className="w-full px-4 py-2.5 h-12 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                                            className="w-full px-4 py-2.5 h-12 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                                             value={llmConfig.OPEN_WEBUI_IMAGE_API_KEY || ""}
                                             onChange={(e) => {
                                                 input_field_changed(e.target.value, "OPEN_WEBUI_IMAGE_API_KEY");
@@ -345,21 +345,21 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                                         <button
                                             type="button"
                                             onClick={() => setShowApiKey((prev) => !prev)}
-                                            className='absolute right-2 top-1/2 -translate-y-1/2 bg-white px-2 py-1 cursor-pointer'
+                                            className='absolute right-2 top-1/2 -translate-y-1/2 bg-card px-2 py-1 cursor-pointer'
                                         >
-                                            {showApiKey ? <Eye className='w-4 h-4 text-gray-500' /> : <EyeOff className='w-4 h-4 text-gray-500' />}
+                                            {showApiKey ? <Eye className='w-4 h-4 text-muted-foreground' /> : <EyeOff className='w-4 h-4 text-muted-foreground' />}
                                         </button>
                                     </div>
                                 </div>
                             )}
                             {llmConfig.IMAGE_PROVIDER === "comfyui" && <div className='w-full'>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label className="block text-sm font-medium text-foreground mb-2">
                                     Workflow JSON
                                 </label>
                                 <div className="relative">
                                     <textarea
                                         placeholder='Paste your ComfyUI workflow JSON here (export via "Export (API)" in ComfyUI)'
-                                        className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors font-mono text-xs"
+                                        className="w-full px-4 py-2.5 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors font-mono text-xs"
                                         rows={3}
                                         value={llmConfig.COMFYUI_WORKFLOW || ""}
                                         onChange={(e) => {
@@ -379,11 +379,11 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
 
 
             {/* Web Grounding Toggle - show at the end, below models dropdown */}
-            {/* <div className="bg-white flex justify-between items-center p-10 rounded-[12px]">
+            {/* <div className="bg-card flex justify-between items-center p-10 rounded-[12px]">
                 <div className=' max-w-[290px]'>
 
                     <h4 className="text-xl font-normal text-[#191919]">Advanced</h4>
-                    <p className="mt-2.5 text-sm  text-gray-500">
+                    <p className="mt-2.5 text-sm  text-muted-foreground">
                         Configure advanced AI features.
                     </p>
                 </div>

@@ -74,14 +74,14 @@ const FinalStep = () => {
             <div className='flex flex-col items-center justify-center'>
 
                 <img src="/final_onboarding.png" alt="TripStory" className='w-[118px] h-[98px]  object-contain' />
-                <h1 className='text-black text-[30px] font-normal font-display py-2.5'>Welcome on board!</h1>
+                <h1 className='text-foreground text-[30px] font-normal font-display py-2.5'>Welcome on board!</h1>
                 <p className='text-[#000000CC] text-xl font-normal font-display'>You’re all set. Let’s create your first presentation.</p>
 
                 {trackingEnabled !== null && (
-                    <div className='flex items-center gap-3 mt-8 px-5 py-3.5 rounded-[10px] border border-[#EDEEEF] bg-white'>
+                    <div className='flex items-center gap-3 mt-8 px-5 py-3.5 rounded-[10px] border border-border bg-card'>
                         <div>
                             <p className='text-sm font-medium text-[#191919] font-display'>Usage analytics</p>
-                            <p className='text-[11px] text-[#9CA3AF] font-display leading-tight mt-0.5'>Help improve TripStory by sharing anonymous usage data.</p>
+                            <p className='text-[11px] text-muted-foreground font-display leading-tight mt-0.5'>Help improve TripStory by sharing anonymous usage data.</p>
                         </div>
                         <Switch
                             checked={trackingEnabled}

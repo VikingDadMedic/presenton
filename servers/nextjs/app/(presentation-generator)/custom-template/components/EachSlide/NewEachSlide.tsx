@@ -156,9 +156,9 @@ const EachSlide: React.FC<EachSlideProps> = ({
   const hasError = !!slide.error;
 
   return (
-    <div className="group max-w-[1440px] mx-auto relative bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-[#D1D5DB]">
+    <div className="group max-w-[1440px] mx-auto relative bg-card rounded-2xl border border-border overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-border">
       {/* Slide Header */}
-      <div className="px-5 py-4 border-b border-[#F3F4F6] bg-gradient-to-r from-[#FAFAFA] to-white">
+      <div className="px-5 py-4 border-b border-border bg-gradient-to-r from-muted to-card">
         <div className="flex items-center justify-between">
           {/* Left: Slide Info */}
           <div className="flex items-center gap-3">
@@ -166,11 +166,11 @@ const EachSlide: React.FC<EachSlideProps> = ({
               {index + 1}
             </div>
             <div>
-              <h3 className="text-base font-semibold text-[#111827] tracking-tight">
+              <h3 className="text-base font-semibold text-foreground tracking-tight">
                 {compiledLayout?.layoutId || `Slide ${index + 1}`}
               </h3>
               {compiledLayout?.layoutDescription && (
-                <p className="text-sm text-[#6B7280] mt-0.5 line-clamp-1 max-w-[300px]">
+                <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1 max-w-[300px]">
                   {compiledLayout.layoutDescription}
                 </p>
               )}
@@ -180,7 +180,7 @@ const EachSlide: React.FC<EachSlideProps> = ({
           {/* Right: Actions */}
           <div className="flex items-center gap-1.5">
             {/* Primary Actions Group */}
-            <div className="flex items-center bg-gray-50/80 rounded-lg p-1 gap-0.5">
+            <div className="flex items-center bg-muted/80 rounded-lg p-1 gap-0.5">
               {/* AI Edit Button */}
               <Popover
                 open={isEditPromptOpen}
@@ -197,8 +197,8 @@ const EachSlide: React.FC<EachSlideProps> = ({
                       inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
                       rounded-md transition-all duration-150
                       ${!isSlideReady
-                        ? "opacity-40 cursor-not-allowed text-gray-400"
-                        : "text-gray-600 hover:bg-white hover:text-primary hover:shadow-sm"
+                        ? "opacity-40 cursor-not-allowed text-muted-foreground"
+                        : "text-muted-foreground hover:bg-card hover:text-primary hover:shadow-sm"
                       }
                     `}
                   >
@@ -210,7 +210,7 @@ const EachSlide: React.FC<EachSlideProps> = ({
                   align="end"
                   side="bottom"
                   sideOffset={8}
-                  className="w-[380px] p-0 rounded-xl border border-gray-200 shadow-2xl bg-white"
+                  className="w-[380px] p-0 rounded-xl border border-border shadow-2xl bg-card"
                 >
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-3">
@@ -219,15 +219,15 @@ const EachSlide: React.FC<EachSlideProps> = ({
                           <Sparkles className="w-3.5 h-3.5 text-white" />
                         </div>
                         <div>
-                          <span className="text-sm font-semibold text-gray-800">AI Edit</span>
-                          <p className="text-[10px] text-gray-400">Apply AI edits & tweaks</p>
+                          <span className="text-sm font-semibold text-foreground">AI Edit</span>
+                          <p className="text-[10px] text-muted-foreground">Apply AI edits & tweaks</p>
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={closeEditPrompt}
                         disabled={isUpdating}
-                        className="p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                        className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-muted-foreground transition-colors disabled:opacity-50"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -240,7 +240,7 @@ const EachSlide: React.FC<EachSlideProps> = ({
                       autoFocus
                       placeholder="What changes would you like? e.g., 'Make the title larger' or 'Change colors to blue theme'"
                       disabled={isUpdating}
-                      className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-800 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 focus:bg-white transition-all"
+                      className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 focus:bg-card transition-all"
                     />
 
                     <div className="flex justify-end mt-3">
@@ -251,7 +251,7 @@ const EachSlide: React.FC<EachSlideProps> = ({
                         className={`
                           inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all
                           ${isUpdating || !prompt.trim()
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                            ? "bg-muted text-muted-foreground cursor-not-allowed"
                             : "bg-primary text-white hover:bg-primary/90 shadow-sm hover:shadow-md"
                           }
                         `}
@@ -286,7 +286,7 @@ const EachSlide: React.FC<EachSlideProps> = ({
                   disabled={!isSlideReady}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed ${isSchemaEditorOpen
                     ? "bg-emerald-100 text-emerald-700"
-                    : "text-gray-600 hover:bg-white hover:text-emerald-600 hover:shadow-sm"
+                    : "text-muted-foreground hover:bg-card hover:text-emerald-600 hover:shadow-sm"
                     }`}
                 >
                   <Edit className="w-3.5 h-3.5" />
@@ -298,7 +298,7 @@ const EachSlide: React.FC<EachSlideProps> = ({
               {/* <ToolTip content="Edit source code">
                 <button
                   onClick={() => setShowCodeEditor(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md text-gray-600 hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all duration-150"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md text-muted-foreground hover:bg-card hover:text-blue-600 hover:shadow-sm transition-all duration-150"
                 >
                   <Code className="w-3.5 h-3.5" />
                   <span>Code</span>
@@ -315,7 +315,7 @@ const EachSlide: React.FC<EachSlideProps> = ({
                     rounded-md transition-all duration-150
                     ${isSelectionEditMode
                       ? "bg-primary/10 text-primary"
-                      : "text-gray-600 hover:bg-white hover:text-primary hover:shadow-sm"
+                      : "text-muted-foreground hover:bg-card hover:text-primary hover:shadow-sm"
                     }
                     disabled:opacity-40 disabled:cursor-not-allowed
                   `}
@@ -327,10 +327,10 @@ const EachSlide: React.FC<EachSlideProps> = ({
             </div>
 
             {/* Separator */}
-            <div className="w-px h-6 bg-gray-200 mx-1" />
+            <div className="w-px h-6 bg-muted mx-1" />
 
             {/* Undo/Redo Group */}
-            <div className="flex items-center bg-gray-50/80 rounded-lg p-1 gap-0.5">
+            <div className="flex items-center bg-muted/80 rounded-lg p-1 gap-0.5">
               <ToolTip content={canUndo ? "Undo (Ctrl+Z)" : "Nothing to undo"}>
                 <button
                   onClick={undo}
@@ -339,8 +339,8 @@ const EachSlide: React.FC<EachSlideProps> = ({
                     inline-flex items-center justify-center w-8 h-8
                     rounded-md transition-all duration-150
                     ${!canUndo || !isSlideReady
-                      ? "opacity-40 cursor-not-allowed text-gray-400"
-                      : "text-gray-600 hover:bg-white hover:text-amber-600 hover:shadow-sm"
+                      ? "opacity-40 cursor-not-allowed text-muted-foreground"
+                      : "text-muted-foreground hover:bg-card hover:text-amber-600 hover:shadow-sm"
                     }
                   `}
                 >
@@ -355,8 +355,8 @@ const EachSlide: React.FC<EachSlideProps> = ({
                     inline-flex items-center justify-center w-8 h-8
                     rounded-md transition-all duration-150
                     ${!canRedo || !isSlideReady
-                      ? "opacity-40 cursor-not-allowed text-gray-400"
-                      : "text-gray-600 hover:bg-white hover:text-amber-600 hover:shadow-sm"
+                      ? "opacity-40 cursor-not-allowed text-muted-foreground"
+                      : "text-muted-foreground hover:bg-card hover:text-amber-600 hover:shadow-sm"
                     }
                   `}
                 >
@@ -366,7 +366,7 @@ const EachSlide: React.FC<EachSlideProps> = ({
             </div>
 
             {/* Separator */}
-            <div className="w-px h-6 bg-gray-200 mx-1" />
+            <div className="w-px h-6 bg-muted mx-1" />
 
             {/* Re-Construct Button */}
             <ToolTip content="Re-Design this slide">
@@ -377,8 +377,8 @@ const EachSlide: React.FC<EachSlideProps> = ({
                       inline-flex items-center gap-2 px-4 py-2 text-sm font-medium
                       rounded-lg transition-all duration-200
                       ${!isSlideReady
-                    ? "opacity-40 cursor-not-allowed bg-gradient-to-r from-[#F3F4F6] to-[#E5E7EB] text-[#9CA3AF]"
-                    : "text-[#111827] shadow-sm hover:shadow-md"
+                    ? "opacity-40 cursor-not-allowed bg-gradient-to-r from-muted to-muted text-muted-foreground"
+                    : "text-foreground shadow-sm hover:shadow-md"
                   }
                     `}
                 style={isSlideReady ? {
@@ -399,8 +399,8 @@ const EachSlide: React.FC<EachSlideProps> = ({
                 className={`
                   p-1.5 rounded-lg border transition-all duration-150
                   ${!isSlideReady
-                    ? "opacity-40 cursor-not-allowed bg-gray-50 border-gray-200 text-gray-400"
-                    : "bg-white border-gray-200 text-gray-400 hover:bg-red-50 hover:border-red-200 hover:text-red-500"
+                    ? "opacity-40 cursor-not-allowed bg-muted border-border text-muted-foreground"
+                    : "bg-card border-border text-muted-foreground hover:bg-destructive/10 hover:border-destructive/20 hover:text-destructive"
                   }
                 `}
               >

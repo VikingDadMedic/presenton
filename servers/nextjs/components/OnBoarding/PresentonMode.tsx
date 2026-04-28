@@ -227,7 +227,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
         if (llmConfig.IMAGE_PROVIDER === "dall-e-3") {
             return (
                 <div className="w-full ">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                         DALL·E 3 Image Quality
                     </label>
                     <div className="">
@@ -235,7 +235,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                             ...prev,
                             DALL_E_3_QUALITY: value
                         }))}>
-                            <SelectTrigger className="w-full h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between">
+                            <SelectTrigger className="w-full h-12 px-4 py-4 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-border justify-between">
                                 <SelectValue placeholder="Select a quality" />
                             </SelectTrigger>
                             <SelectContent>
@@ -253,7 +253,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
         if (llmConfig.IMAGE_PROVIDER === "gpt-image-1.5") {
             return (
                 <div className="w-full">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                         GPT Image 1.5 Quality
                     </label>
                     <div className="">
@@ -266,7 +266,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                         >
                             <SelectTrigger
 
-                                className="w-full h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between">
+                                className="w-full h-12 px-4 py-4 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-border justify-between">
                                 <SelectValue placeholder="Select a quality" />
                             </SelectTrigger>
                             <SelectContent>
@@ -375,10 +375,10 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
 
     return (
         <div className='w-full max-w-[660px] font-display pb-10'>
-            <p className='px-2.5 py-0.5 w-fit text-primary rounded-md  border border-[#EDEEEF] text-[10px] font-medium mb-5 font-display'>TRIPSTORY</p>
+            <p className='px-2.5 py-0.5 w-fit text-primary rounded-md  border border-border text-[10px] font-medium mb-5 font-display'>TRIPSTORY</p>
             <div className=''>
 
-                <h2 className='mb-4 text-black text-[26px] font-normal font-display '>Choose your content providers</h2>
+                <h2 className='mb-4 text-foreground text-[26px] font-normal font-display '>Choose your content providers</h2>
                 <p className='text-[#000000CC] text-xl font-normal font-display'>Select the AI engines that will generate your slide text and visuals.</p>
             </div>
             <div className='flex items-center gap-2 bg-[#F0F3F9B2] rounded-[8px]  px-6 py-2.5 my-[54px]'>
@@ -387,7 +387,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
             </div>
 
             {/* Text Provider */}
-            <div className='p-3 border border-[#EDEEEF] rounded-[11px] bg-white '>
+            <div className='p-3 border border-border rounded-[11px] bg-card '>
                 <div className="flex items-center gap-[24.3px]  mb-[42px]">
                     <div className='w-[74px] h-[74px] rounded-[4px] pt-[16.8px] pr-[17.15px] pb-[17.2px] pl-[16.85px] flex items-center justify-center'
                         style={{ backgroundColor: '#4C55541A' }}
@@ -401,7 +401,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                     <div className='w-full'>
 
                         <h3 className="text-xl font-normal text-[#191919] pb-1.5">Text Generation Settings</h3>
-                        <p className=" text-sm  text-gray-500">
+                        <p className=" text-sm  text-muted-foreground">
                             Choosing where text content comes from
                         </p>
                     </div>
@@ -424,7 +424,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                 <div className='flex flex-col items-start gap-4 '>
                     <div className="flex flex-col justify-start w-full ">
 
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-foreground mb-2">
                             Select Text Provider
                         </label>
                         <Popover
@@ -436,17 +436,17 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                     variant="outline"
                                     role="combobox"
                                     aria-expanded={openProviderSelect}
-                                    className=" h-12 px-4 py-4 outline-none border border-[#E8E8E9] rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between"
+                                    className=" h-12 px-4 py-4 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-border justify-between"
                                 >
                                     <div className="flex gap-3 items-center">
-                                        <span className="text-sm font-medium text-gray-900">
+                                        <span className="text-sm font-medium text-foreground">
                                             {llmConfig.LLM
                                                 ? LLM_PROVIDERS[llmConfig.LLM]
                                                     ?.label || llmConfig.LLM
                                                 : "Select text provider"}
                                         </span>
                                     </div>
-                                    <ChevronUp className="w-4 h-4 text-gray-500" />
+                                    <ChevronUp className="w-4 h-4 text-muted-foreground" />
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent
@@ -477,11 +477,11 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                                         <div className="flex gap-3 items-center">
                                                             <div className="flex flex-col space-y-1 flex-1">
                                                                 <div className="flex items-center justify-between gap-2">
-                                                                    <span className="text-sm font-medium text-gray-900 capitalize">
+                                                                    <span className="text-sm font-medium text-foreground capitalize">
                                                                         {provider.label}
                                                                     </span>
                                                                 </div>
-                                                                <span className="text-xs text-gray-600 leading-relaxed">
+                                                                <span className="text-xs text-muted-foreground leading-relaxed">
                                                                     {provider.description}
                                                                 </span>
                                                             </div>
@@ -507,13 +507,13 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                                 USE_CUSTOM_URL: true,
                                                 OLLAMA_URL: prev.OLLAMA_URL || 'http://localhost:11434'
                                             }))}
-                                            className="py-2.5 bg-[#EDEEEF] px-3.5 w-fit rounded-md text-xs font-semibold text-foreground transition-all duration-200 border border-[#EDEEEF] hover:bg-[#E8F0FF]/90 focus:ring-2 focus:ring-blue-500/20"
+                                            className="py-2.5 bg-muted px-3.5 w-fit rounded-md text-xs font-semibold text-foreground transition-all duration-200 border border-border hover:bg-[#E8F0FF]/90 focus:ring-2 focus:ring-blue-500/20"
                                         >
                                             Use Ollama URL
                                         </button>
                                     ) : (
                                         <>
-                                            <label className="block text-sm font-medium capitalize text-gray-700 mb-2">
+                                            <label className="block text-sm font-medium capitalize text-foreground mb-2">
                                                 Ollama URL
                                             </label>
                                             <div className="relative">
@@ -524,7 +524,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                                         ...prev,
                                                         OLLAMA_URL: e.target.value
                                                     }))}
-                                                    className="w-full px-2 py-3 outline-none border  border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                                                    className="w-full px-2 py-3 outline-none border  border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                                                     placeholder="http://localhost:11434"
                                                 />
                                             </div>
@@ -544,7 +544,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                 </>
                             ) : llmConfig.LLM === 'chatgpt' || llmConfig.LLM === 'codex' ? (
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="block text-sm font-medium text-foreground mb-2">
                                         Select GPT Model
                                     </label>
                                     <Popover open={openModelSelect} onOpenChange={setOpenModelSelect}>
@@ -553,14 +553,14 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                                 variant="outline"
                                                 role="combobox"
                                                 aria-expanded={openModelSelect}
-                                                className="w-full h-12 px-3 outline-none border border-gray-300 rounded-lg hover:border-gray-400 justify-between"
+                                                className="w-full h-12 px-3 outline-none border border-border rounded-lg hover:border-border justify-between"
                                             >
-                                                <span className="text-sm text-gray-900">
+                                                <span className="text-sm text-foreground">
                                                     {llmConfig.CODEX_MODEL
                                                         ? (CHATGPT_MODELS.find((m) => m.id === llmConfig.CODEX_MODEL)?.name ?? llmConfig.CODEX_MODEL)
                                                         : "Select a model"}
                                                 </span>
-                                                <ChevronUp className="w-4 h-4 text-gray-400" />
+                                                <ChevronUp className="w-4 h-4 text-muted-foreground" />
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent
@@ -591,7 +591,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                                                         llmConfig.CODEX_MODEL === model.id ? "opacity-100" : "opacity-0"
                                                                     )}
                                                                 />
-                                                                <span className="text-sm text-gray-900">
+                                                                <span className="text-sm text-foreground">
                                                                     {model.name}
                                                                 </span>
                                                             </CommandItem>
@@ -606,7 +606,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                 <>
                                     <div className='flex items-center justify-between mb-2'>
 
-                                        <label className="block text-sm font-medium capitalize text-gray-700 ">
+                                        <label className="block text-sm font-medium capitalize text-foreground ">
                                             {llmConfig.LLM === 'custom' ? 'Custom LLM API Key' : `${llmConfig.LLM} API Key`}
                                         </label>
                                         {llmConfig.LLM && LLM_PROVIDERS[llmConfig.LLM!]?.getApiKeyUrl && <a href={LLM_PROVIDERS[llmConfig.LLM!]?.getApiKeyUrl || ""} target='_blank' className='text-[#666666] text-xs font-normal flex items-center gap-1'>Get API Key <ArrowUpRight className='w-3.5 h-3.5' /></a>}
@@ -620,15 +620,15 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                                 ...prev,
                                                 [currentApiKeyField]: e.target.value
                                             }))}
-                                            className="w-full px-2 py-3 outline-none border  border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                                            className="w-full px-2 py-3 outline-none border  border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                                             placeholder={`Enter your ${llmConfig.LLM} API key`}
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowApiKey((prev) => !prev)}
-                                            className='absolute right-2 top-1/2 -translate-y-1/2 bg-white px-2 py-1 cursor-pointer'
+                                            className='absolute right-2 top-1/2 -translate-y-1/2 bg-card px-2 py-1 cursor-pointer'
                                         >
-                                            {showApiKey ? <Eye className='w-4 h-4 text-gray-500' /> : <EyeOff className='w-4 h-4 text-gray-500' />}
+                                            {showApiKey ? <Eye className='w-4 h-4 text-muted-foreground' /> : <EyeOff className='w-4 h-4 text-muted-foreground' />}
                                         </button>
                                     </div>
                                 </>
@@ -641,7 +641,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                         ...prev,
                                         CUSTOM_LLM_URL: e.target.value
                                     }))}
-                                    className="w-full mt-2 px-2 py-3 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                                    className="w-full mt-2 px-2 py-3 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                                     placeholder="OpenAI-compatible URL"
                                 />
                             )}
@@ -661,9 +661,9 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                     (llmConfig.LLM === 'anthropic' && !currentApiKey) ||
                                     (llmConfig.LLM === 'custom' && !llmConfig.CUSTOM_LLM_URL)
                                 }
-                                className={`mt-4 py-2.5 bg-[#EDEEEF] disabled:opacity-50 disabled:cursor-not-allowed px-3.5 w-full  rounded-md text-xs font-semibold text-foreground transition-all duration-200 border ${modelsLoading
-                                    ? " border-gray-300 cursor-not-allowed text-gray-500"
-                                    : " border-[#EDEEEF] text-foreground hover:bg-[#EDEEEF]/90 focus:ring-2 focus:ring-blue-500/20"
+                                className={`mt-4 py-2.5 bg-muted disabled:opacity-50 disabled:cursor-not-allowed px-3.5 w-full  rounded-md text-xs font-semibold text-foreground transition-all duration-200 border ${modelsLoading
+                                    ? " border-border cursor-not-allowed text-muted-foreground"
+                                    : " border-border text-foreground hover:bg-muted/90 focus:ring-2 focus:ring-blue-500/20"
                                     }`}
                             >
                                 {modelsLoading ? (
@@ -686,7 +686,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                     {llmConfig.LLM !== 'chatgpt' && llmConfig.LLM !== 'codex' && modelsChecked && availableModels.length > 0 && (
                         <div className="w-full">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label className="block text-sm font-medium text-foreground mb-2">
                                     {llmConfig.LLM === 'ollama' ? 'Choose a supported model' : `Select ${LLM_PROVIDERS[llmConfig.LLM!]?.label} Model`}
                                 </label>
                                 <div className="w-full">
@@ -699,9 +699,9 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                                 variant="outline"
                                                 role="combobox"
                                                 aria-expanded={openModelSelect}
-                                                className="w-full h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between"
+                                                className="w-full h-12 px-4 py-4 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-border justify-between"
                                             >
-                                                <span className="text-sm truncate font-medium text-gray-900">
+                                                <span className="text-sm truncate font-medium text-foreground">
                                                     {
                                                         currentModel
                                                             ? availableModels.find(model => model === currentModel) || currentModel
@@ -710,7 +710,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                                     }
                                                 </span>
 
-                                                <ChevronUp className="w-4 h-4 text-gray-500" />
+                                                <ChevronUp className="w-4 h-4 text-muted-foreground" />
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent
@@ -748,7 +748,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                                                 <div className="flex gap-3 items-center">
                                                                     <div className="flex flex-col space-y-1 flex-1">
                                                                         <div className="flex items-center justify-between gap-2">
-                                                                            <span className="text-sm font-medium text-gray-900">
+                                                                            <span className="text-sm font-medium text-foreground">
                                                                                 {model}
                                                                             </span>
                                                                         </div>
@@ -768,7 +768,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                 </div>
             </div>
             {/* Image Provider */}
-            <div className={`p-3 border border-[#EDEEEF] rounded-[11px] relative mt-5 bg-white ${llmConfig.DISABLE_IMAGE_GENERATION ? "bg-[#F9FAFB]" : ""}`}>
+            <div className={`p-3 border border-border rounded-[11px] relative mt-5 bg-card ${llmConfig.DISABLE_IMAGE_GENERATION ? "bg-muted" : ""}`}>
                 <ToolTip content="Enable/Disable Image Generation" className='flex justify-end items-center absolute top-3 right-3'>
                     <div className='flex justify-end items-center'>
                         <Switch
@@ -791,7 +791,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                     <div>
 
                         <h3 className="text-xl font-normal text-[#191919] ">Image Generation Settings</h3>
-                        <p className=" text-sm  text-gray-500">
+                        <p className=" text-sm  text-muted-foreground">
                             Choosing where images come from
                         </p>
                     </div>
@@ -800,7 +800,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                     <div className='flex flex-col gap-4'>
                         {/* Image Provider Selection */}
                         <div className="w-full">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-foreground mb-2">
                                 Select Image Provider
                             </label>
                             <div className="w-full">
@@ -814,17 +814,17 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                             variant="outline"
                                             role="combobox"
                                             aria-expanded={openImageProviderSelect}
-                                            className=" w-full h-12 px-4 py-4 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-gray-400 justify-between"
+                                            className=" w-full h-12 px-4 py-4 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors hover:border-border justify-between"
                                         >
                                             <div className="flex gap-3 items-center">
-                                                <span className="text-sm font-medium capitalize text-gray-900">
+                                                <span className="text-sm font-medium capitalize text-foreground">
                                                     {llmConfig.IMAGE_PROVIDER
                                                         ? IMAGE_PROVIDERS[llmConfig.IMAGE_PROVIDER]
                                                             ?.label || llmConfig.IMAGE_PROVIDER
                                                         : 'Select Image Provider'}
                                                 </span>
                                             </div>
-                                            <ChevronUp className="w-4 h-4 text-gray-500" />
+                                            <ChevronUp className="w-4 h-4 text-muted-foreground" />
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent
@@ -861,11 +861,11 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                                                 <div className="flex gap-3 items-center">
                                                                     <div className="flex flex-col space-y-1 flex-1">
                                                                         <div className="flex items-center justify-between gap-2">
-                                                                            <span className="text-sm font-medium text-gray-900 capitalize">
+                                                                            <span className="text-sm font-medium text-foreground capitalize">
                                                                                 {provider.label}
                                                                             </span>
                                                                         </div>
-                                                                        <span className="text-xs text-gray-600 leading-relaxed">
+                                                                        <span className="text-xs text-muted-foreground leading-relaxed">
                                                                             {provider.description}
                                                                         </span>
                                                                     </div>
@@ -896,14 +896,14 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                     return (
                                         <div className=" space-y-4 w-full">
                                             <div className=''>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                <label className="block text-sm font-medium text-foreground mb-2">
                                                     ComfyUI Server URL
                                                 </label>
                                                 <div className="relative">
                                                     <input
                                                         type="text"
                                                         placeholder="http://192.168.1.7:8188"
-                                                        className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                                                        className="w-full px-4 py-2.5 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                                                         value={llmConfig.COMFYUI_URL || ""}
                                                         onChange={(e) => {
                                                             setLlmConfig(prev => ({
@@ -925,7 +925,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                     <div className="w-full ">
                                         <div className='flex items-center justify-between mb-2'>
 
-                                            <label className="block text-sm font-medium text-gray-700">
+                                            <label className="block text-sm font-medium text-foreground">
                                                 {provider.apiKeyFieldLabel}
                                             </label>
                                             {provider.getApiKeyUrl && <a href={provider.getApiKeyUrl || ""} target='_blank' className='text-[#666666] text-xs font-normal flex items-center gap-1'>Get API Key <ArrowUpRight className='w-3.5 h-3.5' /></a>}
@@ -934,7 +934,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                             <input
                                                 type={showApiKey ? 'text' : 'password'}
                                                 placeholder={`Enter your ${provider.apiKeyFieldLabel}`}
-                                                className="w-full px-4 py-2.5 h-12 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                                                className="w-full px-4 py-2.5 h-12 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                                                 value={getFieldValue(provider.apiKeyField)}
                                                 onChange={(e) => {
                                                     setLlmConfig((prev) => ({
@@ -948,9 +948,9 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                                             <button
                                                 type="button"
                                                 onClick={() => setShowApiKey((prev) => !prev)}
-                                                className='absolute right-2 top-1/2 -translate-y-1/2 bg-white px-2 py-1 cursor-pointer'
+                                                className='absolute right-2 top-1/2 -translate-y-1/2 bg-card px-2 py-1 cursor-pointer'
                                             >
-                                                {showApiKey ? <Eye className='w-4 h-4 text-gray-500' /> : <EyeOff className='w-4 h-4 text-gray-500' />}
+                                                {showApiKey ? <Eye className='w-4 h-4 text-muted-foreground' /> : <EyeOff className='w-4 h-4 text-muted-foreground' />}
                                             </button>
                                         </div>
 
@@ -966,13 +966,13 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                         {renderQualitySelector(llmConfig)}
                     </div>
                     {llmConfig.IMAGE_PROVIDER === "comfyui" && <div className='w-full'>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-foreground mb-2">
                             Workflow JSON
                         </label>
                         <div className="relative">
                             <textarea
                                 placeholder='Paste your ComfyUI workflow JSON here (export via "Export (API)" in ComfyUI)'
-                                className="w-full px-4 py-2.5 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors font-mono text-xs"
+                                className="w-full px-4 py-2.5 outline-none border border-border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors font-mono text-xs"
                                 rows={3}
                                 value={llmConfig.COMFYUI_WORKFLOW || ""}
                                 onChange={(e) => {
@@ -994,52 +994,52 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                     onClick={() => {
                         setStep(currentStep - 1);
                     }}
-                    className='border border-[#EDEEEF] rounded-lg px-4 py-1 h-[36px]'>
-                    <ChevronLeft className='w-4 h-4 text-gray-500' />
+                    className='border border-border rounded-lg px-4 py-1 h-[36px]'>
+                    <ChevronLeft className='w-4 h-4 text-muted-foreground' />
                 </button>
                 <button
 
                     disabled={savingConfig}
                     onClick={handleSaveConfig}
-                    className='border font-display border-[#EDEEEF] bg-primary  rounded-md px-5 py-2.5 text-white text-xs  font-semibold'>
+                    className='border font-display border-border bg-primary  rounded-md px-5 py-2.5 text-white text-xs  font-semibold'>
                     Continue to Finish
                 </button>
             </div>
             {/* Download Progress Modal */}
             {showDownloadModal && downloadingModel && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-2xl max-w-md w-full p-6 relative">
+                    <div className="bg-card/95 backdrop-blur-md rounded-xl shadow-2xl max-w-md w-full p-6 relative">
                         {/* Modal Content */}
                         <div className="text-center">
                             {/* Icon */}
                             <div className="mb-4">
                                 {downloadingModel.done ? (
-                                    <CheckCircle className="w-12 h-12 text-green-600 mx-auto" />
+                                    <CheckCircle className="w-12 h-12 text-success mx-auto" />
                                 ) : (
-                                    <Download className="w-12 h-12 text-blue-600 mx-auto animate-pulse" />
+                                    <Download className="w-12 h-12 text-primary mx-auto animate-pulse" />
                                 )}
                             </div>
 
                             {/* Title */}
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            <h3 className="text-lg font-semibold text-foreground mb-2">
                                 {downloadingModel.done ? "Download Complete!" : "Downloading Model"}
                             </h3>
 
                             {/* Model Name */}
-                            <p className="text-sm text-gray-600 mb-6">
+                            <p className="text-sm text-muted-foreground mb-6">
                                 {llmConfig.OLLAMA_MODEL}
                             </p>
 
                             {/* Progress Bar */}
                             {downloadProgress > 0 && (
                                 <div className="mb-4">
-                                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                    <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
                                         <div
-                                            className="bg-blue-600 h-3 rounded-full transition-all duration-300 ease-out"
+                                            className="bg-primary h-3 rounded-full transition-all duration-300 ease-out"
                                             style={{ width: `${downloadProgress}%` }}
                                         />
                                     </div>
-                                    <p className="text-sm text-gray-600 mt-2">
+                                    <p className="text-sm text-muted-foreground mt-2">
                                         {downloadProgress}% Complete
                                     </p>
                                 </div>
@@ -1048,8 +1048,8 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
                             {/* Status */}
                             {downloadingModel.status && (
                                 <div className="flex items-center justify-center gap-2 mb-4">
-                                    <CheckCircle className="w-4 h-4 text-green-600" />
-                                    <span className="text-sm font-medium text-green-700 capitalize">
+                                    <CheckCircle className="w-4 h-4 text-success" />
+                                    <span className="text-sm font-medium text-success capitalize">
                                         {downloadingModel.status}
                                     </span>
                                 </div>
@@ -1057,7 +1057,7 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
 
                             {/* Status Message */}
                             {downloadingModel.status && downloadingModel.status !== "pulled" && (
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs text-muted-foreground">
                                     {downloadingModel.status === "downloading" && "Downloading model files..."}
                                     {downloadingModel.status === "verifying" && "Verifying model integrity..."}
                                     {downloadingModel.status === "pulling" && "Pulling model from registry..."}
@@ -1066,8 +1066,8 @@ const PresentonMode = ({ currentStep, setStep }: { currentStep: number, setStep:
 
                             {/* Download Info */}
                             {downloadingModel.downloaded && downloadingModel.size && (
-                                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                                    <div className="flex justify-between text-xs text-gray-600">
+                                <div className="mt-4 p-3 bg-muted rounded-lg">
+                                    <div className="flex justify-between text-xs text-muted-foreground">
                                         <span>Downloaded: {(downloadingModel.downloaded / 1024 / 1024).toFixed(1)} MB</span>
                                         <span>Total: {(downloadingModel.size / 1024 / 1024).toFixed(1)} MB</span>
                                     </div>

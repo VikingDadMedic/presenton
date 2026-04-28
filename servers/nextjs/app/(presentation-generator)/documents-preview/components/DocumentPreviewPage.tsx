@@ -209,7 +209,7 @@ const DocumentsPreviewPage: React.FC = () => {
             {downloadingDocuments.includes(selectedDocument) ? (
               <Skeleton className="w-full h-full" />
             ) : (
-              <div className="whitespace-pre-wrap break-words text-sm leading-7 text-[#2E2E2E]">
+              <div className="whitespace-pre-wrap break-words text-sm leading-7 text-foreground">
                 {textContents[selectedDocument] || ""}
               </div>
             )}
@@ -223,31 +223,31 @@ const DocumentsPreviewPage: React.FC = () => {
     if (!isOpen) return null;
 
     return (
-      <div className={`border-r border-gray-200 fixed xl:relative w-full z-50 xl:z-auto
-        transition-all duration-300 bg-white ease-in-out max-w-[200px] md:max-w-[300px] h-[85vh] rounded-md p-5`}>
+      <div className={`border-r border-border fixed xl:relative w-full z-50 xl:z-auto
+        transition-all duration-300 bg-card ease-in-out max-w-[200px] md:max-w-[300px] h-[85vh] rounded-md p-5`}>
         <X
           onClick={() => setIsOpen(false)}
-          className="text-black mb-4 ml-auto mr-0 cursor-pointer hover:text-gray-600"
+          className="text-foreground mb-4 ml-auto mr-0 cursor-pointer hover:text-muted-foreground"
           size={20}
         />
 
         {documentKeys.length > 0 && (
           <div className="mt-8">
-            <p className="text-xs mt-2 text-[#2E2E2E] opacity-70">DOCUMENTS</p>
+            <p className="text-xs mt-2 text-foreground opacity-70">DOCUMENTS</p>
             <div className="flex flex-col gap-2 mt-6">
               {documentKeys.map((key: string) => (
                 <div
                   key={key}
                   onClick={() => updateSelectedDocument(key)}
-                  className={`${selectedDocument === key ? "border border-blue-500" : ""
+                  className={`${selectedDocument === key ? "border border-primary" : ""
                     } flex p-2 rounded-sm gap-2 items-center cursor-pointer`}
                 >
                   <img
-                    className="h-6 w-6 border border-gray-200"
+                    className="h-6 w-6 border border-border"
                     src={getIconFromFile(key)}
                     alt="Document icon"
                   />
-                  <span className="text-sm h-6 text-[#2E2E2E] overflow-hidden">
+                  <span className="text-sm h-6 text-foreground overflow-hidden">
                     {key.split("/").pop() ?? "file.txt"}
                   </span>
                 </div>
@@ -260,7 +260,7 @@ const DocumentsPreviewPage: React.FC = () => {
   };
 
   return (
-    <div className={`bg-white/90 min-h-screen flex flex-col w-full`}>
+    <div className={`bg-card/90 min-h-screen flex flex-col w-full`}>
       <OverlayLoader
         show={showLoading.show}
         text={showLoading.message}
@@ -284,7 +284,7 @@ const DocumentsPreviewPage: React.FC = () => {
 
         {renderSidebar()}
 
-        <div className="bg-white w-full mx-2 sm:mx-4 h-[calc(100vh-100px)] custom_scrollbar rounded-md overflow-y-auto py-6 pl-6">
+        <div className="bg-card w-full mx-2 sm:mx-4 h-[calc(100vh-100px)] custom_scrollbar rounded-md overflow-y-auto py-6 pl-6">
           {renderDocumentContent()}
         </div>
 

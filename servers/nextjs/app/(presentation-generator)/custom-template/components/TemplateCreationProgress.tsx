@@ -91,8 +91,8 @@ export const TemplateCreationProgress: React.FC<TemplateCreationProgressProps> =
                     ${status === 'completed'
                                             ? 'bg-primary border-primary text-white'
                                             : status === 'current'
-                                                ? 'bg-white border-primary text-primary'
-                                                : 'bg-white border-[#E5E7EB] text-[#9CA3AF]'
+                                                ? 'bg-card border-primary text-primary'
+                                                : 'bg-card border-border text-muted-foreground'
                                         }
                   `}
                                 >
@@ -110,8 +110,8 @@ export const TemplateCreationProgress: React.FC<TemplateCreationProgressProps> =
                                     className={`
                     mt-2 text-xs font-medium
                     ${status === 'completed' || status === 'current'
-                                            ? 'text-[#374151]'
-                                            : 'text-[#9CA3AF]'
+                                            ? 'text-foreground'
+                                            : 'text-muted-foreground'
                                         }
                   `}
                                 >
@@ -125,7 +125,7 @@ export const TemplateCreationProgress: React.FC<TemplateCreationProgressProps> =
                                     <div
                                         className={`h-full transition-colors duration-200 ${getStepStatus(index + 1) !== 'pending'
                                             ? 'bg-primary'
-                                            : 'bg-[#E5E7EB]'
+                                            : 'bg-muted'
                                             }`}
                                     />
                                 </div>
@@ -137,17 +137,17 @@ export const TemplateCreationProgress: React.FC<TemplateCreationProgressProps> =
 
             {/* Processing Progress */}
             {currentStep === 'template-creation' && totalSlides > 0 && (
-                <div className="mt-6 p-4 bg-[#F9FAFB] rounded-xl border border-[#E5E7EB]">
+                <div className="mt-6 p-4 bg-muted rounded-xl border border-border">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-[#374151]">
+                        <span className="text-sm text-foreground">
                             Processing slides
                         </span>
-                        <span className="text-sm font-medium text-[#374151]">
+                        <span className="text-sm font-medium text-foreground">
                             {processedSlides} / {totalSlides}
                         </span>
                     </div>
 
-                    <div className="w-full h-2 bg-[#E5E7EB] rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                         <div
                             className="h-full bg-primary rounded-full transition-all duration-300"
                             style={{ width: `${progressPercentage}%` }}

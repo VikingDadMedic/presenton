@@ -81,8 +81,8 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
               boxShadow: '0 0 4px 0 rgba(0, 0, 0, 0.06)',
             }}
           >
-            <UploadIcon className={`w-4 h-4 text-black`} />
-            <p className='text-xs font-medium text-black'>Upload PPTX File</p>
+            <UploadIcon className={`w-4 h-4 text-foreground`} />
+            <p className='text-xs font-medium text-foreground'>Upload PPTX File</p>
           </div>
         </div>
         <div className=" w-full bg-card rounded-[28px] p-2.5 "
@@ -91,7 +91,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
             clipPath: 'inset(0px -28px -28px -28px)',
           }}
         >
-          <div className="bg-[#FEFEFF] rounded-[18px] p-2 border border-[#EDEEEF] ">
+          <div className="bg-[#FEFEFF] rounded-[18px] p-2 border border-border ">
             <div className="h-[120px] w-full bg-[#F6F6F9]  rounded-[12px] p-1.5">
               <div className="border border-[#B8B8C1] border-dashed rounded-[12px ] p-1.5 h-full relative">
                 {!selectedFile ? <>
@@ -127,7 +127,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                         disabled={isProcessing}
                         onClick={removeFile}
                       >
-                        <X className="w-3 h-3 text-black " />
+                        <X className="w-3 h-3 text-foreground " />
                       </button>
 
                       <FileText className="w-5 h-5 text-white" />
@@ -198,7 +198,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                           : !selectedFile
                             ? "Select a PPTX file"
                             : "Check Fonts"}
-                        <ChevronRight className="w-3.5 h-3.5 text-black" />
+                        <ChevronRight className="w-3.5 h-3.5 text-foreground" />
                       </button>
                     </div>
                   )}

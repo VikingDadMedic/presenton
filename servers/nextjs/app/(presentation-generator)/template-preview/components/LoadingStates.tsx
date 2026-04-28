@@ -11,21 +11,21 @@ interface LoadingStatesProps {
 const LoadingStates: React.FC<LoadingStatesProps> = ({ type, message }) => {
   if (type === "loading") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-primary/5 flex items-center justify-center">
-        <Card className="p-8 text-center shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-card to-primary/5 flex items-center justify-center">
+        <Card className="p-8 text-center shadow-xl border-0 bg-card/80 backdrop-blur-sm">
           <CardContent className="space-y-6">
             <div className="relative">
               <div className="w-16 h-16 mx-auto mb-4 relative">
-                <Loader2 className="w-16 h-16 text-blue-500 animate-spin" />
+                <Loader2 className="w-16 h-16 text-primary animate-spin" />
                 <div className="absolute inset-0 w-16 h-16 border-4 border-blue-100 rounded-full animate-pulse"></div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-xl font-semibold text-gray-900">
+              <h3 className="text-xl font-semibold text-foreground">
                 Loading Layouts
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 {message || "Discovering and loading layout components..."}
               </p>
             </div>
@@ -33,15 +33,15 @@ const LoadingStates: React.FC<LoadingStatesProps> = ({ type, message }) => {
             {/* Loading animation dots */}
             <div className="flex justify-center space-x-1">
               <div
-                className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                className="w-2 h-2 bg-primary rounded-full animate-bounce"
                 style={{ animationDelay: "0ms" }}
               ></div>
               <div
-                className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                className="w-2 h-2 bg-primary rounded-full animate-bounce"
                 style={{ animationDelay: "150ms" }}
               ></div>
               <div
-                className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                className="w-2 h-2 bg-primary rounded-full animate-bounce"
                 style={{ animationDelay: "300ms" }}
               ></div>
             </div>
@@ -53,18 +53,18 @@ const LoadingStates: React.FC<LoadingStatesProps> = ({ type, message }) => {
 
   if (type === "error") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 flex items-center justify-center">
-        <Card className="p-8 text-center shadow-xl border-0 bg-white/80 backdrop-blur-sm max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-destructive/10 via-card to-orange-50 flex items-center justify-center">
+        <Card className="p-8 text-center shadow-xl border-0 bg-card/80 backdrop-blur-sm max-w-md">
           <CardContent className="space-y-6">
-            <div className="w-16 h-16 mx-auto p-4 bg-red-100 rounded-full">
-              <AlertCircle className="w-8 h-8 text-red-500" />
+            <div className="w-16 h-16 mx-auto p-4 bg-destructive/10 rounded-full">
+              <AlertCircle className="w-8 h-8 text-destructive" />
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-xl font-semibold text-gray-900">
+              <h3 className="text-xl font-semibold text-foreground">
                 Something went wrong
               </h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
+              <p className="text-muted-foreground text-sm leading-relaxed">
                 {message ||
                   "Failed to load layouts. Please check your layout files and try again."}
               </p>
@@ -77,24 +77,24 @@ const LoadingStates: React.FC<LoadingStatesProps> = ({ type, message }) => {
 
   if (type === "empty") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-slate-50 flex items-center justify-center">
-        <Card className="p-8 text-center shadow-xl border-0 bg-white/80 backdrop-blur-sm max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-muted via-card to-muted flex items-center justify-center">
+        <Card className="p-8 text-center shadow-xl border-0 bg-card/80 backdrop-blur-sm max-w-md">
           <CardContent className="space-y-6">
-            <div className="w-16 h-16 mx-auto p-4 bg-gray-100 rounded-full">
-              <FileX className="w-8 h-8 text-gray-400" />
+            <div className="w-16 h-16 mx-auto p-4 bg-muted rounded-full">
+              <FileX className="w-8 h-8 text-muted-foreground" />
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-xl font-semibold text-gray-700">
+              <h3 className="text-xl font-semibold text-foreground">
                 No Layouts Found
               </h3>
-              <p className="text-gray-500 text-sm leading-relaxed">
+              <p className="text-muted-foreground text-sm leading-relaxed">
                 No valid layout files were discovered. Make sure your layout
                 components export both a default component and a Schema.
               </p>
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-lg text-left text-xs text-gray-600">
+            <div className="bg-muted p-4 rounded-lg text-left text-xs text-muted-foreground">
               <p className="font-medium mb-2">Expected structure:</p>
               <code className="block">
                 export default MyLayout
@@ -114,16 +114,16 @@ const LoadingStates: React.FC<LoadingStatesProps> = ({ type, message }) => {
 // Component for layout grid skeleton while loading
 export const LayoutGridSkeleton: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-primary/5">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-card to-primary/5">
       {/* Header Skeleton */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-card shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
-              <div className="w-32 h-6 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-8 h-8 bg-muted rounded-lg animate-pulse"></div>
+              <div className="w-32 h-6 bg-muted rounded animate-pulse"></div>
             </div>
-            <div className="w-16 h-6 bg-gray-200 rounded animate-pulse"></div>
+            <div className="w-16 h-6 bg-muted rounded animate-pulse"></div>
           </div>
         </div>
       </div>
@@ -135,16 +135,16 @@ export const LayoutGridSkeleton: React.FC = () => {
           <div className="lg:col-span-1 space-y-4">
             <Card className="p-4">
               <div className="space-y-3">
-                <div className="w-24 h-4 bg-gray-200 rounded animate-pulse"></div>
+                <div className="w-24 h-4 bg-muted rounded animate-pulse"></div>
                 <div className="space-y-2">
-                  <div className="w-full h-8 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="w-full h-8 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="w-full h-8 bg-muted rounded animate-pulse"></div>
+                  <div className="w-full h-8 bg-muted rounded animate-pulse"></div>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {[...Array(6)].map((_, i) => (
                     <div
                       key={i}
-                      className="w-full h-12 bg-gray-200 rounded animate-pulse"
+                      className="w-full h-12 bg-muted rounded animate-pulse"
                     ></div>
                   ))}
                 </div>
@@ -156,10 +156,10 @@ export const LayoutGridSkeleton: React.FC = () => {
           <div className="lg:col-span-3">
             <Card className="p-6">
               <div className="space-y-4">
-                <div className="w-full h-96 bg-gray-200 rounded-lg animate-pulse"></div>
+                <div className="w-full h-96 bg-muted rounded-lg animate-pulse"></div>
                 <div className="space-y-2">
-                  <div className="w-48 h-4 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="w-32 h-3 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="w-48 h-4 bg-muted rounded animate-pulse"></div>
+                  <div className="w-32 h-3 bg-muted rounded animate-pulse"></div>
                 </div>
               </div>
             </Card>

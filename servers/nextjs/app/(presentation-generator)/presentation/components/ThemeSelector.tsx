@@ -46,17 +46,17 @@ const ThemeSelector = ({ current_theme, themes: allThemes }: { current_theme: an
     return (
         <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
-                <button className={`text-sm px-[18px] py-2.5 gap-1.5 flex items-center  border border-[#EDEEEF] bg-[#F6F6F9]   duration-300 rounded-[88px] font-medium font-display ${isOpen ? 'text-[#007AFF]' : 'text-black'}`}>
-                    <Palette className={`h-4 w-4 ${isOpen ? 'text-[#007AFF]' : 'text-black'}`} /> Theme
+                <button className={`text-sm px-[18px] py-2.5 gap-1.5 flex items-center  border border-border bg-[#F6F6F9]   duration-300 rounded-[88px] font-medium font-display ${isOpen ? 'text-[#007AFF]' : 'text-foreground'}`}>
+                    <Palette className={`h-4 w-4 ${isOpen ? 'text-[#007AFF]' : 'text-foreground'}`} /> Theme
                 </button>
             </PopoverTrigger>
             <PopoverContent className="w-fit rounded-[18px] max-h-80 overflow-y-auto hide-scrollbar">
                 <div className='pb-2 flex  gap-2 justify-end'>
-                    <button className='text-xs text-gray-500 pb-2 text-right underline' onClick={() => {
+                    <button className='text-xs text-muted-foreground pb-2 text-right underline' onClick={() => {
                         trackEvent(MixpanelEvent.Navigation, { from: pathname, to: "/theme?tab=new-theme" });
                         router.push(`/theme?tab=new-theme`)
                     }}>+Customize Theme</button>
-                    <button className='text-xs text-gray-500 pb-2 text-right underline' onClick={resetTheme}>Reset Theme</button>
+                    <button className='text-xs text-muted-foreground pb-2 text-right underline' onClick={resetTheme}>Reset Theme</button>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
 
@@ -67,7 +67,7 @@ const ThemeSelector = ({ current_theme, themes: allThemes }: { current_theme: an
                             className={`text-left group relative`}
                         >
 
-                            <div className={`rounded-xl cursor-pointer p-1 border shadow-sm bg-white  transition-all group-hover:shadow-md ${currentTheme.id === t.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                            <div className={`rounded-xl cursor-pointer p-1 border shadow-sm bg-card  transition-all group-hover:shadow-md ${currentTheme.id === t.id ? 'border-blue-500 bg-blue-50' : 'border-border hover:border-border'}`}>
                                 <div className="rounded-lg p-2" style={{ backgroundColor: t.data.colors['background'] }}>
                                     <div className="rounded-md shadow-sm p-3" style={{ backgroundColor: t.data.colors['card'] }}>
                                         <div className="w-16 h-2 rounded-full mb-2" style={{ backgroundColor: t.data.colors['background_text'] }} />
@@ -77,7 +77,7 @@ const ThemeSelector = ({ current_theme, themes: allThemes }: { current_theme: an
                                     </div>
                                 </div>
                             </div>
-                            <p className="mt-2 text-xs text-center font-medium text-gray-700 truncate w-full">
+                            <p className="mt-2 text-xs text-center font-medium text-foreground truncate w-full">
                                 {t.name}
                             </p>
                         </div>

@@ -121,21 +121,21 @@ const ChartDataEditor: React.FC<ChartDataEditorProps> = ({
                                 {columns.map(col => (
                                     <th
                                         key={col.key}
-                                        className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200 bg-gray-50"
+                                        className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border bg-muted"
                                     >
                                         {col.label}
                                     </th>
                                 ))}
-                                <th className="w-10 border-b border-gray-200 bg-gray-50" />
+                                <th className="w-10 border-b border-border bg-muted" />
                             </tr>
                         </thead>
                         <tbody>
                             {rows.map((row, ri) => (
-                                <tr key={row._id} className="hover:bg-gray-50/50">
+                                <tr key={row._id} className="hover:bg-muted/50">
                                     {columns.map(col => {
                                         const errKey = `${ri}-${col.key}`;
                                         return (
-                                            <td key={col.key} className="px-2 py-1.5 border-b border-gray-100">
+                                            <td key={col.key} className="px-2 py-1.5 border-b border-border">
                                                 <Input
                                                     type={col.type === 'number' ? 'number' : 'text'}
                                                     value={row[col.key] ?? ''}
@@ -150,12 +150,12 @@ const ChartDataEditor: React.FC<ChartDataEditorProps> = ({
                                             </td>
                                         );
                                     })}
-                                    <td className="px-1 py-1.5 border-b border-gray-100 text-center">
+                                    <td className="px-1 py-1.5 border-b border-border text-center">
                                         <button
                                             type="button"
                                             onClick={() => deleteRow(ri)}
                                             disabled={rows.length <= 1}
-                                            className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                            className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                                         >
                                             <X className="h-3.5 w-3.5" />
                                         </button>
@@ -169,7 +169,7 @@ const ChartDataEditor: React.FC<ChartDataEditorProps> = ({
                 <button
                     type="button"
                     onClick={addRow}
-                    className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md hover:bg-gray-50 transition-colors w-fit"
+                    className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground px-3 py-2 rounded-md hover:bg-muted transition-colors w-fit"
                 >
                     <Plus className="h-3.5 w-3.5" />
                     Add Row

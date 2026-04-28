@@ -186,10 +186,10 @@ const TravelUploadPage = () => {
         duration={loadingState.duration}
         extra_info={loadingState.extra_info}
       />
-      <div className="rounded-2xl border border-slate-200/70 bg-white/80 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <div className="rounded-2xl border border-border bg-card/80 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/60">
         {/* Destination */}
         <div className="p-4 md:p-6">
-          <label htmlFor="travel-destination" className="text-base font-normal font-display text-slate-900 mb-2 block">
+          <label htmlFor="travel-destination" className="text-base font-normal font-display text-foreground mb-2 block">
             Destination
           </label>
           <input
@@ -198,17 +198,17 @@ const TravelUploadPage = () => {
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
             placeholder="e.g. Kyoto, Japan"
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-instrument_sans text-slate-900 placeholder:text-slate-400 ring-1 ring-inset ring-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+            className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm font-instrument_sans text-foreground placeholder:text-muted-foreground ring-1 ring-inset ring-border shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
         </div>
 
-        <div className="border-t border-slate-200/70" />
+        <div className="border-t border-border" />
 
         {/* Departure City */}
         <div className="p-4 md:p-6">
-          <label htmlFor="travel-origin" className="text-base font-normal font-display text-slate-900 mb-2 block">
+          <label htmlFor="travel-origin" className="text-base font-normal font-display text-foreground mb-2 block">
             Departure City{" "}
-            <span className="text-sm font-instrument_sans text-slate-400 font-normal">
+            <span className="text-sm font-instrument_sans text-muted-foreground font-normal">
               (optional)
             </span>
           </label>
@@ -218,16 +218,16 @@ const TravelUploadPage = () => {
             value={origin}
             onChange={(e) => setOrigin(e.target.value)}
             placeholder="e.g., New York, NY"
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-instrument_sans text-slate-900 placeholder:text-slate-400 ring-1 ring-inset ring-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+            className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm font-instrument_sans text-foreground placeholder:text-muted-foreground ring-1 ring-inset ring-border shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
         </div>
 
-        <div className="border-t border-slate-200/70" />
+        <div className="border-t border-border" />
 
         {/* Trip Duration, Travelers & Currency */}
         <div className="p-4 md:p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div>
-            <label htmlFor="travel-duration" className="text-base font-normal font-display text-slate-900 mb-2 block">
+            <label htmlFor="travel-duration" className="text-base font-normal font-display text-foreground mb-2 block">
               Trip Duration
             </label>
             <div className="flex items-center gap-3">
@@ -240,31 +240,31 @@ const TravelUploadPage = () => {
                 onChange={(e) =>
                   setTripDays(Math.max(1, Math.min(60, Number(e.target.value) || 1)))
                 }
-                className="w-20 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-center text-sm font-instrument_sans text-slate-900 ring-1 ring-inset ring-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-20 rounded-xl border border-border bg-card px-3 py-2.5 text-center text-sm font-instrument_sans text-foreground ring-1 ring-inset ring-border shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
-              <span className="text-sm font-instrument_sans text-slate-500">days</span>
+              <span className="text-sm font-instrument_sans text-muted-foreground">days</span>
             </div>
           </div>
 
           <div>
-            <label htmlFor="travel-travelers" className="text-base font-normal font-display text-slate-900 mb-2 block">
+            <label htmlFor="travel-travelers" className="text-base font-normal font-display text-foreground mb-2 block">
               Travelers
             </label>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setTravelers((v) => Math.max(1, v - 1))}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 active:bg-slate-100"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-muted active:bg-muted"
               >
                 <Minus className="h-4 w-4" />
               </button>
-              <span id="travel-travelers" className="w-10 text-center text-sm font-instrument_sans font-semibold text-slate-900">
+              <span id="travel-travelers" className="w-10 text-center text-sm font-instrument_sans font-semibold text-foreground">
                 {travelers}
               </span>
               <button
                 type="button"
                 onClick={() => setTravelers((v) => Math.min(20, v + 1))}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 active:bg-slate-100"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm hover:bg-muted active:bg-muted"
               >
                 <Plus className="h-4 w-4" />
               </button>
@@ -272,14 +272,14 @@ const TravelUploadPage = () => {
           </div>
 
           <div>
-            <label htmlFor="travel-currency" className="text-base font-normal font-display text-slate-900 mb-2 block">
+            <label htmlFor="travel-currency" className="text-base font-normal font-display text-foreground mb-2 block">
               Currency
             </label>
             <select
               id="travel-currency"
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-instrument_sans text-slate-900 ring-1 ring-inset ring-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm font-instrument_sans text-foreground ring-1 ring-inset ring-border shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
             >
               {["USD", "EUR", "GBP", "AUD", "CAD", "JPY", "CHF", "INR"].map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -288,11 +288,11 @@ const TravelUploadPage = () => {
           </div>
         </div>
 
-        <div className="border-t border-slate-200/70" />
+        <div className="border-t border-border" />
 
         {/* Budget Tier */}
         <fieldset className="p-4 md:p-6 border-0">
-          <legend className="text-base font-normal font-display text-slate-900 mb-3 block">
+          <legend className="text-base font-normal font-display text-foreground mb-3 block">
             Budget
           </legend>
           <div className="grid grid-cols-3 gap-3">
@@ -305,18 +305,18 @@ const TravelUploadPage = () => {
                   "flex flex-col items-center gap-1 rounded-xl border px-3 py-4 text-center transition-all",
                   budget === tier.value
                     ? "border-primary bg-primary/5 ring-2 ring-primary/30"
-                    : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                    : "border-border bg-card hover:border-border hover:bg-muted"
                 )}
               >
                 <span
                   className={cn(
                     "text-sm font-instrument_sans font-semibold",
-                    budget === tier.value ? "text-primary" : "text-slate-900"
+                    budget === tier.value ? "text-primary" : "text-foreground"
                   )}
                 >
                   {tier.label}
                 </span>
-                <span className="text-xs font-instrument_sans text-slate-500">
+                <span className="text-xs font-instrument_sans text-muted-foreground">
                   {tier.description}
                 </span>
               </button>
@@ -324,11 +324,11 @@ const TravelUploadPage = () => {
           </div>
         </fieldset>
 
-        <div className="border-t border-slate-200/70" />
+        <div className="border-t border-border" />
 
         {/* Trip Type */}
         <fieldset className="p-4 md:p-6 border-0">
-          <legend className="text-base font-normal font-display text-slate-900 mb-3 block">
+          <legend className="text-base font-normal font-display text-foreground mb-3 block">
             Trip Type
           </legend>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
@@ -343,7 +343,7 @@ const TravelUploadPage = () => {
                     "flex flex-col items-center gap-2 rounded-xl border px-2 py-4 transition-all",
                     tripType === type.value
                       ? "border-primary bg-primary/5 ring-2 ring-primary/30"
-                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                      : "border-border bg-card hover:border-border hover:bg-muted"
                   )}
                 >
                   <Icon
@@ -351,7 +351,7 @@ const TravelUploadPage = () => {
                       "h-5 w-5",
                       tripType === type.value
                         ? "text-primary"
-                        : "text-slate-500"
+                        : "text-muted-foreground"
                     )}
                   />
                   <span
@@ -359,7 +359,7 @@ const TravelUploadPage = () => {
                       "text-xs font-instrument_sans font-medium",
                       tripType === type.value
                         ? "text-primary"
-                        : "text-slate-700"
+                        : "text-foreground"
                     )}
                   >
                     {type.label}
@@ -370,11 +370,11 @@ const TravelUploadPage = () => {
           </div>
         </fieldset>
 
-        <div className="border-t border-slate-200/70" />
+        <div className="border-t border-border" />
 
         {/* Interests */}
         <fieldset className="p-4 md:p-6 border-0">
-          <legend className="text-base font-normal font-display text-slate-900 mb-3 block">
+          <legend className="text-base font-normal font-display text-foreground mb-3 block">
             Interests
           </legend>
           <div className="flex flex-wrap gap-2">
@@ -387,7 +387,7 @@ const TravelUploadPage = () => {
                   "rounded-full border px-4 py-2 text-sm font-instrument_sans font-medium transition-all",
                   interests.includes(interest)
                     ? "border-primary bg-primary text-white"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                    : "border-border bg-card text-foreground hover:border-border hover:bg-muted"
                 )}
               >
                 {interest}
@@ -396,13 +396,13 @@ const TravelUploadPage = () => {
           </div>
         </fieldset>
 
-        <div className="border-t border-slate-200/70" />
+        <div className="border-t border-border" />
 
         {/* Additional Notes */}
         <div className="p-4 md:p-6">
-          <label htmlFor="travel-notes" className="text-base font-normal font-display text-slate-900 mb-2 block">
+          <label htmlFor="travel-notes" className="text-base font-normal font-display text-foreground mb-2 block">
             Additional Notes{" "}
-            <span className="text-sm font-instrument_sans text-slate-400 font-normal">
+            <span className="text-sm font-instrument_sans text-muted-foreground font-normal">
               (optional)
             </span>
           </label>
@@ -412,11 +412,11 @@ const TravelUploadPage = () => {
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             placeholder="e.g. We're celebrating an anniversary, prefer off-the-beaten-path spots..."
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-instrument_sans text-slate-900 placeholder:text-slate-400 ring-1 ring-inset ring-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 min-h-[80px] max-h-[200px] resize-y"
+            className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm font-instrument_sans text-foreground placeholder:text-muted-foreground ring-1 ring-inset ring-border shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 min-h-[80px] max-h-[200px] resize-y"
           />
         </div>
 
-        <div className="border-t border-slate-200/70" />
+        <div className="border-t border-border" />
 
         {/* Submit */}
         <div className="p-4 md:p-6">

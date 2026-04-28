@@ -54,16 +54,16 @@ const FontManager: React.FC<FontManagerProps> = ({
 
   return (
     <div className="my-8 max-w-[900px] mx-auto">
-      <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-[#F3F4F6] bg-[#FAFAFA]">
+        <div className="px-6 py-5 border-b border-border bg-muted">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
               <Type className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-[#111827]">Font Management</h2>
-              <p className="text-sm text-[#6B7280] mt-0.5">
+              <h2 className="text-xl font-semibold text-foreground">Font Management</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
                 {allFontsUploaded
                   ? "All fonts are ready! You can proceed to preview."
                   : "Upload missing fonts to ensure your presentation displays correctly."}
@@ -75,10 +75,10 @@ const FontManager: React.FC<FontManagerProps> = ({
         <div className="p-6 space-y-6">
           {/* Available Fonts */}
           {hasAvailableFonts && (
-            <div className="p-4 bg-[#F0FDF4] rounded-xl border border-[#BBF7D0]">
+            <div className="p-4 bg-success/10 rounded-xl border border-success/20">
               <div className="flex items-center gap-2 mb-3">
-                <CheckCircle2 className="w-5 h-5 text-[#16A34A]" />
-                <h4 className="text-sm font-semibold text-[#166534]">
+                <CheckCircle2 className="w-5 h-5 text-success" />
+                <h4 className="text-sm font-semibold text-success">
                   Available Fonts ({fontsData.available_fonts.length})
                 </h4>
               </div>
@@ -86,7 +86,7 @@ const FontManager: React.FC<FontManagerProps> = ({
                 {fontsData.available_fonts.map((font, index) => (
                   <span
                     key={index}
-                    className="px-3 py-1.5 bg-white border border-[#D1FAE5] rounded-full text-xs font-medium text-[#166534] shadow-sm"
+                    className="px-3 py-1.5 bg-card border border-success/10 rounded-full text-xs font-medium text-success shadow-sm"
                   >
                     {font.name}
                   </span>
@@ -109,17 +109,17 @@ const FontManager: React.FC<FontManagerProps> = ({
                 {fontsNeedingUpload.map((font, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-4 bg-white rounded-xl border border-[#FDE68A] shadow-sm"
+                    className="flex items-center justify-between p-4 bg-card rounded-xl border border-[#FDE68A] shadow-sm"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-[#FEF3C7] flex items-center justify-center">
                         <FileType className="w-5 h-5 text-[#D97706]" />
                       </div>
                       <div>
-                        <span className="text-sm font-semibold text-[#111827] block">
+                        <span className="text-sm font-semibold text-foreground block">
                           {font.name}
                         </span>
-                        <span className="text-xs text-[#6B7280]">
+                        <span className="text-xs text-muted-foreground">
                           .ttf, .otf, .woff, .woff2
                         </span>
                       </div>
@@ -153,10 +153,10 @@ const FontManager: React.FC<FontManagerProps> = ({
 
           {/* Uploaded Fonts */}
           {hasUploadedFonts && (
-            <div className="p-4 bg-[#F0FDF4] rounded-xl border border-[#BBF7D0]">
+            <div className="p-4 bg-success/10 rounded-xl border border-success/20">
               <div className="flex items-center gap-2 mb-4">
-                <CheckCircle2 className="w-5 h-5 text-[#16A34A]" />
-                <h4 className="text-sm font-semibold text-[#166534]">
+                <CheckCircle2 className="w-5 h-5 text-success" />
+                <h4 className="text-sm font-semibold text-success">
                   Uploaded Fonts ({uploadedFonts.length})
                 </h4>
               </div>
@@ -164,19 +164,19 @@ const FontManager: React.FC<FontManagerProps> = ({
                 {uploadedFonts.map((font, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-3 bg-white rounded-xl border border-[#D1FAE5] shadow-sm"
+                    className="flex items-center justify-between p-3 bg-card rounded-xl border border-success/10 shadow-sm"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-[#DCFCE7] flex items-center justify-center">
-                        <CheckCircle2 className="w-4 h-4 text-[#16A34A]" />
+                      <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
+                        <CheckCircle2 className="w-4 h-4 text-success" />
                       </div>
-                      <span className="text-sm font-medium text-[#166534]">
+                      <span className="text-sm font-medium text-success">
                         {font.fontName}
                       </span>
                     </div>
                     <button
                       onClick={() => removeFont(font.fontName)}
-                      className="p-2 rounded-full text-[#6B7280] hover:text-[#DC2626] hover:bg-[#FEE2E2] transition-colors"
+                      className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -189,18 +189,18 @@ const FontManager: React.FC<FontManagerProps> = ({
 
         {/* Action Footer */}
         <div className={`px-6 py-5 border-t transition-colors duration-300 ${allFontsUploaded
-          ? 'bg-[#F0FDF4] border-[#BBF7D0]'
-          : 'bg-[#FAFAFA] border-[#F3F4F6]'
+          ? 'bg-success/10 border-success/20'
+          : 'bg-muted border-border'
           }`}>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             {!allFontsUploaded && (
-              <div className="flex items-start gap-2 text-sm text-[#6B7280]">
+              <div className="flex items-start gap-2 text-sm text-muted-foreground">
                 <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <p>You can continue without all fonts, but some text may not display correctly.</p>
               </div>
             )}
             {allFontsUploaded && (
-              <p className="text-sm text-[#16A34A] font-medium">
+              <p className="text-sm text-success font-medium">
                 ✓ All fonts are ready
               </p>
             )}
@@ -211,10 +211,10 @@ const FontManager: React.FC<FontManagerProps> = ({
               className={`
                 px-5 py-2 h-auto text-sm font-semibold rounded-full transition-all duration-300
                 ${isUploading
-                  ? 'bg-[#E5E7EB] text-[#9CA3AF]'
+                  ? 'bg-muted text-muted-foreground'
                   : allFontsUploaded
-                    ? 'bg-[#16A34A] text-white hover:bg-[#15803D] shadow-sm'
-                    : 'bg-white text-[#374151] border border-[#E5E7EB] hover:bg-[#F9FAFB]'
+                    ? 'bg-success text-white hover:bg-success shadow-sm'
+                    : 'bg-card text-foreground border border-border hover:bg-muted'
                 }
               `}
             >

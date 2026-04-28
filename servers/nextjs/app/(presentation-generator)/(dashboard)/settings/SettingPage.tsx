@@ -392,10 +392,10 @@ const SettingsPage = () => {
         <div className="w-full">
           <div className="sticky top-0 right-0 z-50 py-[28px]   backdrop-blur mb-4 ">
             <div className="flex  gap-3 items-center ">
-              <h3 className=" text-[28px] tracking-[-0.84px] font-unbounded font-normal text-black flex items-center gap-2">
+              <h3 className=" text-[28px] tracking-[-0.84px] font-unbounded font-normal text-foreground flex items-center gap-2">
                 Settings
               </h3>
-              <p className="text-[10px] px-2.5 py-0.5 rounded-[50px] text-primary border border-[#EDEEEF]  font-medium ">
+              <p className="text-[10px] px-2.5 py-0.5 rounded-[50px] text-primary border border-border  font-medium ">
                 {textSummary} · {imageSummary}
               </p>
             </div>
@@ -418,9 +418,9 @@ const SettingsPage = () => {
           {mode === 'presenton' && selectedProvider === 'image-provider' && <ImageProvider llmConfig={llmConfig} setLlmConfig={setLlmConfig} />}
           {selectedProvider === 'privacy' && <PrivacySettings />}
           {selectedProvider === "session" && (
-            <div className="w-full max-w-lg space-y-5 rounded-[20px] border border-[#EDEEEF] bg-white p-7">
+            <div className="w-full max-w-lg space-y-5 rounded-[20px] border border-border bg-card p-7">
               <div>
-                <h4 className="font-unbounded text-lg font-normal text-black">Sign out</h4>
+                <h4 className="font-unbounded text-lg font-normal text-foreground">Sign out</h4>
                 <p className="mt-2 font-syne text-sm leading-relaxed text-[#494A4D]">
                   End your session on this deployment. You will need to sign in again to use the app and access the API.
                 </p>
@@ -466,41 +466,41 @@ const SettingsPage = () => {
 
       {/* Download Progress Modal */}
       {showDownloadModal && downloadingModel && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-2xl max-w-md w-full p-6 relative">
+        <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card/95 backdrop-blur-md rounded-xl shadow-2xl max-w-md w-full p-6 relative">
             {/* Modal Content */}
             <div className="text-center">
               {/* Icon */}
               <div className="mb-4">
                 {downloadingModel.done ? (
-                  <CheckCircle className="w-12 h-12 text-green-600 mx-auto" />
+                  <CheckCircle className="w-12 h-12 text-success mx-auto" />
                 ) : (
-                  <Download className="w-12 h-12 text-blue-600 mx-auto animate-pulse" />
+                  <Download className="w-12 h-12 text-primary mx-auto animate-pulse" />
                 )}
               </div>
 
               {/* Title */}
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-foreground mb-2">
                 {downloadingModel.done
                   ? "Download Complete!"
                   : "Downloading Model"}
               </h3>
 
               {/* Model Name */}
-              <p className="text-sm text-gray-600 mb-6">
+              <p className="text-sm text-muted-foreground mb-6">
                 {llmConfig.OLLAMA_MODEL}
               </p>
 
               {/* Progress Bar */}
               {downloadProgress > 0 && (
                 <div className="mb-4">
-                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                  <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
                     <div
-                      className="bg-blue-600 h-3 rounded-full transition-all duration-300 ease-out"
+                      className="bg-primary h-3 rounded-full transition-all duration-300 ease-out"
                       style={{ width: `${downloadProgress}%` }}
                     />
                   </div>
-                  <p className="text-sm text-gray-600 mt-2">
+                  <p className="text-sm text-muted-foreground mt-2">
                     {downloadProgress}% Complete
                   </p>
                 </div>
@@ -509,7 +509,7 @@ const SettingsPage = () => {
               {/* Status */}
               {downloadingModel.status && (
                 <div className="flex items-center justify-center gap-2 mb-4">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <CheckCircle className="w-4 h-4 text-success" />
                   <span className="text-sm font-medium text-green-700 capitalize">
                     {downloadingModel.status}
                   </span>
@@ -519,7 +519,7 @@ const SettingsPage = () => {
               {/* Status Message */}
               {downloadingModel.status &&
                 downloadingModel.status !== "pulled" && (
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     {downloadingModel.status === "downloading" &&
                       "Downloading model files..."}
                     {downloadingModel.status === "verifying" &&
@@ -531,8 +531,8 @@ const SettingsPage = () => {
 
               {/* Download Info */}
               {downloadingModel.downloaded && downloadingModel.size && (
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex justify-between text-xs text-gray-600">
+                <div className="mt-4 p-3 bg-muted rounded-lg">
+                  <div className="flex justify-between text-xs text-muted-foreground">
                     <span>
                       Downloaded:{" "}
                       {(downloadingModel.downloaded / 1024 / 1024).toFixed(1)}{" "}
@@ -551,7 +551,7 @@ const SettingsPage = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="rounded-lg border-gray-300 text-gray-800 hover:bg-gray-50"
+                    className="rounded-lg border-border text-foreground hover:bg-muted"
                     onClick={() => downloadAbortRef.current?.abort()}
                   >
                     Cancel download

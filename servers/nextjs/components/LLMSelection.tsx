@@ -220,7 +220,7 @@ export default function LLMProviderSelection({
   return (
     <div className="h-full flex flex-col mt-10">
       {/* Provider Selection - Fixed Header */}
-      <div className="p-2 rounded-2xl border border-gray-200">
+      <div className="p-2 rounded-2xl border border-border">
         <Tabs
           value={llmConfig.LLM || "openai"}
           onValueChange={handleProviderChange}

@@ -71,7 +71,7 @@ const page = async ({
           )}
 
         </h1>
-        <p className="text-xl  font-display text-[#101323CC]">
+        <p className="text-xl  font-display text-muted-foreground">
           {isTravel
             ? "Plan your trip and generate a stunning travel presentation."
             : "Turn prompts or documents into presentations with AI"}

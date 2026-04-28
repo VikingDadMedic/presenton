@@ -31,7 +31,7 @@ const BuiltInTemplateCard = memo(function BuiltInTemplateCard({
   return (
     <Card
       className={cn(
-        "cursor-pointer relative hover:shadow-sm transition-all duration-200 group overflow-hidden rounded-[22px] bg-white border",
+        "cursor-pointer relative hover:shadow-sm transition-all duration-200 group overflow-hidden rounded-[22px] bg-card border",
         isSelected
           ? " border-blue-500 ring-2 ring-blue-500/25 shadow-sm"
           : " border-[#E8E9EC]"
@@ -42,12 +42,12 @@ const BuiltInTemplateCard = memo(function BuiltInTemplateCard({
         <LayoutsBadge count={template.layouts.length} />
         <InbuiltTemplatePreview layouts={template.layouts} templateId={template.id} isOutline={true} />
       </TemplatePreviewStage>
-      <div className="flex items-center justify-between px-6 py-5 bg-white border-t border-[#EDEEEF] relative z-40">
+      <div className="flex items-center justify-between px-6 py-5 bg-card border-t border-border relative z-40">
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-bold text-gray-900 capitalize font-display">
+          <h3 className="text-sm font-bold text-foreground capitalize font-display">
             {template.name}
           </h3>
-          <p className="text-xs text-gray-600 line-clamp-2 font-display">
+          <p className="text-xs text-muted-foreground line-clamp-2 font-display">
             {template.description}
           </p>
         </div>
@@ -115,8 +115,8 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(function Templa
     if (customLoading) {
       return (
         <div className="flex items-center justify-center py-12 font-display">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          <span className="ml-3 text-gray-600">Loading custom templates...</span>
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <span className="ml-3 text-muted-foreground">Loading custom templates...</span>
         </div>
       );
     }
@@ -162,12 +162,12 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(function Templa
     <div className="space-y-[30px] mb-4">
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-semibold text-gray-900 font-display">Custom</h3>
+          <h3 className="text-base font-semibold text-foreground font-display">Custom</h3>
         </div>
         {customTemplateCards}
       </div>
       <div>
-        <h3 className="text-base font-semibold text-gray-900 mb-3 font-display">In Built</h3>
+        <h3 className="text-base font-semibold text-foreground mb-3 font-display">In Built</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {builtInTemplateCards}
         </div>

@@ -63,7 +63,7 @@ const OutlinePage: React.FC = () => {
             <div className="h-[4.75rem] shrink-0 sm:h-[5rem]" aria-hidden />
             <div className="fixed top-26 left-0 right-0 z-50  pb-2">
               <div className="mx-auto w-full max-w-[1440px] px-5 sm:px-10 lg:px-20">
-                <TabsList className="my-4 h-auto w-fit rounded-full border border-[#EDEEEF] bg-white p-1.5">
+                <TabsList className="my-4 h-auto w-fit rounded-full border border-border bg-card p-1.5">
                   <TabsTrigger
                     value={TABS.OUTLINE}
                     className="rounded-full px-5 py-2  text-xs font-medium text-[#2D2D2D] shadow-none data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:shadow-none"
@@ -94,7 +94,7 @@ const OutlinePage: React.FC = () => {
                 />
               </TabsContent>
 
-              <TabsContent value={TABS.LAYOUTS} className="mt-0 bg-white">
+              <TabsContent value={TABS.LAYOUTS} className="mt-0 bg-card">
                 <TemplateSelection
                   selectedTemplate={selectedTemplate}
                   onSelectTemplate={setSelectedTemplate}

@@ -108,7 +108,7 @@ const IconsEditor = ({
               }}
             >
               <div className="relative mb-3">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
                   placeholder="Search icons..."
                   value={searchQuery}
@@ -144,7 +144,7 @@ const IconsEditor = ({
                         e.stopPropagation();
                         handleIconChange(iconSrc);
                       }}
-                      className="w-12 h-12 cursor-pointer group relative rounded-lg overflow-hidden hover:bg-gray-100 p-2 transition-colors"
+                      className="w-12 h-12 cursor-pointer group relative rounded-lg overflow-hidden hover:bg-muted p-2 transition-colors"
                     >
                       <img
                         src={iconSrc}
@@ -155,8 +155,8 @@ const IconsEditor = ({
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center w-full h-[60vh] text-center text-gray-500 space-y-4">
-                  <Search className="w-12 h-12 text-gray-400" />
+                <div className="flex flex-col items-center justify-center w-full h-[60vh] text-center text-muted-foreground space-y-4">
+                  <Search className="w-12 h-12 text-muted-foreground" />
                   <p className="text-sm">No icons found for your search.</p>
                   <p className="text-xs">Try refining your search query.</p>
                 </div>

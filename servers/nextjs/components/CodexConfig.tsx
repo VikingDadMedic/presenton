@@ -227,7 +227,7 @@ export default function CodexConfig({
 
   if (authStatus === "checking") {
     return (
-      <div className="mb-5 w-full p-3 border border-[#EDEEEF] font-display rounded-[8px] flex items-center gap-6">
+      <div className="mb-5 w-full p-3 border border-border font-display rounded-[8px] flex items-center gap-6">
         <div className="w-[74px] h-[74px] bg-[#333333] rounded-full flex items-center justify-center shrink-0">
           <Loader2 className="w-10 h-10 text-[#191919] animate-spin" />
         </div>
@@ -244,9 +244,9 @@ export default function CodexConfig({
   if (authStatus === "polling") {
     return (
       <div className="mb-5 space-y-4 font-display">
-        <div className="w-full p-3 border border-[#EDEEEF] rounded-[8px] flex items-center justify-between gap-4">
+        <div className="w-full p-3 border border-border rounded-[8px] flex items-center justify-between gap-4">
           <div className="flex items-center gap-6 min-w-0 flex-1">
-            <div className="w-[40px] h-[40px] bg-[#EDEEEF] rounded-full flex items-center justify-center shrink-0">
+            <div className="w-[40px] h-[40px] bg-muted rounded-full flex items-center justify-center shrink-0">
               <Loader2 className="w-5 h-5 text-[#191919] animate-spin" />
             </div>
             <div className="text-start min-w-0">
@@ -265,7 +265,7 @@ export default function CodexConfig({
           </button>
         </div>
 
-        <div className="space-y-2 rounded-[8px] border border-[#EDEEEF] p-3">
+        <div className="space-y-2 rounded-[8px] border border-border p-3">
           <p className="text-[#191919] text-xs font-normal">
             Paste redirect URL or code if you were not redirected automatically
           </p>
@@ -273,7 +273,7 @@ export default function CodexConfig({
             <input
               type="text"
               placeholder="Paste URL or code…"
-              className="flex-1 min-w-0 px-3 py-2.5 outline-none border border-[#EDEEEF] rounded-[8px]  text-sm text-[#191919] placeholder:text-[#666666] focus:border-[#555555] transition-colors"
+              className="flex-1 min-w-0 px-3 py-2.5 outline-none border border-border rounded-[8px]  text-sm text-[#191919] placeholder:text-[#666666] focus:border-[#555555] transition-colors"
               value={manualCode}
               onChange={(e) => setManualCode(e.target.value)}
             />
@@ -281,7 +281,7 @@ export default function CodexConfig({
               type="button"
               onClick={handleManualExchange}
               disabled={isExchanging || !manualCode.trim()}
-              className="shrink-0 px-4 py-2.5 bg-[#EDEEEF] hover:bg-[#E4E5E6] disabled:opacity-40 disabled:hover:bg-[#EDEEEF] rounded-[8px] text-sm font-medium text-[#191919] transition-colors flex items-center justify-center min-w-[88px]"
+              className="shrink-0 px-4 py-2.5 bg-muted hover:bg-[#E4E5E6] disabled:opacity-40 disabled:hover:bg-muted rounded-[8px] text-sm font-medium text-[#191919] transition-colors flex items-center justify-center min-w-[88px]"
             >
               {isExchanging ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -299,7 +299,7 @@ export default function CodexConfig({
 
     return (
       <div className=" mb-5">
-        <div className="flex items-center justify-between gap-3 p-5  border border-[#EDEEEF] rounded-[8px]">
+        <div className="flex items-center justify-between gap-3 p-5  border border-border rounded-[8px]">
           <div className="flex items-center gap-3">
 
             <div className="w-[40px] h-[40px] bg-[#333333] rounded-full flex items-center justify-center" >
@@ -358,7 +358,7 @@ export default function CodexConfig({
   return (
     <button
       onClick={handleSignIn}
-      className=" w-full  p-5 border border-[#EDEEEF] font-display  hover:bg-[#F7F6F9] transition-colors duration-300   rounded-[12px] flex items-center   justify-between  "
+      className=" w-full  p-5 border border-border font-display  hover:bg-[#F7F6F9] transition-colors duration-300   rounded-[12px] flex items-center   justify-between  "
     >
       <div className="flex items-center gap-2 flex-1">
         <div className="w-[40px] h-[40px] bg-[#333333] rounded-full flex items-center justify-center" >

@@ -178,9 +178,9 @@ export function OutlineItem({
                     <ToolTip content="Delete Slide">
                         <button
                             onClick={handleSlideDelete}
-                            className="p-1.5 sm:p-2 bg-white shadow-md  rounded-full transition-colors"
+                            className="p-1.5 sm:p-2 bg-card shadow-md  rounded-full transition-colors"
                         >
-                            <Trash className="w-4 h-4  text-black/70" />
+                            <Trash className="w-4 h-4  text-foreground/70" />
                         </button>
                     </ToolTip>
                 </div>

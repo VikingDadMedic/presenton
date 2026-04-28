@@ -236,7 +236,7 @@ export default function CodexConfig({
 
     if (authStatus === "checking") {
         return (
-            <div className="flex items-center gap-2 py-3 text-gray-400">
+            <div className="flex items-center gap-2 py-3 text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span className="text-xs">Checking status…</span>
             </div>
@@ -247,32 +247,32 @@ export default function CodexConfig({
         return (
             <div className="space-y-4">
                 <div className="flex items-center gap-3 py-2">
-                    <Loader2 className="w-4 h-4 text-gray-500 animate-spin" />
-                    <span className="text-sm text-gray-600">Waiting for sign-in…</span>
+                    <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
+                    <span className="text-sm text-muted-foreground">Waiting for sign-in…</span>
                     <button
                         onClick={handleCancelPolling}
-                        className="text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2 ml-auto"
+                        className="text-xs text-muted-foreground hover:text-muted-foreground underline underline-offset-2 ml-auto"
                     >
                         Cancel
                     </button>
                 </div>
 
                 <div className="space-y-2">
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                         Paste redirect URL or code if not redirected automatically
                     </p>
                     <div className="flex gap-2">
                         <input
                             type="text"
                             placeholder="Paste URL or code…"
-                            className="flex-1 px-2 py-2 outline-none border border-gray-300 rounded-lg text-xs focus:border-gray-400 transition-colors"
+                            className="flex-1 px-2 py-2 outline-none border border-border rounded-lg text-xs focus:border-gray-400 transition-colors"
                             value={manualCode}
                             onChange={(e) => setManualCode(e.target.value)}
                         />
                         <button
                             onClick={handleManualExchange}
                             disabled={isExchanging || !manualCode.trim()}
-                            className="px-3 py-2 bg-[#EDEEEF] hover:bg-[#E4E5E6] disabled:opacity-40 rounded-lg text-xs font-medium text-foreground transition-colors"
+                            className="px-3 py-2 bg-muted hover:bg-[#E4E5E6] disabled:opacity-40 rounded-lg text-xs font-medium text-foreground transition-colors"
                         >
                             {isExchanging ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -291,53 +291,53 @@ export default function CodexConfig({
 
         return (
             <div className="space-y-4">
-                <div className="flex items-center gap-3 p-3  border border-[#EDEEEF] rounded-lg">
-                    <UserCheck className="w-5 h-5 text-black shrink-0" />
+                <div className="flex items-center gap-3 p-3  border border-border rounded-lg">
+                    <UserCheck className="w-5 h-5 text-foreground shrink-0" />
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 min-w-0">
-                            <p className="text-sm font-medium text-gray-800 truncate">
+                            <p className="text-sm font-medium text-foreground truncate">
                                 {username || email || (accountId ? `Account ${accountId}` : "ChatGPT Account")}
                             </p>
 
                         </div>
                         {email && username && (
-                            <p className="text-xs text-gray-500 truncate">{email}</p>
+                            <p className="text-xs text-muted-foreground truncate">{email}</p>
                         )}
                         {!email && accountId && (
-                            <p className="text-xs text-gray-500 truncate">ID: {accountId}</p>
+                            <p className="text-xs text-muted-foreground truncate">ID: {accountId}</p>
                         )}
-                        <p className="text-xs text-gray-400">Signed in to ChatGPT</p>
+                        <p className="text-xs text-muted-foreground">Signed in to ChatGPT</p>
                     </div>
                     <div className="flex gap-1.5 shrink-0">
                         <button
                             onClick={handleRefreshToken}
                             disabled={isRefreshing}
                             title="Refresh token"
-                            className="w-8 h-8 flex items-center justify-center rounded-full bg-[#EDEEEF] hover:bg-[#E4E5E6] disabled:opacity-40 transition-colors"
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-muted hover:bg-[#E4E5E6] disabled:opacity-40 transition-colors"
                         >
                             {isRefreshing ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-500" />
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
                             ) : (
-                                <RefreshCw className="w-3.5 h-3.5 text-gray-500" />
+                                <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
                             )}
                         </button>
                         <button
                             onClick={handleSignOut}
                             disabled={isLoggingOut}
                             title="Sign out"
-                            className="w-8 h-8 flex items-center justify-center rounded-full bg-[#EDEEEF] hover:bg-[#E4E5E6] disabled:opacity-40 transition-colors"
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-muted hover:bg-[#E4E5E6] disabled:opacity-40 transition-colors"
                         >
                             {isLoggingOut ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-500" />
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
                             ) : (
-                                <Trash2 className="w-3.5 h-3.5 text-gray-500" />
+                                <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
                             )}
                         </button>
                     </div>
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                         Select GPT Model
                     </label>
                     <Popover open={openModelSelect} onOpenChange={setOpenModelSelect}>
@@ -346,14 +346,14 @@ export default function CodexConfig({
                                 variant="outline"
                                 role="combobox"
                                 aria-expanded={openModelSelect}
-                                className="w-full h-10 px-3 outline-none border border-gray-300 rounded-lg hover:border-gray-400 justify-between"
+                                className="w-full h-10 px-3 outline-none border border-border rounded-lg hover:border-gray-400 justify-between"
                             >
-                                <span className="text-sm text-gray-900">
+                                <span className="text-sm text-foreground">
                                     {codexModel
                                         ? (CHATGPT_MODELS.find((m) => m.id === codexModel)?.name ?? codexModel)
                                         : "Select a model"}
                                 </span>
-                                <ChevronUp className="w-4 h-4 text-gray-400" />
+                                <ChevronUp className="w-4 h-4 text-muted-foreground" />
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent
@@ -381,7 +381,7 @@ export default function CodexConfig({
                                                         codexModel === model.id ? "opacity-100" : "opacity-0"
                                                     )}
                                                 />
-                                                <span className="text-sm text-gray-900">
+                                                <span className="text-sm text-foreground">
                                                     {model.name}
                                                 </span>
                                             </CommandItem>
@@ -399,7 +399,7 @@ export default function CodexConfig({
     return (
         <button
             onClick={handleSignIn}
-            className="mt-8 py-2.5 px-3.5 bg-[#EDEEEF] hover:bg-[#E4E5E6] rounded-md text-xs font-semibold text-foreground transition-colors"
+            className="mt-8 py-2.5 px-3.5 bg-muted hover:bg-[#E4E5E6] rounded-md text-xs font-semibold text-foreground transition-colors"
         >
             Sign in with ChatGPT
         </button>

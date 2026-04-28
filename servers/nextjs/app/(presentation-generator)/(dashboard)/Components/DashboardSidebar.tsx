@@ -5,7 +5,6 @@ import { LayoutDashboard, Star, Brain, Settings, Palette, HelpCircle } from "luc
 import { MotionIcon } from "motion-icons-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 
 
 
@@ -95,10 +94,6 @@ const DashboardSidebar = () => {
             </div>
 
             {/* Settings link hidden for TripStory */}
-
-            <div className="mt-auto p-3">
-                <ThemeSwitcher />
-            </div>
         </aside>
     );
 };

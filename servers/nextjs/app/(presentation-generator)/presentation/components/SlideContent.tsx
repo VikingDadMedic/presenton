@@ -167,7 +167,7 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
                     onClick={() => {
                       setShowNewSlideSelection(true);
                     }}
-                    className="  bg-white shadow-md w-[80px] py-2 border hover:border-primary duration-300  flex items-center justify-center rounded-lg cursor-pointer mx-auto"
+                    className="  bg-card shadow-md w-[80px] py-2 border hover:border-primary duration-300  flex items-center justify-center rounded-lg cursor-pointer mx-auto"
                   >
                     <PlusIcon className="text-gray-500 text-base cursor-pointer" />
                   </div>
@@ -186,7 +186,7 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
 
           {!isStreaming && (
             <div
-              className={`absolute right-3 top-3 z-30 hidden md:flex flex-row items-center gap-2 rounded-[28px] border border-gray-200/80 bg-white/95 px-2.5 py-2 ${isEditPopoverOpen || isSpeakerPopoverOpen
+              className={`absolute right-3 top-3 z-30 hidden md:flex flex-row items-center gap-2 rounded-[28px] border border-border bg-card/95 px-2.5 py-2 ${isEditPopoverOpen || isSpeakerPopoverOpen
                 ? "opacity-100 pointer-events-auto"
                 : "opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
                 }`}
@@ -198,7 +198,7 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    className="flex px-3.5 py-2.5 items-center justify-center rounded-full bg-[#F7F6F9] font-display"
+                    className="flex px-3.5 py-2.5 items-center justify-center rounded-full bg-muted font-display"
                   >
                     <ToolTip content="Update slide using prompt">
                       <Pencil className="h-4 w-4" />
@@ -209,10 +209,10 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
                   side="bottom"
                   align="center"
                   sideOffset={12}
-                  className="z-30 w-[340px] rounded-2xl border border-gray-200 bg-white p-0 shadow-2xl font-display"
+                  className="z-30 w-[340px] rounded-2xl border border-border bg-card p-0 shadow-2xl font-display"
                 >
                   <div className="border-b border-gray-100 px-4 py-3">
-                    <p className="text-sm font-semibold text-gray-900">Update slide</p>
+                    <p className="text-sm font-semibold text-foreground">Update slide</p>
                     <p className="mt-1 text-xs text-gray-500">
                       Describe how this slide should be improved.
                     </p>
@@ -228,7 +228,7 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
                       id={`slide-${slide.index}-prompt`}
                       value={editPrompt}
                       placeholder="Enter your prompt here..."
-                      className="min-h-[110px] max-h-[180px] w-full resize-none rounded-xl border border-gray-200 p-3 text-sm focus-visible:ring-1 focus-visible:ring-primary"
+                      className="min-h-[110px] max-h-[180px] w-full resize-none rounded-xl border border-border p-3 text-sm focus-visible:ring-1 focus-visible:ring-primary"
                       disabled={isUpdating}
                       onChange={(e) => setEditPrompt(e.target.value)}
                       onKeyDown={(e) => {
@@ -273,14 +273,14 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
                   side="bottom"
                   align="center"
                   sideOffset={12}
-                  className="z-30 w-[340px] rounded-2xl border border-gray-200 bg-white p-0 shadow-2xl font-display"
+                  className="z-30 w-[340px] rounded-2xl border border-border bg-card p-0 shadow-2xl font-display"
                 >
                   <div className="border-b border-gray-100 px-4 py-3">
-                    <p className="text-sm font-semibold text-gray-900">Speaker notes</p>
+                    <p className="text-sm font-semibold text-foreground">Speaker notes</p>
 
                   </div>
                   <div className="space-y-3 p-4">
-                    <div className="max-h-[220px] min-h-[100px] overflow-auto whitespace-pre-wrap rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-800">
+                    <div className="max-h-[220px] min-h-[100px] overflow-auto whitespace-pre-wrap rounded-xl border border-border bg-muted p-3 text-sm text-foreground">
                       {slide?.speaker_note?.trim()}
                     </div>
                   </div>
@@ -290,7 +290,7 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
               <button
                 type="button"
                 onClick={onDeleteSlide}
-                className="flex px-4 py-2.5 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 font-display"
+                className="flex px-4 py-2.5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground font-display"
               >
                 <ToolTip content="Delete slide">
                   <Trash className="h-4 w-4" />

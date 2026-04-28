@@ -121,9 +121,9 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-gray-100 font-display">
+      <div className="flex flex-col items-center justify-center h-screen bg-muted font-display">
         <div
-          className="bg-white border border-red-300 text-red-700 px-6 py-8 rounded-lg shadow-lg flex flex-col items-center"
+          className="bg-card border border-red-300 text-red-700 px-6 py-8 rounded-lg shadow-lg flex flex-col items-center"
           role="alert"
         >
           <AlertCircle className="w-16 h-16 mb-4 text-red-500" />
@@ -145,7 +145,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
     <div className="h-screen overflow-hidden font-display ">
       <div
         style={{
-          background: "#ffffff",
+          background: "var(--card, #ffffff)",
         }}
         id="presentation-slides-wrapper"
         className="flex  gap-6 relative "
@@ -158,15 +158,15 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             loading={loading}
           />
         </div>
-        <div className=" w-full h-[calc(100vh-20px)]  pr-[25px] overflow-y-auto">
+        <div className=" w-full h-[calc(100vh-20px)]  pr-[25px] pl-2 overflow-y-auto">
           <PresentationHeader presentation_id={presentation_id} isPresentationSaving={isSaving} currentSlide={selectedSlide} />
           <div
 
             style={{
-              background: "rgba(255, 255, 255, 0.10)",
-              boxShadow: "0 0 20.01px 0 rgba(201, 168, 76, 0.16) inset",
+              background: "color-mix(in srgb, var(--card) 10%, transparent)",
+              boxShadow: "0 0 20px 0 color-mix(in srgb, var(--primary) 16%, transparent) inset",
             }}
-            className="p-6 rounded-[20px] font-sans flex flex-col items-center overflow-hidden justify-center  border border-[#EDECEC] "
+            className="p-6 rounded-[20px] font-sans flex flex-col items-center overflow-hidden justify-center  border border-border "
           >
             <div className="w-full max-w-[1280px] h-full">
 
@@ -190,7 +190,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
                       {Array.from({ length: 2 }).map((_, index) => (
                         <Skeleton
                           key={index}
-                          className="aspect-video bg-gray-400 my-4 w-full mx-auto "
+                          className="aspect-video bg-muted-foreground/20 my-4 w-full mx-auto "
                         />
                       ))}
                     </div>

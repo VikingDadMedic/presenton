@@ -25,6 +25,7 @@ import { ImagesApi } from "@/app/(presentation-generator)/services/api/images";
 import { getApiUrl } from "@/utils/api";
 import { toast } from "sonner";
 import LogoutButton from "@/components/Auth/LogoutButton";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 
 const STOCK_IMAGE_PROVIDERS = new Set(["pexels", "pixabay"]);
 
@@ -43,7 +44,7 @@ const SettingsPage = () => {
   const pathname = usePathname();
   const [mode, setMode] = useState<'nanobanana' | 'presenton'>('presenton')
   const [selectedProvider, setSelectedProvider] = useState<
-    "text-provider" | "image-provider" | "privacy" | "session"
+    "text-provider" | "image-provider" | "privacy" | "session" | "appearance"
   >("text-provider");
   const userConfigState = useSelector((state: RootState) => state.userConfig);
   const [llmConfig, setLlmConfig] = useState<LLMConfig>(
@@ -416,6 +417,17 @@ const SettingsPage = () => {
             llmConfig={llmConfig}
           />}
           {mode === 'presenton' && selectedProvider === 'image-provider' && <ImageProvider llmConfig={llmConfig} setLlmConfig={setLlmConfig} />}
+          {selectedProvider === 'appearance' && (
+            <div className="w-full max-w-lg space-y-5 rounded-[20px] border border-border bg-card p-7">
+              <div>
+                <h4 className="font-unbounded text-lg font-normal text-foreground">Theme</h4>
+                <p className="mt-2 font-syne text-sm leading-relaxed text-[#494A4D]">
+                  Choose how the app looks. Your preference is saved to this device.
+                </p>
+              </div>
+              <ThemeSwitcher />
+            </div>
+          )}
           {selectedProvider === 'privacy' && <PrivacySettings />}
           {selectedProvider === "session" && (
             <div className="w-full max-w-lg space-y-5 rounded-[20px] border border-border bg-card p-7">
@@ -435,8 +447,8 @@ const SettingsPage = () => {
         </div>
       </main>
 
-      {/* Fixed Bottom Button — hidden on Sign out; nothing to save there */}
-      {selectedProvider !== "session" ? (
+      {/* Fixed Bottom Button — hidden on Sign out and Appearance; nothing to save there */}
+      {selectedProvider !== "session" && selectedProvider !== "appearance" ? (
         <div className=" mx-auto fixed bottom-20 right-5 ">
           <button
             onClick={handleSaveConfig}

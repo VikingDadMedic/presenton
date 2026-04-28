@@ -857,7 +857,7 @@ const ThemePanel: React.FC = () => {
         Brand Logo
       </Label>
 
-      <div className="space-y-2 bg-[#F6F6F9] rounded-md p-1 cursor-pointer"
+      <div className="space-y-2 bg-muted rounded-md p-1 cursor-pointer"
         onClick={(e) => {
 
           e.stopPropagation()
@@ -1024,7 +1024,7 @@ const ThemePanel: React.FC = () => {
             <div
               onClick={handleClickOutside}
               className="min-w-[530px]   border-r border-border">
-              <div className="flex items-center justify-between px-5 rounded-md py-3 mx-2.5 my-2.5 bg-[#F6F6F9]  ">
+              <div className="flex items-center justify-between px-5 rounded-md py-3 mx-2.5 my-2.5 bg-muted  ">
                 <input id="theme-name" name="theme-name" className="text-lg font-semibold text-[#4C4D50] bg-transparent w-full outline-none border-none px-2  rounded" autoFocus={false} defaultValue={selectedTheme.name} onBlur={(e) => setSelectedTheme({ ...selectedTheme, name: e.target.value })}>
 
                 </input>

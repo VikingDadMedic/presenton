@@ -92,7 +92,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
           }}
         >
           <div className="bg-[#FEFEFF] rounded-[18px] p-2 border border-border ">
-            <div className="h-[120px] w-full bg-[#F6F6F9]  rounded-[12px] p-1.5">
+            <div className="h-[120px] w-full bg-muted  rounded-[12px] p-1.5">
               <div className="border border-[#B8B8C1] border-dashed rounded-[12px ] p-1.5 h-full relative">
                 {!selectedFile ? <>
                   <input

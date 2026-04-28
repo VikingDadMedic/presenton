@@ -950,12 +950,8 @@ const ThemePanel: React.FC = () => {
             pathname,
             source: "theme_page_header",
           })}
-          className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-black text-sm font-semibold font-display shadow-sm hover:shadow-md"
+          className="inline-flex items-center gap-2 rounded-md px-4 py-2.5 bg-primary text-primary-foreground text-sm font-semibold font-display shadow-sm hover:shadow-md"
           aria-label="Create new theme"
-          style={{
-            borderRadius: "48px",
-            background: "linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)",
-          }}
         >
 
           <span className="hidden md:inline">New Theme</span>
@@ -965,25 +961,19 @@ const ThemePanel: React.FC = () => {
       </div>
       {/* Tabs */}
       <div className='p-1 rounded-lg bg-[#F7F6F9] w-fit border border-[#F4F4F4] flex items-center justify-center '>
-        <button className='px-5  py-2 text-xs font-medium text-[#3A3A3A] rounded-md'
+        <button className={`px-5  py-2 text-xs font-medium rounded-md ${tab === 'custom' ? 'bg-primary text-primary-foreground' : 'text-[#3A3A3A]'}`}
           onClick={() => {
             trackEvent(MixpanelEvent.Theme_Tab_Switched, { pathname, tab: 'custom' })
             setTab('custom')
-          }}
-          style={{
-            background: tab === 'custom' ? 'linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)' : 'transparent'
           }}
         >Custom</button>
         <svg xmlns="http://www.w3.org/2000/svg" className='mx-1' width="2" height="17" viewBox="0 0 2 17" fill="none">
           <path d="M1 0V16.5" stroke="#EDECEC" strokeWidth="2" />
         </svg>
-        <button className='px-5  py-2 text-xs font-medium text-[#3A3A3A] rounded-md'
+        <button className={`px-5  py-2 text-xs font-medium rounded-md ${tab === 'default' ? 'bg-primary text-primary-foreground' : 'text-[#3A3A3A]'}`}
           onClick={() => {
             trackEvent(MixpanelEvent.Theme_Tab_Switched, { pathname, tab: 'default' })
             setTab('default')
-          }}
-          style={{
-            background: tab === 'default' ? 'linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)' : 'transparent'
           }}
         >Built-in</button>
       </div>
@@ -1059,7 +1049,7 @@ const ThemePanel: React.FC = () => {
                         onClick={() => setCurrentStep(currentStep - 1)}
                       >Back</button>}
 
-                      <button className='px-7 py-2.5 flex items-center gap-1 rounded-md text-xs font-semibold text-[#101323] '
+                      <button className='px-7 py-2.5 flex items-center gap-1 rounded-md text-xs font-semibold bg-primary text-primary-foreground'
 
                         onClick={() => {
                           if (currentStep === 4) {
@@ -1078,9 +1068,6 @@ const ThemePanel: React.FC = () => {
                           else {
                             setCurrentStep(currentStep + 1)
                           }
-                        }}
-                        style={{
-                          background: 'linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)'
                         }}
                       >
                         {currentStep === 1 ? 'Generate theme palette' : currentStep === 2 ? 'Continue to Fonts' : currentStep === 3 ? 'Continue to Design' : 'Save as Custom Theme'}

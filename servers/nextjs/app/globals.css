@@ -3,7 +3,7 @@
 @plugin "@tailwindcss/typography";
 @plugin "tailwindcss-animate";
 
-@custom-variant dark (&:is(.dark *, [data-theme="dark"] *));
+@custom-variant dark (&:is(.dark *, [data-theme="eggshell-dark"] *, [data-theme="velara-dark"] *));
 
 @theme {
   --color-background: var(--background);
@@ -40,12 +40,44 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-signal: var(--signal);
+  --color-coral: var(--coral);
+  --color-mist: var(--mist);
+  --color-eggshell: var(--eggshell);
+  --color-ink: var(--ink);
+
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-error: var(--error);
+  --color-error-bg: var(--error-bg);
+  --color-premium: var(--premium);
+  --color-premium-bg: var(--premium-bg);
+
+  --color-sidebar-background: var(--sidebar-background);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
   --radius-xs: 3px;
   --radius-sm: calc(var(--radius) - 3px);
   --radius-md: calc(var(--radius) - 1px);
   --radius-lg: var(--radius);
   --radius-xl: 10px;
   --radius-2xl: 12px;
+
+  --shadow-soft: 0 24px 80px rgba(16, 20, 20, 0.08);
+  --shadow-glow: 0 0 32px rgba(0, 191, 216, 0.32);
+  --shadow-teal-soft: 0 20px 60px rgba(4, 124, 122, 0.18);
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
@@ -55,20 +87,12 @@
   --font-mono: var(--font-mono);
 
   @keyframes accordion-down {
-    from {
-      height: 0;
-    }
-    to {
-      height: var(--radix-accordion-content-height);
-    }
+    from { height: 0; }
+    to { height: var(--radix-accordion-content-height); }
   }
   @keyframes accordion-up {
-    from {
-      height: var(--radix-accordion-content-height);
-    }
-    to {
-      height: 0;
-    }
+    from { height: var(--radix-accordion-content-height); }
+    to { height: 0; }
   }
 }
 
@@ -86,10 +110,124 @@
   text-wrap: balance;
 }
 
-/* ---------- Velara dark-first tokens ---------- */
+/* ========== THEME REGISTRY ========== */
+/* Each [data-theme="..."] block is a complete palette.
+   :root mirrors eggshell-light as the default fallback.
+   next-themes flips the data-theme attribute at runtime. */
 
 @layer base {
-  :root {
+
+  /* ---------- Eggshell Bright Tech (light) — default ---------- */
+  :root,
+  [data-theme="eggshell-light"] {
+    --background: #f8f4ec;
+    --foreground: #101414;
+    --card: #ffffff;
+    --card-foreground: #101414;
+    --popover: #ffffff;
+    --popover-foreground: #101414;
+    --primary: #047c7a;
+    --primary-foreground: #ffffff;
+    --secondary: #608c8a;
+    --secondary-foreground: #ffffff;
+    --muted: #e6f0ef;
+    --muted-foreground: #5a6e6d;
+    --accent: #00bfd8;
+    --accent-foreground: #101414;
+    --destructive: #ff6b5f;
+    --destructive-foreground: #ffffff;
+    --border: #e6f0ef;
+    --input: #e6f0ef;
+    --ring: #00bfd8;
+    --gold: #c6a47e;
+    --gold-foreground: #101414;
+    --signal: #00bfd8;
+    --coral: #ff6b5f;
+    --mist: #e6f0ef;
+    --eggshell: #f8f4ec;
+    --ink: #101414;
+    --success: #22977f;
+    --success-bg: #ddf3ec;
+    --warning: #d99835;
+    --warning-bg: #f7ead5;
+    --info: #00bfd8;
+    --info-bg: #ddf9fc;
+    --error: #ff6b5f;
+    --error-bg: #ffe5e2;
+    --premium: #c6a47e;
+    --premium-bg: #f0e5d7;
+    --chart-1: #047c7a;
+    --chart-2: #00bfd8;
+    --chart-3: #608c8a;
+    --chart-4: #c6a47e;
+    --chart-5: #ff6b5f;
+    --sidebar-background: #f8f4ec;
+    --sidebar-foreground: #101414;
+    --sidebar-primary: #047c7a;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #e6f0ef;
+    --sidebar-accent-foreground: #101414;
+    --sidebar-border: #dbe8e7;
+    --sidebar-ring: #00bfd8;
+    --radius: 8px;
+  }
+
+  /* ---------- Eggshell Bright Tech (dark) — deep teal glass ---------- */
+  [data-theme="eggshell-dark"] {
+    --background: #0d1818;
+    --foreground: #f8f4ec;
+    --card: #132222;
+    --card-foreground: #f8f4ec;
+    --popover: #132222;
+    --popover-foreground: #f8f4ec;
+    --primary: #00bfd8;
+    --primary-foreground: #0d1818;
+    --secondary: #608c8a;
+    --secondary-foreground: #ffffff;
+    --muted: #1a2e2e;
+    --muted-foreground: #8cb8b6;
+    --accent: #047c7a;
+    --accent-foreground: #ffffff;
+    --destructive: #ff6b5f;
+    --destructive-foreground: #ffffff;
+    --border: #1e3838;
+    --input: #1e3838;
+    --ring: #00bfd8;
+    --gold: #c6a47e;
+    --gold-foreground: #0d1818;
+    --signal: #00bfd8;
+    --coral: #ff6b5f;
+    --mist: #1a2e2e;
+    --eggshell: #f8f4ec;
+    --ink: #101414;
+    --success: #2dd4a8;
+    --success-bg: #0d2d24;
+    --warning: #f0ad4e;
+    --warning-bg: #2d2010;
+    --info: #00bfd8;
+    --info-bg: #0d2228;
+    --error: #ff6b5f;
+    --error-bg: #2d1210;
+    --premium: #c6a47e;
+    --premium-bg: #2d2418;
+    --chart-1: #00bfd8;
+    --chart-2: #047c7a;
+    --chart-3: #608c8a;
+    --chart-4: #c6a47e;
+    --chart-5: #ff6b5f;
+    --sidebar-background: #0d1818;
+    --sidebar-foreground: #f8f4ec;
+    --sidebar-primary: #00bfd8;
+    --sidebar-primary-foreground: #0d1818;
+    --sidebar-accent: #1a2e2e;
+    --sidebar-accent-foreground: #f8f4ec;
+    --sidebar-border: #1e3838;
+    --sidebar-ring: #00bfd8;
+    --radius: 8px;
+  }
+
+  /* ---------- Velara Gold (dark) — legacy ---------- */
+  [data-theme="velara-dark"] {
     --background: #13151c;
     --foreground: #f4f0e8;
     --card: #1a1d26;
@@ -109,15 +247,41 @@
     --border: rgba(255,255,255,0.16);
     --input: rgba(255,255,255,0.16);
     --ring: rgba(201,168,76,0.38);
+    --gold: #c9a84c;
+    --gold-foreground: #13151c;
+    --signal: #2dd4bf;
+    --coral: #fb7185;
+    --mist: rgba(255,255,255,0.06);
+    --eggshell: #f4f0e8;
+    --ink: #13151c;
+    --success: #2dd4bf;
+    --success-bg: #13251c;
+    --warning: #f59e0b;
+    --warning-bg: #251e13;
+    --info: #5b8cff;
+    --info-bg: #131e2f;
+    --error: #fb7185;
+    --error-bg: #251318;
+    --premium: #c9a84c;
+    --premium-bg: #252013;
     --chart-1: #2dd4bf;
     --chart-2: #f59e0b;
     --chart-3: #5b8cff;
     --chart-4: #c9a84c;
     --chart-5: #fb7185;
+    --sidebar-background: #13151c;
+    --sidebar-foreground: #f4f0e8;
+    --sidebar-primary: #c9a84c;
+    --sidebar-primary-foreground: #13151c;
+    --sidebar-accent: rgba(255,255,255,0.06);
+    --sidebar-accent-foreground: #f4f0e8;
+    --sidebar-border: rgba(255,255,255,0.12);
+    --sidebar-ring: rgba(201,168,76,0.38);
     --radius: 6px;
   }
 
-  [data-theme="light"] {
+  /* ---------- Velara Gold (light) — legacy ---------- */
+  [data-theme="velara-light"] {
     --background: #f5f1e8;
     --foreground: #211d16;
     --card: #eee8dc;
@@ -137,11 +301,37 @@
     --border: rgba(28,26,18,0.14);
     --input: rgba(28,26,18,0.14);
     --ring: rgba(154,106,26,0.28);
+    --gold: #9a6a1a;
+    --gold-foreground: #f8f4ec;
+    --signal: #0f8b82;
+    --coral: #d9485f;
+    --mist: rgba(28,26,18,0.04);
+    --eggshell: #f5f1e8;
+    --ink: #211d16;
+    --success: #0f8b82;
+    --success-bg: #e4f0ef;
+    --warning: #c56c12;
+    --warning-bg: #f0e6d8;
+    --info: #4f78e8;
+    --info-bg: #e4ebf8;
+    --error: #d9485f;
+    --error-bg: #f8e4e8;
+    --premium: #9a6a1a;
+    --premium-bg: #f0e6d8;
     --chart-1: #0f8b82;
     --chart-2: #c56c12;
     --chart-3: #4f78e8;
     --chart-4: #8b6dd8;
     --chart-5: #d9485f;
+    --sidebar-background: #f5f1e8;
+    --sidebar-foreground: #211d16;
+    --sidebar-primary: #9a6a1a;
+    --sidebar-primary-foreground: #f8f4ec;
+    --sidebar-accent: rgba(28,26,18,0.04);
+    --sidebar-accent-foreground: #211d16;
+    --sidebar-border: rgba(28,26,18,0.10);
+    --sidebar-ring: rgba(154,106,26,0.28);
+    --radius: 6px;
   }
 }
 
@@ -166,8 +356,8 @@ strong {
 }
 
 ::selection {
-  background-color: rgba(201,168,76,0.13);
-  color: #e8c87a;
+  background-color: color-mix(in srgb, var(--primary) 15%, transparent);
+  color: var(--primary);
 }
 
 /* ---------- Global scrollbar (Velara thin) ---------- */
@@ -334,7 +524,7 @@ thead {
   left: 50%;
   width: 0;
   height: 0;
-  background: radial-gradient(circle, rgba(201, 168, 76, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 10%, transparent) 0%, transparent 70%);
   transform: translate(-50%, -50%);
   border-radius: 50%;
   animation: rippleEffect 0.6s ease-out forwards;

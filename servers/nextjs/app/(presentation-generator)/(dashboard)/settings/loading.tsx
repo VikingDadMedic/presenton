@@ -107,7 +107,7 @@ export default function LoadingSettings() {
 
             {/* Fixed save button — matches SettingPage placement */}
             <div className="mx-auto fixed bottom-20 right-5 z-40">
-                <Shimmer className="h-12 w-[200px] sm:w-[240px] rounded-[58px]" />
+                <Shimmer className="h-12 w-[200px] sm:w-[240px] rounded-md" />
             </div>
         </div>
     );

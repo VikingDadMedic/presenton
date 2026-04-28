@@ -255,13 +255,9 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    style={{
-                      background: "linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)",
-
-                    }}
-                    className={`flex px-4 py-2.5 items-center justify-center rounded-full border font-display ${slide?.speaker_note
-                      ? "border-primary/20 bg-primary/5 text-primary"
-                      : "border-gray-200 bg-white text-gray-600"
+                    className={`flex px-4 py-2.5 items-center justify-center rounded-md border font-display ${slide?.speaker_note
+                      ? "border-primary/20 bg-primary text-primary-foreground"
+                      : "border-border bg-card text-muted-foreground"
                       }`}
                   >
                     <ToolTip content="Edit speaker notes">

@@ -427,7 +427,7 @@ const SettingsPage = () => {
               </div>
               <LogoutButton
                 label="Sign out"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-[58px] border border-[#EDEEEF] bg-primary px-5 py-3 font-syne text-xs font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-primary px-5 py-3 font-syne text-xs font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
               />
             </div>
           )}
@@ -446,7 +446,7 @@ const SettingsPage = () => {
                 "linear-gradient(270deg, #D5C99E 2.4%, #E3D8BD 27.88%, #F4DCD3 69.23%, #FDE4C2 100%)",
               color: "#101323",
             }}
-            className={`w-full font-syne font-semibold flex items-center justify-center gap-2 py-3 px-5 rounded-[58px] transition-all duration-500 ${buttonState.isDisabled
+            className={`w-full font-syne font-semibold flex items-center justify-center gap-2 py-3 px-5 rounded-md transition-all duration-500 ${buttonState.isDisabled
               ? "bg-gray-400 cursor-not-allowed"
               : "bg-primary hover:bg-primary/90 focus:ring-4 focus:ring-primary/20"
               } text-white`}

@@ -327,7 +327,7 @@ export default function CodexConfig({
               onClick={handleRefreshToken}
               disabled={isRefreshing}
               title="Refresh token"
-              className="flex items-center justify-center px-3.5 py-2.5  border border-[#EDEEEF] rounded-[58px] minid:opacity-40 transition-colors"
+              className="flex items-center justify-center px-3.5 py-2.5 border border-border rounded-md disabled:opacity-40 transition-colors"
             >
               {isRefreshing ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-[#191919]" />
@@ -339,7 +339,7 @@ export default function CodexConfig({
               onClick={handleSignOut}
               disabled={isLoggingOut}
               title="Sign out"
-              className="flex items-center justify-center px-3.5 py-2.5  border border-[#EDEEEF] rounded-[58px]  disabled:opacity-40 transition-colors"
+              className="flex items-center justify-center px-3.5 py-2.5 border border-border rounded-md disabled:opacity-40 transition-colors"
             >
               {isLoggingOut ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-[#191919]" />

@@ -75,7 +75,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
           }}
         >
 
-          <div className={`flex justify-center gap-1 py-2.5 pl-2 pr-3 cursor-pointer bg-white  rounded-[80px] `}
+          <div className={`flex justify-center gap-1 py-2.5 pl-2 pr-3 cursor-pointer bg-card rounded-lg `}
 
             style={{
               boxShadow: '0 0 4px 0 rgba(0, 0, 0, 0.06)',
@@ -186,10 +186,8 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                   ) : (
                     <div className="flex items-center justify-end gap-2.5">
 
-                      <button className="px-4 py-2.5 text-xs font-semibold text-[#101323] font-display tracking-[-0.12px] flex gap-1"
+                      <button className="px-4 py-2.5 text-xs font-semibold bg-primary text-primary-foreground rounded-md font-display tracking-[-0.12px] flex gap-1"
                         style={{
-                          borderRadius: '48px',
-                          background: 'linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)',
                           cursor: !isAllowed ? 'not-allowed' : 'pointer',
                         }}
                         onClick={handleCheckFonts}

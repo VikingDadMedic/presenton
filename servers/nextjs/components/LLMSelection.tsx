@@ -383,14 +383,10 @@ export default function LLMProviderSelection({
         {/* <button
           onClick={handleSaveConfig}
           disabled={buttonState.isDisabled}
-          style={{
-            background: "linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)",
-            color: "#101323",
-          }}
           className={`w-full font-semibold py-3 px-4 rounded-lg transition-all duration-500 ${buttonState.isDisabled
             ? "bg-gray-400 cursor-not-allowed"
             : "bg-primary hover:bg-primary/90 focus:ring-2 focus:ring-primary/30 text-primary-foreground"
-            } text-white`}
+            }`}
         >
           {buttonState.isLoading ? (
             <div className="flex items-center justify-center gap-2">

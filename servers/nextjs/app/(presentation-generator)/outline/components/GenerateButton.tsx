@@ -33,12 +33,9 @@ const GenerateButton: React.FC<GenerateButtonProps> = ({
       onClick={() => {
         onSubmit();
       }}
-      className=" w-full flex items-center gap-0.5 rounded-[58px] text-sm py-3 px-5 font-instrument_sans font-semibold  text-[#101323] disabled:opacity-50 disabled:cursor-not-allowed font-display hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200"
-      style={{
-        background: "linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)",
-      }}
+      size="lg"
+      className="w-full font-display font-semibold"
     >
-
       {getButtonText()}
       <ChevronRight className="w-4 h-4" />
     </Button>

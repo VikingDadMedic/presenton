@@ -558,7 +558,7 @@ const PresentationHeader = ({
           </div>}
           {presentationData && presentationData.slides && presentationData.slides.length > 0 && !presentationData.slides[0]?.layout?.includes("custom") && <ThemeSelector current_theme={presentationData?.theme || {}} themes={themes} />}
 
-          <div className="flex items-center gap-2 bg-[#F6F6F9] px-3.5 h-[38px] border border-[#EDECEC] rounded-[80px]">
+          <div className="flex items-center gap-2 bg-muted px-3.5 h-[38px] border border-border rounded-lg">
 
             <ToolTip content="Regenerate Presentation">
               <button onClick={handleReGenerate} className="group">
@@ -608,10 +608,7 @@ const PresentationHeader = ({
 
           <Popover open={open} onOpenChange={setOpen} >
             <PopoverTrigger asChild>
-              <button className="flex  items-center gap-[7px] px-[18px] py-[11px] rounded-[53px] text-sm font-semibold text-[#101323]"
-                style={{
-                  background: "linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)",
-                }}
+              <button className="flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-semibold bg-primary text-primary-foreground shadow-[var(--shadow-teal-soft)] hover:bg-primary/90 hover:-translate-y-0.5 transition-all"
                 disabled={isExporting || isStreaming === true}
               >
                 {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Export"} <ArrowRightFromLine className="w-3.5 h-3.5" />

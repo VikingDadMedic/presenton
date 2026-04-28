@@ -55,7 +55,7 @@ const ModeSelectStep = ({ selectedMode, setStep, setSelectedMode }: { selectedMo
                     onClick={() => {
                         setStep(2);
                     }}
-                    className='border font-display border-[#EDEEEF] bg-primary  rounded-[58px] px-5 py-2.5 text-white text-xs  font-semibold'>
+                    className='border font-display border-border bg-primary rounded-md px-5 py-2.5 text-primary-foreground text-xs font-semibold'>
                     Continue to providers
                 </button>
             </div>

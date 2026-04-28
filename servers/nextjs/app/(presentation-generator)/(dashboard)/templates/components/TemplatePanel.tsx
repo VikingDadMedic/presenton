@@ -147,12 +147,8 @@ const LayoutPreview = () => {
                         <Link
                             href="/custom-template"
                             onClick={() => trackEvent(MixpanelEvent.Templates_New_Template_Clicked)}
-                            className="inline-flex items-center font-display font-semibold gap-2 rounded-xl px-4 py-2.5 text-black text-sm  shadow-sm hover:shadow-md"
+                            className="inline-flex items-center font-display font-semibold gap-2 rounded-md px-4 py-2.5 bg-primary text-primary-foreground text-sm  shadow-sm hover:shadow-md"
                             aria-label="Create new template"
-                            style={{
-                                borderRadius: "48px",
-                                background: "linear-gradient(270deg, #e8c87a 2.4%, #d4b97e 27.88%, #c9a84c 69.23%, #b8985d 100%)",
-                            }}
                         >
                             <span className="hidden md:inline">New Template</span>
                             <span className="md:hidden">New</span>

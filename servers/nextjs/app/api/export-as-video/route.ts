@@ -382,7 +382,7 @@ export async function POST(req: NextRequest) {
     let renderSuccess = false;
     try {
       execSync(
-        `cd ${JSON.stringify(tempDir)} && npx hyperframes render --output ${JSON.stringify(outPath)} --width 1280 --height 720`,
+        `cd ${JSON.stringify(tempDir)} && npx hyperframes render --output ${JSON.stringify(outPath)}`,
         {
           timeout: 180000,
           env: {

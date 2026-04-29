@@ -607,6 +607,10 @@ async def _generate_slide_audio(
             character_count = int(raw_character_count)
         except Exception:
             character_count = 0
+    if character_count <= 0:
+        # ElevenLabs headers can occasionally omit x-character-count; use
+        # a deterministic fallback so usage logs and budget checks stay meaningful.
+        character_count = len(text)
     request_id = _clean_optional_string(headers.get("request-id"))
 
     now = datetime.now(timezone.utc)

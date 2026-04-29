@@ -62,6 +62,8 @@ function buildSlideAnimations(
 
   let entrance = "";
   let exit = "";
+  const titleSelector = JSON.stringify(`${s} ${TITLE_SELECTORS}`);
+  const cardSelector = JSON.stringify(`${s} ${CARD_SELECTORS}`);
 
   if (style === "scale-zoom") {
     entrance = `  tl.fromTo("${s}", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: ${transitionDur}, ease: "expo.out" }, ${start});`;
@@ -80,8 +82,8 @@ function buildSlideAnimations(
       : `  tl.to("${s}", { opacity: 0, duration: ${transitionDur * 0.625}, ease: "power2.in" }, ${start + t - transitionDur * 0.625});`;
   }
 
-  const titleFlyIn = `  tl.from("${s} ${TITLE_SELECTORS}", { y: 30, opacity: 0, duration: 0.6, ease: "power3.out", stagger: 0.1 }, ${start + 0.3});`;
-  const cardStagger = `  tl.from("${s} ${CARD_SELECTORS}", { y: 20, opacity: 0, duration: 0.5, ease: "power2.out", stagger: 0.15 }, ${start + 0.8});`;
+  const titleFlyIn = `  tl.from(${titleSelector}, { y: 30, opacity: 0, duration: 0.6, ease: "power3.out", stagger: 0.1 }, ${start + 0.3});`;
+  const cardStagger = `  tl.from(${cardSelector}, { y: 20, opacity: 0, duration: 0.5, ease: "power2.out", stagger: 0.15 }, ${start + 0.8});`;
 
   return [
     `  // --- Slide ${slideIndex} (${style}) ---`,

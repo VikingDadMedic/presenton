@@ -226,6 +226,7 @@ export async function POST(req: NextRequest) {
   let browser: Browser | null = null;
   let page: Page | null = null;
   let tempDir = "";
+  const sessionCookie = req.cookies.get("presenton_session")?.value;
 
   try {
     tempDir = path.join(
@@ -248,6 +249,13 @@ export async function POST(req: NextRequest) {
     });
 
     page = await browser.newPage();
+    if (sessionCookie) {
+      await page.setCookie({
+        name: "presenton_session",
+        value: sessionCookie,
+        url: "http://localhost",
+      });
+    }
     await page.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1 });
     page.setDefaultNavigationTimeout(120000);
     page.setDefaultTimeout(120000);
@@ -404,6 +412,13 @@ export async function POST(req: NextRequest) {
         args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
       });
       page = await browser.newPage();
+      if (sessionCookie) {
+        await page.setCookie({
+          name: "presenton_session",
+          value: sessionCookie,
+          url: "http://localhost",
+        });
+      }
       await page.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1 });
       page.setDefaultNavigationTimeout(120000);
       await page.goto(`http://localhost/pdf-maker?id=${id}`, {

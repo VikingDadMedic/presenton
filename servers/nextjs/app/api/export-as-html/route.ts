@@ -1,5 +1,5 @@
-import { NextResponse, NextRequest } from "next/server";
-import puppeteer, { Browser, Page } from "puppeteer";
+import { NextResponse, type NextRequest } from "next/server";
+import puppeteer, { type Browser, type Page } from "puppeteer";
 import fs from "fs";
 import path from "path";
 import JSZip from "jszip";
@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
 
   let browser: Browser | null = null;
   let page: Page | null = null;
+  const sessionCookie = req.cookies.get("presenton_session")?.value;
 
   try {
     browser = await puppeteer.launch({
@@ -73,6 +74,13 @@ export async function POST(req: NextRequest) {
     });
 
     page = await browser.newPage();
+    if (sessionCookie) {
+      await page.setCookie({
+        name: "presenton_session",
+        value: sessionCookie,
+        url: "http://localhost",
+      });
+    }
     await page.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1 });
     page.setDefaultNavigationTimeout(120000);
     page.setDefaultTimeout(120000);

@@ -2,6 +2,7 @@ import os
 from utils.get_env import get_app_data_directory_env, get_database_url_env
 from urllib.parse import urlsplit, urlunsplit, parse_qsl
 import ssl
+from sqlalchemy import func
 
 
 def _ensure_sqlite_parent_dir(database_url: str) -> None:
@@ -98,3 +99,21 @@ def get_database_url_and_connect_args() -> tuple[str, dict]:
         pass
 
     return database_url, connect_args
+
+
+def group_by_period(column, period: str, database_url: str):
+    normalized_period = (period or "day").strip().lower()
+    if normalized_period not in {"day", "month"}:
+        normalized_period = "day"
+
+    if "sqlite" in database_url:
+        sqlite_pattern = "%Y-%m" if normalized_period == "month" else "%Y-%m-%d"
+        return func.strftime(sqlite_pattern, column)
+
+    if "mysql" in database_url:
+        mysql_pattern = "%Y-%m" if normalized_period == "month" else "%Y-%m-%d"
+        return func.date_format(column, mysql_pattern)
+
+    trunc_granularity = "month" if normalized_period == "month" else "day"
+    output_pattern = "YYYY-MM" if normalized_period == "month" else "YYYY-MM-DD"
+    return func.to_char(func.date_trunc(trunc_granularity, column), output_pattern)

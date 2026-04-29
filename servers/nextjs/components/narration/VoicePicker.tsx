@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { PresentationGenerationApi } from "@/app/(presentation-generator)/services/api/presentation-generation";
 import { toast } from "sonner";
+import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 
 const VOICE_CACHE_KEY = "presenton:narration:voices:v1";
 const VOICE_CACHE_TTL_MS = 60 * 60 * 1000;
@@ -29,6 +30,7 @@ interface VoicePickerProps {
   value?: string | null;
   onChange: (voiceId: string) => void;
   className?: string;
+  analyticsContext?: string;
 }
 
 const readVoiceCache = (): NarrationVoice[] | null => {
@@ -61,7 +63,12 @@ const writeVoiceCache = (voices: NarrationVoice[]) => {
   }
 };
 
-const VoicePicker: React.FC<VoicePickerProps> = ({ value, onChange, className }) => {
+const VoicePicker: React.FC<VoicePickerProps> = ({
+  value,
+  onChange,
+  className,
+  analyticsContext,
+}) => {
   const [voices, setVoices] = useState<NarrationVoice[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [previewingVoiceId, setPreviewingVoiceId] = useState<string | null>(null);
@@ -125,7 +132,16 @@ const VoicePicker: React.FC<VoicePickerProps> = ({ value, onChange, className })
   return (
     <div className={className}>
       <div className="flex items-center gap-2">
-        <Select value={value || undefined} onValueChange={onChange}>
+        <Select
+          value={value || undefined}
+          onValueChange={(voiceId) => {
+            onChange(voiceId);
+            trackEvent(MixpanelEvent.Narration_Voice_Changed, {
+              voice_id: voiceId,
+              context: analyticsContext || "unknown",
+            });
+          }}
+        >
           <SelectTrigger className="w-full rounded-lg border-border">
             <SelectValue placeholder={isLoading ? "Loading voices..." : "Select voice"} />
           </SelectTrigger>

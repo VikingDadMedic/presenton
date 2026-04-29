@@ -3,6 +3,7 @@ from datetime import datetime
 import json
 import os
 import random
+import shutil
 import traceback
 from typing import Annotated, List, Literal, Optional, Tuple
 import dirtyjson
@@ -45,6 +46,7 @@ from utils.llm_calls.generate_presentation_outlines import (
 from models.sql.slide import SlideModel
 from models.sql.presentation_layout_code import PresentationLayoutCodeModel
 from models.sse_response import SSECompleteResponse, SSEErrorResponse, SSEResponse
+from api.v1.ppt.endpoints.narration import _clear_slide_narration
 
 from services.database import get_async_session
 from services.temp_file_service import TEMP_FILE_SERVICE
@@ -54,7 +56,11 @@ from services.pptx_presentation_creator import PptxPresentationCreator
 from models.sql.async_presentation_generation_status import (
     AsyncPresentationGenerationTaskModel,
 )
-from utils.asset_directory_utils import get_exports_directory, get_images_directory
+from utils.asset_directory_utils import (
+    get_audio_directory,
+    get_exports_directory,
+    get_images_directory,
+)
 from utils.llm_calls.generate_presentation_structure import (
     generate_presentation_structure,
 )
@@ -247,6 +253,10 @@ async def delete_presentation(
     presentation = await sql_session.get(PresentationModel, id)
     if not presentation:
         raise HTTPException(404, "Presentation not found")
+
+    audio_dir = os.path.join(get_audio_directory(), str(id))
+    if os.path.isdir(audio_dir):
+        shutil.rmtree(audio_dir, ignore_errors=True)
 
     await sql_session.delete(presentation)
     await sql_session.commit()
@@ -509,6 +519,7 @@ async def stream_presentation(
                     ),
                     presentation_synopsis=presentation_synopsis,
                     tone_preset=resolved_narration_tone,
+                    destination_context=presentation.enriched_data,
                 )
             except HTTPException as e:
                 yield SSEErrorResponse(detail=e.detail).to_string()
@@ -569,6 +580,15 @@ async def stream_presentation(
             generated_assets.extend(assets_list)
 
         # Moved this here to make sure new slides are generated before deleting the old ones
+        existing_slides = list(
+            (
+                await sql_session.scalars(
+                    select(SlideModel).where(SlideModel.presentation == id)
+                )
+            ).all()
+        )
+        for existing_slide in existing_slides:
+            _clear_slide_narration(existing_slide, also_remove_file=True)
         await sql_session.execute(
             delete(SlideModel).where(SlideModel.presentation == id)
         )
@@ -638,6 +658,16 @@ async def update_presentation(
         for slide in slides:
             slide.presentation = uuid.UUID(slide.presentation)
             slide.id = uuid.UUID(slide.id)
+
+        existing_slides = list(
+            (
+                await sql_session.scalars(
+                    select(SlideModel).where(SlideModel.presentation == presentation.id)
+                )
+            ).all()
+        )
+        for existing_slide in existing_slides:
+            _clear_slide_narration(existing_slide, also_remove_file=True)
 
         await sql_session.execute(
             delete(SlideModel).where(SlideModel.presentation == presentation.id)
@@ -1132,6 +1162,7 @@ async def generate_presentation_handler(
                     ),
                     presentation_synopsis=presentation_synopsis,
                     tone_preset=resolved_narration_tone,
+                    destination_context=enriched_data_for_model,
                 )
                 for i in range(start, end)
             ]

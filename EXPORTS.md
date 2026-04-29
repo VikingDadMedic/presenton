@@ -58,6 +58,7 @@ curl -X POST https://your-host/api/v1/ppt/presentation/generate \
 | `template` | string | `"general"` | Template group: `general`, `travel`, `travel-itinerary`, `code`, `education`, `product-overview`, `report`, etc. |
 | `n_slides` | integer | auto | Number of slides (auto-detected if omitted) |
 | `tone` | string | `"default"` | `default`, `casual`, `professional`, `funny`, `educational`, `sales_pitch`, `inspirational`, `adventurous`, `luxury` |
+| `narration_tone` | string | `"travel_companion"` | Narration tone preset used for speaker-note generation and narration defaults (`travel_companion`, `documentary`, `hype_reel`, `friendly_tutorial`) |
 | `verbosity` | string | `"standard"` | `concise`, `standard`, `text-heavy` |
 | `language` | string | auto | Presentation language |
 | `export_as` | string | `"pptx"` | `pptx`, `pdf`, `html`, `video` |
@@ -105,6 +106,7 @@ The optional `export_options` object controls format-specific rendering:
 | `transition_style` | video | `"cycle"` | Transition animation style |
 | `transition_duration` | video | `0.8` | Seconds for each transition |
 | `audio_url` | video | null | Background audio URL for the video |
+| `use_narration_as_soundtrack` | video | `false` | Uses per-slide narration MP3 as the primary soundtrack and extends slide timing to fit narration length |
 | `auto_play_interval` | html | `5000` | Auto-play interval in ms for HTML slideshow |
 
 ### Narration Behavior in Exports
@@ -282,6 +284,10 @@ TripStory exposes an MCP server at `/mcp/` for AI agent integration. The followi
 | `get_enricher_status` | `GET /enrichers/status` | Check which enricher APIs are configured |
 | `list_presentations` | `GET /all` | List all presentations |
 | `templates_list` | `GET /template-management/summary` | List available templates |
+| `get_narration_voices` | `GET /narration/voices` | List available ElevenLabs voices |
+| `narration_estimate` | `GET /narration/presentation/{id}/estimate` | Estimate characters before synthesis |
+| `bulk_generate_narration` | `POST /narration/presentation/{id}/bulk` | Generate narration audio for all eligible slides |
+| `get_narration_status` | `GET /narration/presentation/{id}` | Inspect per-slide narration audio status |
 | `get_embed_url` | `POST /api/export-as-embed` | Get embed URL for a presentation |
 | `export_json` | `GET /export/json/{id}` | Download structured JSON |
 | `generate_async` | `POST /generate/async` | Start async generation |
@@ -344,16 +350,21 @@ FastAPI (Python)                    Next.js (Node.js)
    |                                    |
    POST /generate ----+                 |
    POST /export ------+                 |
+   POST /narration/* -+                 |
                       |                 |
               export_utils.py           |
                       |                 |
-        +-------------+--------+-------+---------+
-        |             |        |       |         |
-     PPTX          PDF      HTML    Video     Embed
-        |             |        |       |         |
+        +-------------+--------+--------+---------+
+        |             |        |        |         |
+     PPTX          PDF      HTML      Video     Embed
+        |             |        |        |         |
    python-pptx   bundled   Puppeteer  Hyperframes  React
                  export    HTML       GSAP+FFmpeg   player
                  runtime   capture    composition   /embed/{id}
+                               |          |
+                               +----+-----+
+                                    |
+                         /app_data/audio + narration_usage_logs
 ```
 
 All exports start from the same slide data (structured JSON rendered by React at 1280x720). The format determines which rendering pipeline processes the HTML output.

@@ -206,10 +206,11 @@ Select layout index for each of {n_slides} slides.
 - `outline` -- the markdown content for this slide (from Call 1)
 - `language`, `tone`, `verbosity`
 - `instructions` -- user instructions + `enriched_context` markdown (concatenated)
+- `previous_slide_title`, `next_slide_title`, `presentation_synopsis`, `destination_context` -- continuity signals passed into Call 3 prompts and post-processing
 
 **Schema Transformation** (before sending to LLM):
 1. `__image_url__` and `__icon_url__` fields are **stripped** (LLM generates prompts, not URLs)
-2. `__speaker_note__` field is **injected** (100-250 chars, required)
+2. `__speaker_note__` field is **injected** (target 250-800 chars, required; hard ceiling 1000 after IPA augmentation)
 3. All `.meta({ description })` from Zod become JSON Schema `description` fields
 4. All `.min()/.max()` become `minLength`/`maxLength` constraints
 
@@ -263,7 +264,7 @@ English
                   "description": "Short inspirational tagline" },
     "country":  { "type": "string", "minLength": 2, "maxLength": 30 },
     "image":    { "__image_prompt__": { "type": "string" } },
-    "__speaker_note__": { "type": "string", "minLength": 100, "maxLength": 250 }
+    "__speaker_note__": { "type": "string", "minLength": 250, "maxLength": 800 }
   }
 }
 ```
@@ -280,6 +281,8 @@ English
   "__speaker_note__": "Welcome everyone to our Santorini travel showcase..."
 }
 ```
+
+`__speaker_note__` now supports inline audio pacing tags (for example `[pause]`, `[warmly]`) and IPA phoneme tags (for example `<phoneme alphabet="ipa" ph="ˈreiːcaˌviːk">Reykjavík</phoneme>`). After Call 3 returns, auto-IPA augmentation runs with this order: curated dictionary -> destination-intel-derived terms -> LLM fallback.
 
 > **Per-Call Model Routing**: Since April 2026, the pipeline supports different models per call via `utils/llm_config.py`. Default production config: Call 1 uses GPT-5.5, Calls 2-3 use Mercury 2 (Inception Labs diffusion LLM) with `strict=True` and length constraints stripped via `utils/schema_utils.py` (validated client-side). Mercury 2 is 2.9-14.6x faster than GPT-4.1 for structured output.
 
@@ -509,3 +512,12 @@ TIME ─────────────────────────
 | **Total wall time** | **~60-130s** | |
 
 If Call 3 were parallelized (like the `/generate` path), the 40-80s would collapse to 5-10s, cutting total time roughly in half.
+
+### Narration Timeline (Post-Generation)
+
+Narration is a follow-up phase after slides exist in DB:
+
+- `GET /api/v1/ppt/narration/presentation/{id}/estimate` computes per-slide character forecasts.
+- `POST /api/v1/ppt/narration/slide/{id}` and `POST /api/v1/ppt/narration/presentation/{id}/bulk` synthesize ElevenLabs MP3 audio using per-slide override -> deck default -> curated fallback.
+- Audio files persist under `/app_data/audio/{presentation_id}/slide_*.mp3`.
+- `narration_usage_logs` receives one record per synthesis request, powering `GET /api/v1/ppt/narration/usage/summary`.

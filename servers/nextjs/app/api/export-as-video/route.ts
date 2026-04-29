@@ -1,5 +1,5 @@
-import { NextResponse, NextRequest } from "next/server";
-import puppeteer, { Browser, Page } from "puppeteer";
+import { NextResponse, type NextRequest } from "next/server";
+import puppeteer, { type Browser, type Page } from "puppeteer";
 import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
@@ -8,6 +8,45 @@ const DEFAULT_SLIDE_DURATION = 5;
 const TRANSITION_DURATION = 0.8;
 const TITLE_SELECTORS = 'h1, h2, [class*="title"], [class*="Title"], [class*="heading"], [class*="Heading"]';
 const CARD_SELECTORS = '[class*="card"], [class*="Card"], [class*="item"], [class*="Item"], [class*="metric"], [class*="Metric"], [class*="tier"], [class*="Tier"]';
+
+interface SlideCapture {
+  html: string;
+  note: string;
+  audioUrl: string;
+}
+
+interface SlideNarrationTrack {
+  slideIndex: number;
+  relativePath: string;
+  durationSeconds: number;
+}
+
+function resolveAudioFilesystemPath(audioUrl: string): string | null {
+  const trimmed = (audioUrl || "").trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("/app_data/audio/")) {
+    const appDataRoot = process.env.APP_DATA_DIRECTORY || "/tmp/presenton";
+    const relative = trimmed.replace(/^\/app_data\/audio\//, "");
+    return path.join(appDataRoot, "audio", relative);
+  }
+  if (path.isAbsolute(trimmed)) {
+    return trimmed;
+  }
+  return null;
+}
+
+function getMp3DurationSeconds(filePath: string): number {
+  const output = execSync(
+    `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ${JSON.stringify(filePath)}`,
+    {
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "pipe"],
+    }
+  );
+  const duration = Number.parseFloat(output.trim());
+  if (!Number.isFinite(duration) || duration <= 0) return 0;
+  return duration;
+}
 
 function buildSlideAnimations(
   slideIndex: number,
@@ -89,7 +128,8 @@ function buildHyperframesComposition(
   stylesheets: string[],
   transitionStyle: string,
   transitionDuration: number,
-  audioUrl?: string,
+  narrationTracks: SlideNarrationTrack[] = [],
+  backgroundAudioUrl?: string,
 ): string {
   const totalSlides = slides.length;
   const totalDuration = totalSlides * slideDuration;
@@ -117,6 +157,16 @@ function buildHyperframesComposition(
     .map(([k, v]) => `      ${k}: ${v};`)
     .join("\n");
 
+  const narrationAudioElements = narrationTracks
+    .map(
+      (track) =>
+        `<audio data-start="slide-${track.slideIndex}" data-duration="${Math.max(
+          track.durationSeconds,
+          0.1
+        )}" data-track-index="10" data-volume="1" src="${track.relativePath}"></audio>`
+    )
+    .join("\n");
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -138,7 +188,8 @@ ${themeStyle}">
 
 ${slideClips}
 
-${audioUrl ? `<audio data-start="0" data-duration="${totalDuration}" data-track-index="10" data-volume="0.3" src="${audioUrl}"></audio>` : ""}
+${narrationAudioElements}
+${backgroundAudioUrl ? `<audio data-start="0" data-duration="${totalDuration}" data-track-index="11" data-volume="0.3" src="${backgroundAudioUrl}"></audio>` : ""}
 </div>
 
 <script>
@@ -154,7 +205,15 @@ ${animations}
 }
 
 export async function POST(req: NextRequest) {
-  const { id, title, slideDuration, transitionStyle, transitionDuration, audioUrl } = await req.json();
+  const {
+    id,
+    title,
+    slideDuration,
+    transitionStyle,
+    transitionDuration,
+    audioUrl,
+    useNarrationAsSoundtrack,
+  } = await req.json();
   if (!id) {
     return NextResponse.json(
       { error: "Missing Presentation ID" },
@@ -162,7 +221,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const duration = slideDuration || DEFAULT_SLIDE_DURATION;
+  const baseDuration = Number(slideDuration) || DEFAULT_SLIDE_DURATION;
+  const soundtrackModeEnabled = Boolean(useNarrationAsSoundtrack);
   let browser: Browser | null = null;
   let page: Page | null = null;
   let tempDir = "";
@@ -217,7 +277,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const slides: { html: string; note: string }[] = [];
+      const slides: { html: string; note: string; audioUrl: string }[] = [];
       slideWrappers.forEach((wrapper) => {
         const slideEl = wrapper.querySelector(
           ".aspect-video, [class*='aspect-video']"
@@ -227,7 +287,9 @@ export async function POST(req: NextRequest) {
           : (wrapper as HTMLElement).innerHTML;
         const note =
           (wrapper as HTMLElement).getAttribute("data-speaker-note") || "";
-        slides.push({ html, note });
+        const audioUrl =
+          (wrapper as HTMLElement).getAttribute("data-narration-audio") || "";
+        slides.push({ html, note, audioUrl });
       });
 
       const stylesheets: string[] = [];
@@ -250,6 +312,37 @@ export async function POST(req: NextRequest) {
       throw new Error("No slides found in presentation");
     }
 
+    const narrationTracks: SlideNarrationTrack[] = [];
+    if (soundtrackModeEnabled) {
+      const narrationDir = path.join(tempDir, "narration");
+      fs.mkdirSync(narrationDir, { recursive: true });
+
+      (slideData.slides as SlideCapture[]).forEach((slide, idx) => {
+        const sourcePath = resolveAudioFilesystemPath(slide.audioUrl);
+        if (!sourcePath || !fs.existsSync(sourcePath)) return;
+        const relativePath = path.join("narration", `slide_${idx + 1}.mp3`);
+        const destinationPath = path.join(tempDir, relativePath);
+        fs.copyFileSync(sourcePath, destinationPath);
+        const durationSeconds = getMp3DurationSeconds(destinationPath);
+        narrationTracks.push({
+          slideIndex: idx,
+          relativePath,
+          durationSeconds,
+        });
+      });
+
+      if (!narrationTracks.length) {
+        throw new Error(
+          "Narration soundtrack requested, but no slide narration audio files were found."
+        );
+      }
+    }
+
+    const longestNarrationSeconds = narrationTracks.reduce(
+      (maxDuration, track) => Math.max(maxDuration, track.durationSeconds),
+      0
+    );
+    const duration = Math.max(baseDuration, longestNarrationSeconds);
     const style = transitionStyle || "cycle";
     const transDur = transitionDuration || TRANSITION_DURATION;
 
@@ -260,6 +353,7 @@ export async function POST(req: NextRequest) {
       slideData.stylesheets,
       style,
       transDur,
+      narrationTracks,
       audioUrl,
     );
 
@@ -299,6 +393,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (!renderSuccess) {
+      if (soundtrackModeEnabled) {
+        throw new Error(
+          "Hyperframes render failed while narration soundtrack mode is enabled. Retry after fixing renderer availability or disable soundtrack mode."
+        );
+      }
       browser = await puppeteer.launch({
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
         headless: true,

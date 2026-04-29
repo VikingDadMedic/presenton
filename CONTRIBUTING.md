@@ -89,6 +89,8 @@ npm run dev
 
 The Next.js dev server proxies `/api/v1/*` to `http://localhost:8000` via `next.config.ts` rewrites. Set `USER_CONFIG_PATH` and `CONTAINER_DB_PATH` environment variables for both services (see README.md).
 
+If you are working on narration features, also set `ELEVENLABS_API_KEY` (and optionally `ELEVENLABS_DEFAULT_VOICE_ID`) before starting the backend so `/api/v1/ppt/narration/*` endpoints are available for local testing.
+
 ### Running Tests
 
 ```bash

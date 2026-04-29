@@ -109,6 +109,8 @@ const PresentationHeader = ({
   const [isExporting, setIsExporting] = useState(false);
   const [narrationPopoverOpen, setNarrationPopoverOpen] = useState(false);
   const [bulkNarrationLoading, setBulkNarrationLoading] = useState(false);
+  const [videoExportPopoverOpen, setVideoExportPopoverOpen] = useState(false);
+  const [useNarrationAsSoundtrack, setUseNarrationAsSoundtrack] = useState(false);
   const [themes, setThemes] = useState<Theme[]>([]);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [embedDialogOpen, setEmbedDialogOpen] = useState(false);
@@ -334,9 +336,24 @@ const PresentationHeader = ({
     }
   };
 
-  const handleExportVideo = async () => {
+  const handleExportVideo = async (options?: { useNarrationAsSoundtrack?: boolean }) => {
     if (isStreaming) return;
+    const narrationSoundtrackEnabled = Boolean(options?.useNarrationAsSoundtrack);
+    if (
+      narrationSoundtrackEnabled &&
+      !presentationData?.slides?.some((slide) => Boolean(slide.narration_audio_url))
+    ) {
+      toast.error("No narration audio available for soundtrack mode.");
+      return;
+    }
     try {
+      trackEvent(MixpanelEvent.Presentation_Export_Started, {
+        pathname,
+        presentation_id,
+        format: "video",
+        slide_count: presentationData?.slides?.length || 0,
+        use_narration_as_soundtrack: narrationSoundtrackEnabled,
+      });
       toast.info("Rendering video... this may take a minute or two.", { duration: 10000 });
       setIsExporting(true);
       await PresentationGenerationApi.updatePresentationContent(presentationData);
@@ -348,6 +365,7 @@ const PresentationHeader = ({
         slideDuration: 5,
         transitionStyle: "cycle",
         transitionDuration: 0.8,
+        useNarrationAsSoundtrack: narrationSoundtrackEnabled,
       });
       if (path) {
         downloadLink(path, safeFileName);
@@ -389,6 +407,24 @@ const PresentationHeader = ({
     narration_pronunciation_dictionary_id?: string | null;
   }) => {
     dispatch(updateNarrationDefaults(patch));
+    if (patch.narration_voice_id !== undefined) {
+      trackEvent(MixpanelEvent.Narration_Voice_Changed, {
+        context: "deck-default",
+        voice_id: patch.narration_voice_id,
+      });
+    }
+    if (patch.narration_tone !== undefined) {
+      trackEvent(MixpanelEvent.Narration_Tone_Changed, {
+        context: "deck-default",
+        tone: patch.narration_tone,
+      });
+    }
+    if (patch.narration_model_id !== undefined) {
+      trackEvent(MixpanelEvent.Narration_Model_Changed, {
+        context: "deck-default",
+        model_id: patch.narration_model_id,
+      });
+    }
   };
 
   const handleGenerateAllNarration = async () => {
@@ -452,6 +488,12 @@ const PresentationHeader = ({
     if (!confirmed) return;
 
     setBulkNarrationLoading(true);
+    trackEvent(MixpanelEvent.Narration_Bulk_Started, {
+      pathname,
+      presentation_id,
+      estimated_characters: estimatedCharacters,
+      synthesizeable_slides: synthesizeableSlides,
+    });
     try {
       const result = await PresentationGenerationApi.bulkGenerateNarration(
         presentation_id,
@@ -487,9 +529,21 @@ const PresentationHeader = ({
       toast.success("Narration generated for deck", {
         description: `Characters processed: ${(result?.total_character_count || 0).toLocaleString()}`,
       });
+      trackEvent(MixpanelEvent.Narration_Bulk_Completed, {
+        pathname,
+        presentation_id,
+        generated_slides: result?.generated_slides || 0,
+        total_character_count: result?.total_character_count || 0,
+      });
     } catch (error: any) {
       toast.error("Failed to generate narration", {
         description: error?.message || "Please verify ElevenLabs configuration.",
+      });
+      trackEvent(MixpanelEvent.Narration_Failed, {
+        pathname,
+        presentation_id,
+        action: "bulk_generate",
+        message: error?.message || "unknown",
       });
     } finally {
       setBulkNarrationLoading(false);
@@ -556,17 +610,56 @@ const PresentationHeader = ({
           HTML
           <MotionIcon name="ArrowUpRight" animation="bounce" trigger="hover" size={14} />
         </Button>
-        <Button
-          onClick={() => {
-            handleExportVideo();
-            setOpen(false);
-          }}
-          variant="ghost"
-          className={`w-full flex px-0 justify-start text-xs text-foreground hover:bg-transparent  ${mobile ? "bg-card py-6" : ""}`}
+        <Popover
+          open={videoExportPopoverOpen}
+          onOpenChange={setVideoExportPopoverOpen}
         >
-          Video
-          <MotionIcon name="ArrowUpRight" animation="bounce" trigger="hover" size={14} />
-        </Button>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              className={`w-full flex px-0 justify-start text-xs text-foreground hover:bg-transparent ${mobile ? "bg-card py-6" : ""}`}
+            >
+              Video
+              <MotionIcon name="ArrowUpRight" animation="bounce" trigger="hover" size={14} />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-[280px] rounded-xl p-3">
+            <div className="space-y-3">
+              <p className="text-xs font-medium text-foreground">
+                Video export options
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  setUseNarrationAsSoundtrack((prev) => !prev)
+                }
+                className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-xs ${
+                  useNarrationAsSoundtrack
+                    ? "border-primary/30 bg-primary/5 text-primary"
+                    : "border-border bg-card text-foreground"
+                }`}
+              >
+                <span>Use narration as soundtrack</span>
+                <span>{useNarrationAsSoundtrack ? "On" : "Off"}</span>
+              </button>
+              <Button
+                type="button"
+                size="sm"
+                className="w-full rounded-lg"
+                onClick={() => {
+                  void handleExportVideo({
+                    useNarrationAsSoundtrack,
+                  });
+                  setVideoExportPopoverOpen(false);
+                  setOpen(false);
+                }}
+              >
+                Export video
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
         <Button
           onClick={() => {
             handleExportJson();

@@ -113,6 +113,21 @@ export enum MixpanelEvent {
   CustomTemplate_Save_Started = 'Custom Template Save Started',
   CustomTemplate_Saved = 'Custom Template Saved',
   CustomTemplate_Save_Modal_Opened = 'Custom Template Save Modal Opened',
+
+  Narration_Single_Generated = 'Narration Single Generated',
+  Narration_Single_Regenerated = 'Narration Single Regenerated',
+  Narration_Bulk_Started = 'Narration Bulk Started',
+  Narration_Bulk_Completed = 'Narration Bulk Completed',
+  Narration_Played = 'Narration Played',
+  Narration_Failed = 'Narration Failed',
+  Narration_Voice_Changed = 'Narration Voice Changed',
+  Narration_Tone_Changed = 'Narration Tone Changed',
+  Narration_Model_Changed = 'Narration Model Changed',
+  Narration_Override_Reset = 'Narration Override Reset',
+  Narration_AutoNarrate_Toggled = 'Narration AutoNarrate Toggled',
+  Narration_Mute_Toggled = 'Narration Mute Toggled',
+  Pronunciation_Dictionary_Uploaded = 'Pronunciation Dictionary Uploaded',
+  Narration_Usage_Viewed = 'Narration Usage Viewed',
 }
 
 export type MixpanelProps = Record<string, unknown>;

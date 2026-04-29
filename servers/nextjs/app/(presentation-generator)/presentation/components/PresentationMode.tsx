@@ -28,6 +28,7 @@ import { resolveBackendAssetUrl } from "@/utils/api";
 import { toast } from "sonner";
 import { useDispatch } from "react-redux";
 import { updateSlideNarration } from "@/store/slices/presentationGeneration";
+import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 
 interface PresentationModeProps {
   slides: Slide[];
@@ -66,6 +67,10 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
     () => slides[currentSlide]?.speaker_note?.trim() || "",
     [slides, currentSlide]
   );
+  const presentationId = useMemo(() => {
+    const rawId = slides[0]?.presentation;
+    return rawId ? String(rawId) : undefined;
+  }, [slides]);
 
   const activeSlide = slides[currentSlide];
 
@@ -159,6 +164,13 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
             })
           );
         } catch (error: any) {
+          trackEvent(MixpanelEvent.Narration_Failed, {
+            context: "presentation-mode",
+            action: "single_generate",
+            presentation_id: presentationId,
+            slide_id: String(slide.id),
+            message: error?.message || "unknown",
+          });
           toast.error("Unable to generate narration", {
             description: error?.message || "Check ElevenLabs configuration.",
           });
@@ -171,11 +183,22 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
         const audio = ensureAudioRef();
         audio.src = url;
         await audio.play();
+        trackEvent(MixpanelEvent.Narration_Played, {
+          context: "presentation-mode",
+          presentation_id: presentationId,
+          slide_id: String(slide.id),
+        });
       } catch {
+        trackEvent(MixpanelEvent.Narration_Failed, {
+          context: "presentation-mode",
+          action: "playback",
+          presentation_id: presentationId,
+          slide_id: String(slide.id),
+        });
         toast.error("Unable to play narration audio.");
       }
     },
-    [dispatch, ensureAudioRef, slides]
+    [dispatch, ensureAudioRef, slides, presentationId]
   );
 
   const prefetchNextSlideAudio = useCallback(() => {
@@ -195,6 +218,11 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
       return;
     }
     setIsGeneratingAll(true);
+    trackEvent(MixpanelEvent.Narration_Bulk_Started, {
+      context: "presentation-mode",
+      presentation_id: String(presentationId),
+      slide_count: slides.length,
+    });
     try {
       const result = await PresentationGenerationApi.bulkGenerateNarration(
         String(presentationId),
@@ -223,9 +251,21 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
         );
       });
       toast.success("Narration generated for all slides.");
+      trackEvent(MixpanelEvent.Narration_Bulk_Completed, {
+        context: "presentation-mode",
+        presentation_id: String(presentationId),
+        generated_slides: Number((result as any)?.generated_slides ?? 0),
+        total_character_count: Number((result as any)?.total_character_count ?? 0),
+      });
     } catch (error: any) {
       toast.error("Bulk narration generation failed", {
         description: error?.message || "Please try again.",
+      });
+      trackEvent(MixpanelEvent.Narration_Failed, {
+        context: "presentation-mode",
+        action: "bulk_generate",
+        presentation_id: String(presentationId),
+        message: error?.message || "unknown",
       });
     } finally {
       setIsGeneratingAll(false);
@@ -483,7 +523,15 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
           className="h-8 rounded-full px-3 text-xs"
           onClick={(e) => {
             e.stopPropagation();
-            setAutoNarrate((prev) => !prev);
+            setAutoNarrate((prev) => {
+              const next = !prev;
+              trackEvent(MixpanelEvent.Narration_AutoNarrate_Toggled, {
+                context: "presentation-mode",
+                presentation_id: presentationId,
+                enabled: next,
+              });
+              return next;
+            });
           }}
         >
           <Volume2 className="mr-1 h-3.5 w-3.5" />
@@ -509,7 +557,15 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
           className="h-8 rounded-full px-3 text-xs"
           onClick={(e) => {
             e.stopPropagation();
-            setIsMuted((prev) => !prev);
+            setIsMuted((prev) => {
+              const next = !prev;
+              trackEvent(MixpanelEvent.Narration_Mute_Toggled, {
+                context: "presentation-mode",
+                presentation_id: presentationId,
+                muted: next,
+              });
+              return next;
+            });
           }}
         >
           {isMuted ? (

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PresentationGenerationApi } from "@/app/(presentation-generator)/services/api/presentation-generation";
 import { resolveBackendAssetUrl } from "@/utils/api";
 import { toast } from "sonner";
+import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 
 export interface NarrationGenerationResult {
   audio_url?: string | null;
@@ -29,6 +30,8 @@ interface NarrationPlayerProps {
   voiceId?: string | null;
   tone?: string | null;
   modelId?: string | null;
+  speakerNoteHash?: string | null;
+  narrationTextHash?: string | null;
   onGenerated?: (result: NarrationGenerationResult) => void;
   className?: string;
 }
@@ -39,6 +42,8 @@ const NarrationPlayer: React.FC<NarrationPlayerProps> = ({
   voiceId,
   tone,
   modelId,
+  speakerNoteHash,
+  narrationTextHash,
   onGenerated,
   className,
 }) => {
@@ -48,6 +53,12 @@ const NarrationPlayer: React.FC<NarrationPlayerProps> = ({
   const [characterCount, setCharacterCount] = useState<number | null>(null);
 
   const resolvedAudioUrl = useMemo(() => resolveBackendAssetUrl(audioUrl || ""), [audioUrl]);
+  const isAudioStale = Boolean(
+    resolvedAudioUrl &&
+      speakerNoteHash &&
+      narrationTextHash &&
+      speakerNoteHash !== narrationTextHash
+  );
 
   const ensureAudioRef = () => {
     if (!audioRef.current) {
@@ -100,19 +111,40 @@ const NarrationPlayer: React.FC<NarrationPlayerProps> = ({
         toast.info("Using cached narration audio.");
       } else if (forceRegenerate) {
         toast.success("Narration regenerated");
+        trackEvent(MixpanelEvent.Narration_Single_Regenerated, {
+          slide_id: slideId,
+          character_count: nextCount,
+        });
       } else {
         toast.success("Narration generated");
+        trackEvent(MixpanelEvent.Narration_Single_Generated, {
+          slide_id: slideId,
+          character_count: nextCount,
+        });
+      }
+
+      if (data?.narration_fallback) {
+        toast.info("Configured voice was unavailable; applied curated fallback voice.");
       }
 
       if (autoPlayAfterGenerate && data?.audio_url) {
         const generatedAudioUrl = resolveBackendAssetUrl(data.audio_url);
         if (generatedAudioUrl) {
           await playAudioFromUrl(generatedAudioUrl);
+          trackEvent(MixpanelEvent.Narration_Played, {
+            slide_id: slideId,
+            source: "autoplay_after_generate",
+          });
         }
       }
     } catch (error: any) {
       toast.error("Failed to generate narration", {
         description: error?.message || "Please check ElevenLabs settings.",
+      });
+      trackEvent(MixpanelEvent.Narration_Failed, {
+        slide_id: slideId,
+        action: forceRegenerate ? "regenerate" : "generate",
+        message: error?.message || "unknown",
       });
     } finally {
       setIsGenerating(false);
@@ -132,8 +164,17 @@ const NarrationPlayer: React.FC<NarrationPlayerProps> = ({
     try {
       audio.src = resolvedAudioUrl;
       await audio.play();
+      trackEvent(MixpanelEvent.Narration_Played, {
+        slide_id: slideId,
+        source: "player_toggle",
+      });
     } catch {
       toast.error("Unable to play narration audio.");
+      trackEvent(MixpanelEvent.Narration_Failed, {
+        slide_id: slideId,
+        action: "play",
+        message: "Unable to play narration audio.",
+      });
     }
   };
 
@@ -169,6 +210,11 @@ const NarrationPlayer: React.FC<NarrationPlayerProps> = ({
           )}
           {resolvedAudioUrl ? (isPlaying ? "Pause" : "Play") : "Generate"}
         </Button>
+        {isAudioStale ? (
+          <span className="rounded-full border border-amber-300 bg-amber-100/70 px-2 py-1 text-[10px] font-medium text-amber-900">
+            Audio is stale - regenerate
+          </span>
+        ) : null}
         <Button
           type="button"
           variant="ghost"

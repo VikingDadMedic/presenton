@@ -41,6 +41,7 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
   const [isSpeakerPopoverOpen, setIsSpeakerPopoverOpen] = useState(false);
   const [showRawSpeakerNote, setShowRawSpeakerNote] = useState(false);
   const [showNarrationOverrides, setShowNarrationOverrides] = useState(false);
+  const [speakerNoteHash, setSpeakerNoteHash] = useState<string | null>(null);
   const [editPrompt, setEditPrompt] = useState("");
   const { presentationData, isStreaming } = useSelector(
     (state: RootState) => state.presentationGeneration
@@ -59,6 +60,49 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
     slide?.narration_model_id ||
     deckDefaultModelId ||
     null;
+
+  useEffect(() => {
+    let cancelled = false;
+    const computeSpeakerNoteHash = async () => {
+      const speakerNote = (slide?.speaker_note || "").trim();
+      if (!speakerNote) {
+        if (!cancelled) setSpeakerNoteHash(null);
+        return;
+      }
+      if (typeof window === "undefined" || !window.crypto?.subtle) {
+        if (!cancelled) setSpeakerNoteHash(null);
+        return;
+      }
+      const dictionaryId =
+        presentationData?.narration_pronunciation_dictionary_id || "";
+      const hashPayload = [
+        speakerNote,
+        effectiveVoiceId || "",
+        effectiveTone || "",
+        effectiveModelId || "",
+        dictionaryId,
+      ].join("||");
+      const encoded = new TextEncoder().encode(hashPayload);
+      const digest = await window.crypto.subtle.digest("SHA-256", encoded);
+      const hashHex = Array.from(new Uint8Array(digest))
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join("");
+      if (!cancelled) {
+        setSpeakerNoteHash(hashHex);
+      }
+    };
+
+    void computeSpeakerNoteHash();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    slide?.speaker_note,
+    effectiveVoiceId,
+    effectiveTone,
+    effectiveModelId,
+    presentationData?.narration_pronunciation_dictionary_id,
+  ]);
 
   const handleSubmit = async () => {
     if (!editPrompt.trim()) {
@@ -337,6 +381,8 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
                       voiceId={effectiveVoiceId}
                       tone={effectiveTone}
                       modelId={effectiveModelId}
+                      speakerNoteHash={speakerNoteHash}
+                      narrationTextHash={slide?.narration_text_hash || null}
                       onGenerated={(result) => {
                         applySlideNarrationPatch({
                           narration_voice_id:
@@ -376,6 +422,7 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
                                   narration_voice_id: voiceId,
                                 })
                               }
+                              analyticsContext="slide-override"
                             />
                           </div>
                           <div>
@@ -389,17 +436,34 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
                                   narration_tone: tone,
                                 })
                               }
+                              analyticsContext="slide-override"
                             />
                           </div>
                           <button
                             type="button"
-                            onClick={() =>
+                            onClick={async () => {
+                              try {
+                                await PresentationGenerationApi.deleteSlideNarration(
+                                  String(slide.id)
+                                );
+                              } catch {
+                                // Continue clearing local state even if delete fails remotely.
+                              }
                               applySlideNarrationPatch({
                                 narration_voice_id: null,
                                 narration_tone: null,
                                 narration_model_id: null,
-                              })
-                            }
+                                narration_audio_url: null,
+                                narration_text_hash: null,
+                                narration_generated_at: null,
+                              });
+                              trackEvent(MixpanelEvent.Narration_Override_Reset, {
+                                pathname,
+                                presentation_id: presentationId,
+                                slide_id: slide.id,
+                                slide_index: slide.index,
+                              });
+                            }}
                             className="rounded-md border border-border px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted"
                           >
                             Reset to deck default

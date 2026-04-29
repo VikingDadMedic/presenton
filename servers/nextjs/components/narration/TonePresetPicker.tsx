@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 
 export const TONE_PRESET_OPTIONS = [
   {
@@ -36,16 +37,27 @@ interface TonePresetPickerProps {
   value?: string | null;
   onChange: (value: string) => void;
   className?: string;
+  analyticsContext?: string;
 }
 
 const TonePresetPicker: React.FC<TonePresetPickerProps> = ({
   value,
   onChange,
   className,
+  analyticsContext,
 }) => {
   return (
     <div className={className}>
-      <Select value={value || undefined} onValueChange={onChange}>
+      <Select
+        value={value || undefined}
+        onValueChange={(nextTone) => {
+          onChange(nextTone);
+          trackEvent(MixpanelEvent.Narration_Tone_Changed, {
+            tone: nextTone,
+            context: analyticsContext || "unknown",
+          });
+        }}
+      >
         <SelectTrigger className="w-full rounded-lg border-border">
           <SelectValue placeholder="Choose tone preset" />
         </SelectTrigger>

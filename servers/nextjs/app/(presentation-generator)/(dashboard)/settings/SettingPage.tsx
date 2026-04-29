@@ -27,6 +27,18 @@ import { toast } from "sonner";
 import LogoutButton from "@/components/Auth/LogoutButton";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import NarrationSettings from "./NarrationSettings";
+import NarrationUsageSettings from "./NarrationUsageSettings";
+
+type SettingsSection =
+  | "text-provider"
+  | "image-provider"
+  | "privacy"
+  | "session"
+  | "appearance"
+  | "narration"
+  | "narration-usage";
+
+const NARRATION_USAGE_PATH = "/settings/narration-usage";
 
 const STOCK_IMAGE_PROVIDERS = new Set(["pexels", "pixabay"]);
 
@@ -44,9 +56,9 @@ const SettingsPage = () => {
   const router = useRouter();
   const pathname = usePathname();
   const [mode, setMode] = useState<'nanobanana' | 'presenton'>('presenton')
-  const [selectedProvider, setSelectedProvider] = useState<
-    "text-provider" | "image-provider" | "privacy" | "session" | "appearance" | "narration"
-  >("text-provider");
+  const [selectedProvider, setSelectedProvider] = useState<SettingsSection>(
+    pathname.endsWith(NARRATION_USAGE_PATH) ? "narration-usage" : "text-provider"
+  );
   const userConfigState = useSelector((state: RootState) => state.userConfig);
   const [llmConfig, setLlmConfig] = useState<LLMConfig>(
     userConfigState.llm_config
@@ -279,6 +291,24 @@ const SettingsPage = () => {
     }
   }, [canChangeKeys, router]);
 
+  useEffect(() => {
+    if (pathname.endsWith(NARRATION_USAGE_PATH)) {
+      setSelectedProvider("narration-usage");
+    }
+  }, [pathname]);
+
+  const handleProviderChange = (provider: SettingsSection) => {
+    setSelectedProvider(provider);
+    const isOnNarrationUsagePath = pathname.endsWith(NARRATION_USAGE_PATH);
+    if (provider === "narration-usage" && !isOnNarrationUsagePath) {
+      router.push(NARRATION_USAGE_PATH);
+      return;
+    }
+    if (provider !== "narration-usage" && isOnNarrationUsagePath) {
+      router.push("/settings");
+    }
+  };
+
   if (!canChangeKeys) {
     return null;
   }
@@ -389,7 +419,7 @@ const SettingsPage = () => {
           mode={mode}
           setMode={setMode}
           selectedProvider={selectedProvider}
-          setSelectedProvider={setSelectedProvider}
+          setSelectedProvider={handleProviderChange}
         />
         <div className="w-full">
           <div className="sticky top-0 right-0 z-50 py-[28px]   backdrop-blur mb-4 ">
@@ -440,6 +470,7 @@ const SettingsPage = () => {
               }}
             />
           )}
+          {selectedProvider === "narration-usage" && <NarrationUsageSettings />}
           {selectedProvider === 'privacy' && <PrivacySettings />}
           {selectedProvider === "session" && (
             <div className="w-full max-w-lg space-y-5 rounded-[20px] border border-border bg-card p-7">
@@ -460,7 +491,9 @@ const SettingsPage = () => {
       </main>
 
       {/* Fixed Bottom Button — hidden on Sign out and Appearance; nothing to save there */}
-      {selectedProvider !== "session" && selectedProvider !== "appearance" ? (
+      {selectedProvider !== "session" &&
+      selectedProvider !== "appearance" &&
+      selectedProvider !== "narration-usage" ? (
         <div className=" mx-auto fixed bottom-20 right-5 ">
           <button
             onClick={handleSaveConfig}

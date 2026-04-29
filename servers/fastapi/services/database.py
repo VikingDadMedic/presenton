@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     AsyncSession,
 )
-from sqlalchemy import text
+from sqlalchemy import event, text
 from sqlmodel import SQLModel
 
 from models.sql.async_presentation_generation_status import (
@@ -14,6 +14,7 @@ from models.sql.async_presentation_generation_status import (
 )
 from models.sql.image_asset import ImageAsset
 from models.sql.key_value import KeyValueSqlModel
+from models.sql.narration_usage_log import NarrationUsageLog
 from models.sql.ollama_pull_status import OllamaPullStatus
 from models.sql.presentation_layout_code import PresentationLayoutCodeModel
 from models.sql.presentation import PresentationModel
@@ -38,6 +39,16 @@ sql_engine: AsyncEngine = create_async_engine(
 async_session_maker = async_sessionmaker(sql_engine, expire_on_commit=False)
 
 
+def _enable_sqlite_foreign_keys(dbapi_connection, _connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
+
+if database_url.startswith("sqlite"):
+    event.listen(sql_engine.sync_engine, "connect", _enable_sqlite_foreign_keys)
+
+
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_maker() as session:
         yield session
@@ -49,6 +60,7 @@ container_db_url = f"sqlite+aiosqlite:///{os.path.join(_app_data_dir, 'container
 container_db_engine: AsyncEngine = create_async_engine(
     container_db_url, connect_args={"check_same_thread": False}
 )
+event.listen(container_db_engine.sync_engine, "connect", _enable_sqlite_foreign_keys)
 container_db_async_session_maker = async_sessionmaker(
     container_db_engine, expire_on_commit=False
 )
@@ -72,6 +84,7 @@ async def create_db_and_tables():
                         SlideModel.__table__,
                         KeyValueSqlModel.__table__,
                         ImageAsset.__table__,
+                        NarrationUsageLog.__table__,
                         PresentationLayoutCodeModel.__table__,
                         TemplateCreateInfoModel.__table__,
                         TemplateModel.__table__,
@@ -82,32 +95,65 @@ async def create_db_and_tables():
             )
 
             # Lightweight schema migration for existing DBs: ensure new columns exist.
-            if database_url.startswith("sqlite"):
-                result = await conn.execute(text("PRAGMA table_info(presentations)"))
-                column_names = {row[1] for row in result.fetchall()}
-            else:
-                result = await conn.execute(text(
-                    "SELECT column_name FROM information_schema.columns "
-                    "WHERE table_name = 'presentations'"
-                ))
-                column_names = {row[0] for row in result.fetchall()}
+            async def _get_column_names(table_name: str) -> set[str]:
+                if database_url.startswith("sqlite"):
+                    result = await conn.execute(text(f"PRAGMA table_info({table_name})"))
+                    return {row[1] for row in result.fetchall()}
 
-            if "theme" not in column_names:
+                result = await conn.execute(
+                    text(
+                        "SELECT column_name FROM information_schema.columns "
+                        "WHERE table_name = :table_name"
+                    ),
+                    {"table_name": table_name},
+                )
+                return {row[0] for row in result.fetchall()}
+
+            presentation_column_names = await _get_column_names("presentations")
+
+            if "theme" not in presentation_column_names:
                 col_type = "JSON" if database_url.startswith("sqlite") else "JSONB"
                 await conn.execute(text(f"ALTER TABLE presentations ADD COLUMN theme {col_type}"))
+                presentation_column_names.add("theme")
 
-            migration_columns = [
-                ("origin", "VARCHAR", None),
-                ("currency", "VARCHAR", "'USD'"),
+            presentation_migration_columns = [
+                ("origin", "VARCHAR(255)", None),
+                ("currency", "VARCHAR(16)", "'USD'"),
                 ("enriched_context", "TEXT", None),
                 ("enriched_data", "JSON" if database_url.startswith("sqlite") else "JSONB", None),
+                ("narration_voice_id", "VARCHAR(64)", None),
+                ("narration_tone", "VARCHAR(64)", None),
+                ("narration_model_id", "VARCHAR(64)", None),
+                ("narration_pronunciation_dictionary_id", "VARCHAR(64)", None),
             ]
-            for col_name, col_type, default_val in migration_columns:
-                if col_name not in column_names:
+            for col_name, col_type, default_val in presentation_migration_columns:
+                if col_name not in presentation_column_names:
                     default_clause = f" DEFAULT {default_val}" if default_val else ""
                     await conn.execute(text(
                         f"ALTER TABLE presentations ADD COLUMN {col_name} {col_type}{default_clause}"
                     ))
+                    presentation_column_names.add(col_name)
+
+            slide_column_names = await _get_column_names("slides")
+            slide_migration_columns = [
+                ("narration_voice_id", "VARCHAR(64)", None),
+                ("narration_tone", "VARCHAR(64)", None),
+                ("narration_model_id", "VARCHAR(64)", None),
+                ("narration_audio_url", "VARCHAR(255)", None),
+                ("narration_text_hash", "VARCHAR(64)", None),
+                (
+                    "narration_generated_at",
+                    "DATETIME" if database_url.startswith("sqlite") else "TIMESTAMP WITH TIME ZONE",
+                    None,
+                ),
+            ]
+            for col_name, col_type, default_val in slide_migration_columns:
+                if col_name not in slide_column_names:
+                    default_clause = f" DEFAULT {default_val}" if default_val else ""
+                    await conn.execute(
+                        text(f"ALTER TABLE slides ADD COLUMN {col_name} {col_type}{default_clause}")
+                    )
+                    slide_column_names.add(col_name)
 
     async with container_db_engine.begin() as conn:
         await conn.run_sync(

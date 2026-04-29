@@ -46,11 +46,17 @@ class PresentationModel(SQLModel, table=True):
     currency: str = Field(sa_column=Column(String), default="USD")
     enriched_context: Optional[str] = Field(sa_column=Column(String), default=None)
     enriched_data: Optional[dict] = Field(sa_column=Column(JSON), default=None)
-    narration_voice_id: Optional[str] = Field(sa_column=Column(String), default=None)
-    narration_tone: Optional[str] = Field(sa_column=Column(String), default=None)
-    narration_model_id: Optional[str] = Field(sa_column=Column(String), default=None)
+    narration_voice_id: Optional[str] = Field(
+        sa_column=Column(String(length=64), nullable=True), default=None
+    )
+    narration_tone: Optional[str] = Field(
+        sa_column=Column(String(length=64), nullable=True), default=None
+    )
+    narration_model_id: Optional[str] = Field(
+        sa_column=Column(String(length=64), nullable=True), default=None
+    )
     narration_pronunciation_dictionary_id: Optional[str] = Field(
-        sa_column=Column(String), default=None
+        sa_column=Column(String(length=64), nullable=True), default=None
     )
 
     def get_new_presentation(self):

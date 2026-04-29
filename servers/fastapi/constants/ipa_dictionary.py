@@ -1,0 +1,17 @@
+CURATED_IPA_DICTIONARY: dict[str, str] = {
+    "Cinque Terre": "ˈtʃiŋkwe ˈtɛrre",
+    "Reykjavik": "ˈreɪkjəvɪk",
+    "Kyoto": "kjoːto",
+    "Qatar": "ˈkɑːtɑːr",
+    "Doha": "ˈdoʊhə",
+    "Marrakech": "məˈrɑːkɛʃ",
+    "Seychelles": "seɪˈʃɛlz",
+    "Phuket": "puːˈkɛt",
+    "Ljubljana": "ljuːˈbljɑːnə",
+    "Ibiza": "ɪˈbiːθə",
+    "Mallorca": "məˈjɔːrkə",
+    "Tulum": "tuːˈluːm",
+    "A Coruña": "a koˈɾuɲa",
+    "Bordeaux": "bɔːrˈdoʊ",
+    "Chamonix": "ʃæməˈni",
+}

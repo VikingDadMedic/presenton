@@ -7,6 +7,7 @@ from llmai.shared import JSONSchemaResponse, Message, SystemMessage, UserMessage
 from constants.narration import TONE_PROMPT_ADDENDA, normalize_tone_preset
 from models.presentation_layout import SlideLayoutModel
 from models.sql.slide import SlideModel
+from services.auto_ipa_service import augment_speaker_note_with_ipa
 from utils.llm_config import get_content_model_config, has_content_model_override
 from utils.llm_client_error_handler import handle_llm_client_exceptions
 from utils.llm_utils import extract_structured_content, get_generate_kwargs
@@ -196,6 +197,7 @@ async def get_edited_slide_content(
     next_slide_title: Optional[str] = None,
     presentation_synopsis: Optional[str] = None,
     tone_preset: Optional[str] = None,
+    destination_context: Optional[dict] = None,
 ):
     config, model, extra_body = get_content_model_config()
     client = get_client(config=config)
@@ -210,7 +212,7 @@ async def get_edited_slide_content(
             "__speaker_note__": {
                 "type": "string",
                 "minLength": 250,
-                "maxLength": 800,
+                "maxLength": 1000,
                 "description": (
                     "Narration text for the slide with optional inline audio tags "
                     "and IPA phoneme hints where needed"
@@ -261,10 +263,21 @@ async def get_edited_slide_content(
             response = await asyncio.to_thread(client.generate, **kwargs)
             content = extract_structured_content(response.content)
             if content is not None:
-                if use_override:
-                    violations = validate_length_constraints(content, original_schema)
-                    if violations and attempt < 2:
-                        continue
+                speaker_note = content.get("__speaker_note__")
+                if isinstance(speaker_note, str) and speaker_note.strip():
+                    content["__speaker_note__"] = await augment_speaker_note_with_ipa(
+                        speaker_note,
+                        destination=destination_context,
+                    )
+
+                violations = validate_length_constraints(content, original_schema)
+                if violations and attempt < 2:
+                    continue
+                if violations:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Generated content violated schema constraints: {violations}",
+                    )
                 return content
 
             if attempt < 2:

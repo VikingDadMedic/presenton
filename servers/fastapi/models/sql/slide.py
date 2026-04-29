@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 import uuid
-from sqlalchemy import DateTime, ForeignKey
+from sqlalchemy import DateTime, ForeignKey, String
 from sqlmodel import Field, Column, JSON, SQLModel
 
 
@@ -18,11 +18,21 @@ class SlideModel(SQLModel, table=True):
     content: dict = Field(sa_column=Column(JSON))
     html_content: Optional[str] = None
     speaker_note: Optional[str] = None
-    narration_voice_id: Optional[str] = None
-    narration_tone: Optional[str] = None
-    narration_model_id: Optional[str] = None
-    narration_audio_url: Optional[str] = None
-    narration_text_hash: Optional[str] = None
+    narration_voice_id: Optional[str] = Field(
+        default=None, sa_column=Column(String(length=64), nullable=True)
+    )
+    narration_tone: Optional[str] = Field(
+        default=None, sa_column=Column(String(length=64), nullable=True)
+    )
+    narration_model_id: Optional[str] = Field(
+        default=None, sa_column=Column(String(length=64), nullable=True)
+    )
+    narration_audio_url: Optional[str] = Field(
+        default=None, sa_column=Column(String(length=255), nullable=True)
+    )
+    narration_text_hash: Optional[str] = Field(
+        default=None, sa_column=Column(String(length=64), nullable=True)
+    )
     narration_generated_at: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True), nullable=True),

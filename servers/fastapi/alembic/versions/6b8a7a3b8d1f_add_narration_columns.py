@@ -19,25 +19,25 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("slides", sa.Column("narration_voice_id", sa.String(), nullable=True))
-    op.add_column("slides", sa.Column("narration_tone", sa.String(), nullable=True))
-    op.add_column("slides", sa.Column("narration_model_id", sa.String(), nullable=True))
-    op.add_column("slides", sa.Column("narration_audio_url", sa.String(), nullable=True))
-    op.add_column("slides", sa.Column("narration_text_hash", sa.String(), nullable=True))
+    op.add_column("slides", sa.Column("narration_voice_id", sa.String(length=64), nullable=True))
+    op.add_column("slides", sa.Column("narration_tone", sa.String(length=64), nullable=True))
+    op.add_column("slides", sa.Column("narration_model_id", sa.String(length=64), nullable=True))
+    op.add_column("slides", sa.Column("narration_audio_url", sa.String(length=255), nullable=True))
+    op.add_column("slides", sa.Column("narration_text_hash", sa.String(length=64), nullable=True))
     op.add_column(
         "slides", sa.Column("narration_generated_at", sa.DateTime(timezone=True), nullable=True)
     )
 
     op.add_column(
-        "presentations", sa.Column("narration_voice_id", sa.String(), nullable=True)
+        "presentations", sa.Column("narration_voice_id", sa.String(length=64), nullable=True)
     )
-    op.add_column("presentations", sa.Column("narration_tone", sa.String(), nullable=True))
+    op.add_column("presentations", sa.Column("narration_tone", sa.String(length=64), nullable=True))
     op.add_column(
-        "presentations", sa.Column("narration_model_id", sa.String(), nullable=True)
+        "presentations", sa.Column("narration_model_id", sa.String(length=64), nullable=True)
     )
     op.add_column(
         "presentations",
-        sa.Column("narration_pronunciation_dictionary_id", sa.String(), nullable=True),
+        sa.Column("narration_pronunciation_dictionary_id", sa.String(length=64), nullable=True),
     )
 
 

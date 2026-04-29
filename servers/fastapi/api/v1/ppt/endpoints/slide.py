@@ -9,6 +9,7 @@ import uuid
 
 from models.sql.presentation import PresentationModel
 from models.sql.slide import SlideModel
+from api.v1.ppt.endpoints.narration import _clear_slide_narration
 from services.database import get_async_session
 from services.image_generation_service import ImageGenerationService
 from services.mem0_presentation_memory_service import (
@@ -106,6 +107,7 @@ async def edit_slide(
         next_slide_title=next_slide_title,
         presentation_synopsis=_build_presentation_synopsis(presentation),
         tone_preset=presentation.narration_tone or os.getenv("ELEVENLABS_DEFAULT_TONE"),
+        destination_context=presentation.enriched_data,
     )
 
     image_generation_service = ImageGenerationService(get_images_directory())
@@ -122,6 +124,7 @@ async def edit_slide(
     slide.id = uuid.uuid4()
 
     sql_session.add(slide)
+    _clear_slide_narration(slide, also_remove_file=True)
     slide.content = edited_slide_content
     slide.layout = slide_layout.id
     slide.speaker_note = edited_slide_content.get("__speaker_note__", "")
@@ -274,6 +277,14 @@ async def edit_slide_field(
     slide.id = uuid.uuid4()
     sql_session.add(slide)
     slide.content = content
+    if field_path == "__speaker_note__":
+        if isinstance(new_value, str):
+            slide.speaker_note = new_value
+        elif new_value is None:
+            slide.speaker_note = None
+        else:
+            slide.speaker_note = str(new_value)
+        _clear_slide_narration(slide, also_remove_file=True)
     await sql_session.commit()
 
     return slide

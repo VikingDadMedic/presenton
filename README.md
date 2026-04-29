@@ -20,6 +20,7 @@ TripStory generates polished destination showcases, itineraries, deal packages, 
 - **6 narrative arcs** as ordered template sequences (itinerary, reveal, contrast, audience, micro, local)
 - **17 enrichers + 1 derived** pull real hotels, flights, activities, weather, reviews, maps, dining, events, deals, visa info, transportation, cuisine, language, and connectivity data from external APIs
 - **6 export formats**: PPTX, PDF, HTML slideshow ZIP (with narration audio bundle when available), Video/MP4 (GSAP transitions), JSON, interactive embed
+- **ElevenLabs narration pipeline** with per-slide overrides, curated tone presets, pronunciation dictionaries, auto-IPA hints, and usage tracking
 - **Per-call model routing**: different LLM models for outline generation, layout assignment, and content filling
 - **Built-in MCP server** at `/mcp/` for AI agent integration (10 tools)
 - **Single-admin auth** with HTTP Basic on all `/api/v1/*` routes
@@ -146,6 +147,37 @@ curl -u admin:yourpassword \
 
 See [`EXPORTS.md`](EXPORTS.md) for the full 6-format export reference, transition styles, MCP tool mapping, and async generation.
 
+## Narration via API
+
+TripStory exposes narration endpoints for readiness checks, voice discovery, bulk synthesis, and usage reporting.
+
+```bash
+# 1) Check readiness + voices
+curl -u admin:yourpassword \
+  http://localhost:5000/api/v1/ppt/narration/readiness
+
+curl -u admin:yourpassword \
+  http://localhost:5000/api/v1/ppt/narration/voices
+
+# 2) Estimate + bulk-generate narration for an existing presentation
+PRESENTATION_ID="d3000f96-096c-4768-b67b-e99aed029b57"
+
+curl -u admin:yourpassword \
+  "http://localhost:5000/api/v1/ppt/narration/presentation/${PRESENTATION_ID}/estimate"
+
+curl -u admin:yourpassword \
+  -X POST "http://localhost:5000/api/v1/ppt/narration/presentation/${PRESENTATION_ID}/bulk" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tone": "travel_companion",
+    "model_id": "eleven_v3"
+  }'
+
+# 3) Pull usage summary for dashboard/reporting
+curl -u admin:yourpassword \
+  "http://localhost:5000/api/v1/ppt/narration/usage/summary?period=day"
+```
+
 ---
 
 ## Configuration
@@ -234,6 +266,7 @@ All enricher keys are optional. Missing keys mean that enricher returns empty da
 | [`main-workflow.md`](main-workflow.md) | Generation pipeline (4-step API, 3 LLM calls, enrichment, assets) |
 | [`CODEBASE_DESIGNS.md`](CODEBASE_DESIGNS.md) | Frontend styling, CSS, UI components, theme architecture |
 | [`EXPORTS.md`](EXPORTS.md) | All 6 export formats, API reference, MCP tools, enricher table |
+| [`README.md#narration-via-api`](README.md#narration-via-api) | Narration endpoint quickstart (readiness, voices, bulk, usage) |
 | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Azure App Service deployment, resource topology, troubleshooting |
 | [`REFACTOR-PIVOT.MD`](REFACTOR-PIVOT.MD) | Travel pivot implementation history (Phases 0-12) |
 | [`FEAT-EXPANSION.md`](FEAT-EXPANSION.md) | Enrichment pipeline reference (18 enricher modules, API keys, schemas) |

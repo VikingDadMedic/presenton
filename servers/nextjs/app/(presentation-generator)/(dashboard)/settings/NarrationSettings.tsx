@@ -15,6 +15,7 @@ import VoicePicker from "@/components/narration/VoicePicker";
 import TonePresetPicker from "@/components/narration/TonePresetPicker";
 import { PresentationGenerationApi } from "@/app/(presentation-generator)/services/api/presentation-generation";
 import { toast } from "sonner";
+import { MixpanelEvent, trackEvent } from "@/utils/mixpanel";
 
 interface NarrationSettingsProps {
   llmConfig: LLMConfig;
@@ -156,6 +157,7 @@ const NarrationSettings: React.FC<NarrationSettingsProps> = ({
             onChange={(voiceId) =>
               onInputChange(voiceId, "ELEVENLABS_DEFAULT_VOICE_ID")
             }
+            analyticsContext="settings"
           />
         </div>
 
@@ -165,9 +167,13 @@ const NarrationSettings: React.FC<NarrationSettingsProps> = ({
           </p>
           <Select
             value={llmConfig.ELEVENLABS_DEFAULT_MODEL || "eleven_v3"}
-            onValueChange={(value) =>
-              onInputChange(value, "ELEVENLABS_DEFAULT_MODEL")
-            }
+            onValueChange={(value) => {
+              onInputChange(value, "ELEVENLABS_DEFAULT_MODEL");
+              trackEvent(MixpanelEvent.Narration_Model_Changed, {
+                model_id: value,
+                context: "settings",
+              });
+            }}
           >
             <SelectTrigger className="w-full rounded-lg border-border">
               <SelectValue placeholder="Select model" />
@@ -199,6 +205,7 @@ const NarrationSettings: React.FC<NarrationSettingsProps> = ({
                 );
               }
             }}
+            analyticsContext="settings"
           />
         </div>
       </div>
@@ -248,6 +255,10 @@ const NarrationSettings: React.FC<NarrationSettingsProps> = ({
                     "ELEVENLABS_PRONUNCIATION_DICTIONARY_ID"
                   );
                   toast.success("Pronunciation dictionary uploaded.");
+                  trackEvent(MixpanelEvent.Pronunciation_Dictionary_Uploaded, {
+                    dictionary_id: result.dictionary_id,
+                    rule_count: rules.length,
+                  });
                 }
               } catch (error: any) {
                 toast.error("Failed to upload pronunciation dictionary", {

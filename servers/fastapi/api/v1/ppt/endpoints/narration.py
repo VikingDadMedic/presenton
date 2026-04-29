@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import logging
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Dict, List, Optional, Tuple
@@ -7,10 +8,11 @@ import uuid
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from constants.elevenlabs_voices import CURATED_ELEVENLABS_VOICES
+from constants.elevenlabs_voices import CURATED_ELEVENLABS_VOICES, TONE_CURATED_VOICE_IDS
 from constants.narration import (
     TonePreset,
     TONE_DEFAULT_VOICE_IDS,
@@ -18,16 +20,19 @@ from constants.narration import (
     normalize_tone_preset,
 )
 from models.sql.presentation import PresentationModel
+from models.sql.narration_usage_log import NarrationUsageLog
 from models.sql.slide import SlideModel
-from services.database import get_async_session
+from services.database import database_url, get_async_session
 from services.elevenlabs_service import ElevenLabsService
 from services.pronunciation_dictionary_service import upload_user_dictionary
 from utils.asset_directory_utils import get_audio_directory
+from utils.db_utils import group_by_period
 from utils.get_env import (
     get_elevenlabs_api_key_env,
     get_elevenlabs_default_model_env,
     get_elevenlabs_default_voice_id_env,
 )
+from utils.user_config import get_user_config
 
 
 NARRATION_ROUTER = APIRouter(prefix="/narration", tags=["Narration"])
@@ -35,6 +40,7 @@ _VOICE_CACHE_TTL = timedelta(hours=1)
 _VOICE_CACHE: Dict[str, Tuple[datetime, List[dict]]] = {}
 _DEFAULT_BULK_NARRATION_CONCURRENCY = 3
 _MAX_BULK_NARRATION_CONCURRENCY = 12
+_LOGGER = logging.getLogger(__name__)
 
 
 class NarrationReadinessResponse(BaseModel):
@@ -89,6 +95,21 @@ class NarrationEstimateResponse(BaseModel):
 class NarrationPresentationStatusResponse(BaseModel):
     presentation_id: uuid.UUID
     slides: List[NarrationSlideResponse]
+
+
+class NarrationUsageSummaryRow(BaseModel):
+    period: str
+    character_count: int
+    request_count: int
+
+
+class NarrationUsageSummaryResponse(BaseModel):
+    from_date: datetime
+    to_date: datetime
+    period: str
+    total_character_count: int
+    total_request_count: int
+    rows: List[NarrationUsageSummaryRow]
 
 
 class UploadPronunciationDictionaryRequest(BaseModel):
@@ -162,6 +183,93 @@ def _read_optional_positive_int_env(env_name: str) -> Optional[int]:
     if parsed <= 0:
         return None
     return parsed
+
+
+def _month_start_utc(now: datetime) -> datetime:
+    return datetime(now.year, now.month, 1, tzinfo=timezone.utc)
+
+
+async def _get_monthly_character_usage(
+    sql_session: AsyncSession, *, now: Optional[datetime] = None
+) -> int:
+    current_time = now or datetime.now(timezone.utc)
+    month_start = _month_start_utc(current_time)
+    used_characters = await sql_session.scalar(
+        select(func.coalesce(func.sum(NarrationUsageLog.character_count), 0)).where(
+            NarrationUsageLog.created_at >= month_start
+        )
+    )
+    return int(used_characters or 0)
+
+
+async def _enforce_monthly_character_budget_or_raise(
+    sql_session: AsyncSession, *, estimated_characters: int
+) -> None:
+    if estimated_characters <= 0:
+        return
+
+    monthly_budget = _read_optional_positive_int_env(
+        "ELEVENLABS_MONTHLY_CHARACTER_BUDGET"
+    )
+    if monthly_budget is None:
+        return
+
+    used_characters = await _get_monthly_character_usage(sql_session)
+    if used_characters + estimated_characters > monthly_budget:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Monthly ElevenLabs narration character budget exceeded. "
+                f"Used: {used_characters}, requested: {estimated_characters}, "
+                f"budget: {monthly_budget}."
+            ),
+        )
+
+
+async def _record_narration_usage(
+    sql_session: AsyncSession,
+    *,
+    presentation_id: uuid.UUID,
+    slide_id: uuid.UUID,
+    voice_id: Optional[str],
+    model_id: Optional[str],
+    character_count: int,
+    request_id: Optional[str],
+) -> None:
+    if character_count <= 0:
+        return
+
+    sql_session.add(
+        NarrationUsageLog(
+            presentation_id=presentation_id,
+            slide_id=slide_id,
+            voice_id=voice_id,
+            model_id=model_id,
+            character_count=character_count,
+            request_id=_clean_optional_string(request_id),
+        )
+    )
+
+
+def _normalize_period(period: Optional[str]) -> str:
+    if not period:
+        return "day"
+    normalized = period.strip().lower()
+    if normalized in {"day", "month"}:
+        return normalized
+    return "day"
+
+
+def _serialize_group_value(value) -> str:
+    if value is None:
+        return ""
+    return str(value)
+
+
+def _to_utc_datetime(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 
 def _extract_slide_title(slide: SlideModel) -> Optional[str]:
@@ -269,6 +377,32 @@ def _resolve_model_id(
     return "eleven_v3"
 
 
+def _resolve_curated_fallback_voice_id(
+    tone: str, *, exclude_voice_id: Optional[str] = None
+) -> Optional[str]:
+    candidate_ids: List[str] = []
+    normalized_tone = normalize_tone_preset(tone)
+    if normalized_tone and normalized_tone in TONE_CURATED_VOICE_IDS:
+        candidate_ids.extend(TONE_CURATED_VOICE_IDS[normalized_tone])
+    candidate_ids.extend(
+        [
+            str(voice.get("voice_id"))
+            for voice in CURATED_ELEVENLABS_VOICES
+            if voice.get("voice_id")
+        ]
+    )
+
+    seen: set[str] = set()
+    for candidate in candidate_ids:
+        if not candidate or candidate in seen:
+            continue
+        seen.add(candidate)
+        if exclude_voice_id and candidate == exclude_voice_id:
+            continue
+        return candidate
+    return None
+
+
 def _resolve_speaker_note_text(slide: SlideModel) -> str:
     note = (slide.speaker_note or "").strip()
     if note:
@@ -321,16 +455,67 @@ def _resolve_audio_paths(
     return absolute_path, app_url
 
 
+def _clear_slide_narration(slide: SlideModel, *, also_remove_file: bool) -> None:
+    if also_remove_file and slide.narration_audio_url and slide.narration_audio_url.startswith("/app_data/audio/"):
+        relative_path = slide.narration_audio_url[len("/app_data/audio/") :].lstrip("/")
+        absolute_path = os.path.join(get_audio_directory(), relative_path)
+        if os.path.isfile(absolute_path):
+            os.remove(absolute_path)
+
+    slide.narration_audio_url = None
+    slide.narration_text_hash = None
+    slide.narration_generated_at = None
+
+
+def _estimate_billable_characters_for_slide(
+    slide: SlideModel,
+    presentation: PresentationModel,
+    request: NarrationGenerateRequest,
+) -> int:
+    text = _resolve_speaker_note_text(slide)
+    if not text:
+        return 0
+
+    tone = _resolve_tone(presentation, request.tone, slide)
+    voice_id = _resolve_voice_id(presentation, slide, request.voice_id, tone)
+    model_id = _resolve_model_id(presentation, slide, request.model_id)
+    dictionary_id = (
+        presentation.narration_pronunciation_dictionary_id
+        or os.getenv("ELEVENLABS_PRONUNCIATION_DICTIONARY_ID")
+    )
+    next_hash = _compute_narration_hash(text, voice_id or "", tone, model_id, dictionary_id)
+
+    if (
+        not request.force_regenerate
+        and slide.narration_text_hash == next_hash
+        and _audio_file_exists(slide.narration_audio_url)
+    ):
+        return 0
+    return len(text)
+
+
 async def _generate_slide_audio(
     slide: SlideModel,
     presentation: PresentationModel,
     request: NarrationGenerateRequest,
-) -> Tuple[NarrationSlideResponse, int]:
+) -> Tuple[NarrationSlideResponse, int, Optional[str], Optional[str]]:
     text = _resolve_speaker_note_text(slide)
     if not text:
         raise HTTPException(
             status_code=400,
             detail=f"Slide {slide.id} has no speaker note to synthesize",
+        )
+    max_chars_per_slide = _read_optional_positive_int_env(
+        "ELEVENLABS_MAX_CHARS_PER_SLIDE"
+    )
+    if max_chars_per_slide is not None and len(text) > max_chars_per_slide:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Speaker note exceeds per-slide narration character limit. "
+                f"Slide {slide.id} has {len(text)} characters, "
+                f"limit is {max_chars_per_slide}."
+            ),
         )
 
     tone = _resolve_tone(presentation, request.tone, slide)
@@ -368,6 +553,8 @@ async def _generate_slide_audio(
                 cached=True,
             ),
             0,
+            None,
+            None,
         )
 
     api_key = _get_elevenlabs_api_key()
@@ -382,12 +569,32 @@ async def _generate_slide_audio(
     if dictionary_id:
         locators = [{"pronunciation_dictionary_id": dictionary_id}]
 
-    audio_bytes, headers = await service.synthesize(
-        text=text,
-        voice_id=voice_id,
-        model_id=model_id,
-        pronunciation_dictionary_locators=locators,
-    )
+    fallback_header: Optional[str] = None
+    try:
+        audio_bytes, headers = await service.synthesize(
+            text=text,
+            voice_id=voice_id,
+            model_id=model_id,
+            pronunciation_dictionary_locators=locators,
+        )
+    except HTTPException as synthesize_error:
+        if 400 <= synthesize_error.status_code < 500:
+            fallback_voice_id = _resolve_curated_fallback_voice_id(
+                tone, exclude_voice_id=voice_id
+            )
+            if fallback_voice_id:
+                audio_bytes, headers = await service.synthesize(
+                    text=text,
+                    voice_id=fallback_voice_id,
+                    model_id=model_id,
+                    pronunciation_dictionary_locators=locators,
+                )
+                fallback_header = f"{voice_id}->{fallback_voice_id}"
+                voice_id = fallback_voice_id
+            else:
+                raise
+        else:
+            raise
 
     output_path, app_url = _resolve_audio_paths(presentation.id, slide.index)
     with open(output_path, "wb") as f:
@@ -400,6 +607,7 @@ async def _generate_slide_audio(
             character_count = int(raw_character_count)
         except Exception:
             character_count = 0
+    request_id = _clean_optional_string(headers.get("request-id"))
 
     now = datetime.now(timezone.utc)
     slide.narration_voice_id = voice_id
@@ -422,6 +630,8 @@ async def _generate_slide_audio(
             cached=False,
         ),
         character_count,
+        fallback_header,
+        request_id,
     )
 
 
@@ -486,16 +696,37 @@ async def generate_narration_for_slide(
     if not presentation:
         raise HTTPException(status_code=404, detail="Presentation not found")
 
-    generated, character_count = await _generate_slide_audio(
+    estimated_character_count = _estimate_billable_characters_for_slide(
+        slide,
+        presentation,
+        normalized_request,
+    )
+    await _enforce_monthly_character_budget_or_raise(
+        sql_session,
+        estimated_characters=estimated_character_count,
+    )
+
+    generated, character_count, fallback_header, request_id = await _generate_slide_audio(
         slide=slide,
         presentation=presentation,
         request=normalized_request,
+    )
+    await _record_narration_usage(
+        sql_session,
+        presentation_id=presentation.id,
+        slide_id=slide.id,
+        voice_id=generated.voice_id,
+        model_id=generated.model_id,
+        character_count=character_count,
+        request_id=request_id,
     )
     sql_session.add(slide)
     await sql_session.commit()
 
     if response and character_count > 0:
         response.headers["x-character-count"] = str(character_count)
+    if response and fallback_header:
+        response.headers["x-narration-fallback"] = fallback_header
     return generated
 
 
@@ -576,6 +807,10 @@ async def bulk_generate_narration_for_presentation(
     _, estimated_total_characters, synthesizeable_slides = _build_narration_estimate_rows(
         slides
     )
+    estimated_billable_characters = sum(
+        _estimate_billable_characters_for_slide(slide, presentation, normalized_request)
+        for slide in slides
+    )
     if synthesizeable_slides <= 0:
         raise HTTPException(
             status_code=400,
@@ -598,6 +833,11 @@ async def bulk_generate_narration_for_presentation(
             ),
         )
 
+    await _enforce_monthly_character_budget_or_raise(
+        sql_session,
+        estimated_characters=estimated_billable_characters,
+    )
+
     bulk_concurrency = _read_positive_int_env(
         "ELEVENLABS_BULK_CONCURRENCY",
         _DEFAULT_BULK_NARRATION_CONCURRENCY,
@@ -609,14 +849,14 @@ async def bulk_generate_narration_for_presentation(
 
     async def _process_slide(
         slide_position: int, slide_model: SlideModel
-    ) -> tuple[int, NarrationSlideResponse, int]:
+    ) -> tuple[int, NarrationSlideResponse, int, Optional[str], Optional[str]]:
         async with semaphore:
-            generated, character_count = await _generate_slide_audio(
+            generated, character_count, fallback_header, request_id = await _generate_slide_audio(
                 slide=slide_model,
                 presentation=presentation,
                 request=normalized_request,
             )
-        return slide_position, generated, character_count
+        return slide_position, generated, character_count, fallback_header, request_id
 
     processing_tasks = [
         asyncio.create_task(_process_slide(index, slide))
@@ -633,11 +873,29 @@ async def bulk_generate_narration_for_presentation(
     generated_results: List[Optional[NarrationSlideResponse]] = [None] * len(slides)
     total_character_count = 0
     generated_slides = 0
-    for slide_position, generated, character_count in processed_results:
+    fallback_headers: List[str] = []
+    for (
+        slide_position,
+        generated,
+        character_count,
+        fallback_header,
+        request_id,
+    ) in processed_results:
         generated_results[slide_position] = generated
         total_character_count += character_count
         if not generated.cached:
             generated_slides += 1
+        if fallback_header:
+            fallback_headers.append(fallback_header)
+        await _record_narration_usage(
+            sql_session,
+            presentation_id=presentation.id,
+            slide_id=slides[slide_position].id,
+            voice_id=generated.voice_id,
+            model_id=generated.model_id,
+            character_count=character_count,
+            request_id=request_id,
+        )
         sql_session.add(slides[slide_position])
 
     sql_session.add(presentation)
@@ -645,6 +903,8 @@ async def bulk_generate_narration_for_presentation(
 
     if response:
         response.headers["x-character-count"] = str(total_character_count)
+        if fallback_headers:
+            response.headers["x-narration-fallback"] = ",".join(sorted(set(fallback_headers)))
 
     return NarrationBulkResponse(
         presentation_id=presentation_id,
@@ -695,6 +955,66 @@ async def get_narration_status_for_presentation(
     )
 
 
+@NARRATION_ROUTER.get(
+    "/usage/summary",
+    response_model=NarrationUsageSummaryResponse,
+)
+async def get_narration_usage_summary(
+    from_date: Annotated[Optional[datetime], Query(alias="from")] = None,
+    to_date: Annotated[Optional[datetime], Query(alias="to")] = None,
+    period: Annotated[Optional[str], Query()] = "day",
+    sql_session: AsyncSession = Depends(get_async_session),
+):
+    now = datetime.now(timezone.utc)
+    resolved_from = _to_utc_datetime(from_date) if from_date else now - timedelta(days=30)
+    resolved_to = _to_utc_datetime(to_date) if to_date else now
+    if resolved_from > resolved_to:
+        raise HTTPException(
+            status_code=400,
+            detail="'from' must be earlier than or equal to 'to'.",
+        )
+
+    normalized_period = _normalize_period(period)
+    period_bucket = group_by_period(
+        NarrationUsageLog.created_at, normalized_period, database_url
+    ).label("period_bucket")
+    summary_rows = (
+        await sql_session.execute(
+            select(
+                period_bucket,
+                func.coalesce(func.sum(NarrationUsageLog.character_count), 0).label(
+                    "character_count"
+                ),
+                func.count(NarrationUsageLog.id).label("request_count"),
+            )
+            .where(NarrationUsageLog.created_at >= resolved_from)
+            .where(NarrationUsageLog.created_at <= resolved_to)
+            .group_by(period_bucket)
+            .order_by(period_bucket)
+        )
+    ).all()
+
+    rows = [
+        NarrationUsageSummaryRow(
+            period=_serialize_group_value(row.period_bucket),
+            character_count=int(row.character_count or 0),
+            request_count=int(row.request_count or 0),
+        )
+        for row in summary_rows
+    ]
+    total_character_count = sum(row.character_count for row in rows)
+    total_request_count = sum(row.request_count for row in rows)
+
+    return NarrationUsageSummaryResponse(
+        from_date=resolved_from,
+        to_date=resolved_to,
+        period=normalized_period,
+        total_character_count=total_character_count,
+        total_request_count=total_request_count,
+        rows=rows,
+    )
+
+
 @NARRATION_ROUTER.delete("/slide/{slide_id}")
 async def delete_narration_for_slide(
     slide_id: uuid.UUID, sql_session: AsyncSession = Depends(get_async_session)
@@ -703,15 +1023,7 @@ async def delete_narration_for_slide(
     if not slide:
         raise HTTPException(status_code=404, detail="Slide not found")
 
-    if slide.narration_audio_url and slide.narration_audio_url.startswith("/app_data/audio/"):
-        relative_path = slide.narration_audio_url[len("/app_data/audio/") :].lstrip("/")
-        absolute_path = os.path.join(get_audio_directory(), relative_path)
-        if os.path.isfile(absolute_path):
-            os.remove(absolute_path)
-
-    slide.narration_audio_url = None
-    slide.narration_text_hash = None
-    slide.narration_generated_at = None
+    _clear_slide_narration(slide, also_remove_file=True)
     sql_session.add(slide)
     await sql_session.commit()
     return {"deleted": True, "slide_id": str(slide_id)}
@@ -721,8 +1033,29 @@ async def delete_narration_for_slide(
 async def create_pronunciation_dictionary(
     request: UploadPronunciationDictionaryRequest,
 ):
+    previous_dictionary_id = (
+        _clean_optional_string(get_user_config().ELEVENLABS_PRONUNCIATION_DICTIONARY_ID) or ""
+    )
     dictionary_id = await upload_user_dictionary(
         rules=request.rules,
         name=request.name or "Presenton Pronunciation Dictionary",
     )
+
+    if previous_dictionary_id and previous_dictionary_id != dictionary_id:
+        api_key = _get_elevenlabs_api_key()
+        if api_key:
+            service = ElevenLabsService(api_key=api_key)
+
+            async def _delete_previous_dictionary() -> None:
+                try:
+                    await service.delete_pronunciation_dictionary(previous_dictionary_id)
+                except Exception as delete_error:
+                    _LOGGER.warning(
+                        "Failed to delete previous pronunciation dictionary %s: %s",
+                        previous_dictionary_id,
+                        delete_error,
+                    )
+
+            asyncio.create_task(_delete_previous_dictionary())
+
     return {"dictionary_id": dictionary_id}

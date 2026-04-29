@@ -183,9 +183,11 @@ export class PresentationGenerationApi {
     );
     const data = await ApiResponseHandler.handleResponse(response, "Failed to generate narration");
     const characterCount = response.headers.get("x-character-count");
+    const narrationFallback = response.headers.get("x-narration-fallback");
     return {
       ...data,
       character_count: characterCount ? Number(characterCount) : data.character_count,
+      narration_fallback: narrationFallback || data.narration_fallback,
     };
   }
 
@@ -209,9 +211,11 @@ export class PresentationGenerationApi {
     );
     const data = await ApiResponseHandler.handleResponse(response, "Failed to generate narration");
     const characterCount = response.headers.get("x-character-count");
+    const narrationFallback = response.headers.get("x-narration-fallback");
     return {
       ...data,
       total_character_count: characterCount ? Number(characterCount) : data.total_character_count,
+      narration_fallback: narrationFallback || data.narration_fallback,
     };
   }
 
@@ -240,6 +244,30 @@ export class PresentationGenerationApi {
       }
     );
     return ApiResponseHandler.handleResponse(response, "Failed to fetch narration status");
+  }
+
+  static async getNarrationUsageSummary(params?: {
+    from?: string;
+    to?: string;
+    period?: "day" | "month";
+  }) {
+    const searchParams = new URLSearchParams();
+    if (params?.from) searchParams.set("from", params.from);
+    if (params?.to) searchParams.set("to", params.to);
+    if (params?.period) searchParams.set("period", params.period);
+    const query = searchParams.toString();
+    const response = await fetch(
+      getApiUrl(`/api/v1/ppt/narration/usage/summary${query ? `?${query}` : ""}`),
+      {
+        method: "GET",
+        headers: getHeader(),
+        cache: "no-cache",
+      }
+    );
+    return ApiResponseHandler.handleResponse(
+      response,
+      "Failed to load narration usage summary"
+    );
   }
 
   static async deleteSlideNarration(slideId: string) {
@@ -444,6 +472,7 @@ export class PresentationGenerationApi {
     transitionStyle?: string;
     transitionDuration?: number;
     audioUrl?: string;
+    useNarrationAsSoundtrack?: boolean;
   }) {
     const response = await fetch("/api/export-as-video", {
       method: "POST",

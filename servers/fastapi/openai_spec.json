@@ -345,6 +345,115 @@
           }
         }
       }
+    },
+    "/api/v1/ppt/narration/voices": {
+      "get": {
+        "tags": ["Narration"],
+        "summary": "List available narration voices.",
+        "operationId": "get_narration_voices",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Optional voice name filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Narration voice catalog",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NarrationVoicesResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ppt/narration/presentation/{presentation_id}/estimate": {
+      "get": {
+        "tags": ["Narration"],
+        "summary": "Estimate narration character usage for a presentation.",
+        "operationId": "narration_estimate",
+        "parameters": [
+          {
+            "name": "presentation_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Narration estimate",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NarrationEstimateResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ppt/narration/presentation/{presentation_id}/bulk": {
+      "post": {
+        "tags": ["Narration"],
+        "summary": "Generate narration audio for all slides in a presentation.",
+        "operationId": "bulk_generate_narration",
+        "parameters": [
+          {
+            "name": "presentation_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NarrationGenerateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk narration generation result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NarrationBulkResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ppt/narration/presentation/{presentation_id}": {
+      "get": {
+        "tags": ["Narration"],
+        "summary": "Get narration status for all slides in a presentation.",
+        "operationId": "get_narration_status",
+        "parameters": [
+          {
+            "name": "presentation_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Per-slide narration status",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NarrationPresentationStatusResponse" }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -514,6 +623,97 @@
           "layout_count": { "type": "integer" },
           "last_updated_at": { "type": "string", "format": "date-time" },
           "template": { "type": "object" }
+        }
+      },
+      "NarrationGenerateRequest": {
+        "type": "object",
+        "properties": {
+          "voice_id": { "type": "string" },
+          "tone": { "type": "string" },
+          "model_id": { "type": "string" },
+          "force_regenerate": { "type": "boolean", "default": false }
+        }
+      },
+      "NarrationSlideResponse": {
+        "type": "object",
+        "properties": {
+          "slide_id": { "type": "string", "format": "uuid" },
+          "audio_url": { "type": "string" },
+          "text_hash": { "type": "string" },
+          "generated_at": { "type": "string", "format": "date-time" },
+          "voice_id": { "type": "string" },
+          "tone": { "type": "string" },
+          "model_id": { "type": "string" },
+          "character_count": { "type": "integer" },
+          "cached": { "type": "boolean" }
+        }
+      },
+      "NarrationBulkResponse": {
+        "type": "object",
+        "properties": {
+          "presentation_id": { "type": "string", "format": "uuid" },
+          "total_slides": { "type": "integer" },
+          "generated_slides": { "type": "integer" },
+          "total_character_count": { "type": "integer" },
+          "slides": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/NarrationSlideResponse" }
+          }
+        }
+      },
+      "NarrationEstimateSlide": {
+        "type": "object",
+        "properties": {
+          "slide_id": { "type": "string", "format": "uuid" },
+          "index": { "type": "integer" },
+          "title": { "type": "string" },
+          "has_speaker_note": { "type": "boolean" },
+          "character_count": { "type": "integer" }
+        }
+      },
+      "NarrationEstimateResponse": {
+        "type": "object",
+        "properties": {
+          "presentation_id": { "type": "string", "format": "uuid" },
+          "total_slides": { "type": "integer" },
+          "synthesizeable_slides": { "type": "integer" },
+          "total_character_count": { "type": "integer" },
+          "max_character_limit": { "type": "integer" },
+          "slides": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/NarrationEstimateSlide" }
+          }
+        }
+      },
+      "NarrationPresentationStatusResponse": {
+        "type": "object",
+        "properties": {
+          "presentation_id": { "type": "string", "format": "uuid" },
+          "slides": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/NarrationSlideResponse" }
+          }
+        }
+      },
+      "NarrationVoicesResponse": {
+        "type": "object",
+        "properties": {
+          "voices": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "voice_id": { "type": "string" },
+                "name": { "type": "string" },
+                "category": { "type": "string" },
+                "language": { "type": "string" },
+                "description": { "type": "string" },
+                "preview_url": { "type": "string" }
+              }
+            }
+          },
+          "cached": { "type": "boolean" },
+          "source": { "type": "string" }
         }
       },
       "ErrorResponse": {

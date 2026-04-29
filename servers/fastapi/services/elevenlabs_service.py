@@ -139,3 +139,19 @@ class ElevenLabsService:
                 detail="ElevenLabs did not return a dictionary id",
             )
         return dictionary_id
+
+    async def delete_pronunciation_dictionary(self, dictionary_id: str) -> None:
+        dictionary_id = (dictionary_id or "").strip()
+        if not dictionary_id:
+            return
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.delete(
+                f"{self.base_url}/pronunciation-dictionaries/{dictionary_id}",
+                headers=self._headers,
+            )
+        if response.status_code >= 400:
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=f"Failed to delete pronunciation dictionary: {response.text}",
+            )

@@ -3,7 +3,9 @@
 
 
 import React, { useEffect, useCallback, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
 
 
 
@@ -24,6 +26,7 @@ import { FileUploadSection } from "./components/FileUploadSection";
 
 import { useFontLoader } from "../hooks/useFontLoad";
 import Header from "@/app/(presentation-generator)/(dashboard)/dashboard/components/Header";
+import { RootState } from "@/store/store";
 
 
 
@@ -31,9 +34,17 @@ import Header from "@/app/(presentation-generator)/(dashboard)/dashboard/compone
 
 const CustomTemplatePage = () => {
     const router = useRouter();
+    const { llm_config } = useSelector((state: RootState) => state.userConfig);
 
     const [schemaEditorSlideIndex, setSchemaEditorSlideIndex] = useState<number | null>(null);
     const [schemaPreviewData, setSchemaPreviewData] = useState<Record<number, Record<string, any>>>({});
+    const [templateReadiness, setTemplateReadiness] = useState<{
+        ready: boolean;
+        reason: string | null;
+    }>({
+        ready: true,
+        reason: null,
+    });
 
     const { selectedFile, handleFileSelect, removeFile } = useFileUpload();
 
@@ -45,6 +56,7 @@ const CustomTemplatePage = () => {
         setSlides,
         completedSlides,
         checkFonts,
+        checkReadiness,
         uploadFont,
         removeFont,
         fontUploadAndPreview,
@@ -71,6 +83,56 @@ const CustomTemplatePage = () => {
             document.head.appendChild(script);
         }
     }, []);
+
+    useEffect(() => {
+        const readinessDependency = [
+            llm_config?.LLM ?? "",
+            llm_config?.OPENAI_MODEL ?? "",
+            llm_config?.GOOGLE_MODEL ?? "",
+            llm_config?.ANTHROPIC_MODEL ?? "",
+            llm_config?.CODEX_MODEL ?? "",
+            llm_config?.OPENAI_API_KEY ? "openai-key:set" : "openai-key:unset",
+            llm_config?.GOOGLE_API_KEY ? "google-key:set" : "google-key:unset",
+            llm_config?.ANTHROPIC_API_KEY ? "anthropic-key:set" : "anthropic-key:unset",
+            llm_config?.CODEX_ACCESS_TOKEN ? "codex-token:set" : "codex-token:unset",
+        ].join("|");
+        let isMounted = true;
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => {
+            if (!readinessDependency && !isMounted) {
+                return;
+            }
+            const loadTemplateReadiness = async () => {
+                const readiness = await checkReadiness(controller.signal);
+                if (!isMounted || !readiness) {
+                    return;
+                }
+                setTemplateReadiness({
+                    ready: readiness.ready,
+                    reason: readiness.reason ?? null,
+                });
+            };
+
+            void loadTemplateReadiness();
+        }, 250);
+
+        return () => {
+            isMounted = false;
+            controller.abort();
+            window.clearTimeout(timeout);
+        };
+    }, [
+        checkReadiness,
+        llm_config?.LLM,
+        llm_config?.OPENAI_MODEL,
+        llm_config?.GOOGLE_MODEL,
+        llm_config?.ANTHROPIC_MODEL,
+        llm_config?.CODEX_MODEL,
+        llm_config?.OPENAI_API_KEY,
+        llm_config?.GOOGLE_API_KEY,
+        llm_config?.ANTHROPIC_API_KEY,
+        llm_config?.CODEX_ACCESS_TOKEN,
+    ]);
 
 
     /**
@@ -191,11 +253,24 @@ const CustomTemplatePage = () => {
             <TemplateStudioHeader />
             {showFileUpload ? (
                 <div className="pb-24">
+                    {!templateReadiness.ready && (
+                        <div className="mx-auto mb-4 max-w-[650px] rounded-lg border border-amber-300/40 bg-amber-100/40 px-4 py-3 text-sm text-amber-900">
+                            <p className="font-semibold">Template generation is not ready.</p>
+                            <p className="mt-1">
+                                {templateReadiness.reason ??
+                                    "Please configure a supported provider and credentials in Settings."}
+                            </p>
+                            <Link href="/settings" className="mt-2 inline-flex underline underline-offset-4">
+                                Open Settings
+                            </Link>
+                        </div>
+                    )}
                     <FileUploadSection
                         selectedFile={selectedFile}
                         handleFileSelect={handleFileSelect}
                         removeFile={removeFile}
                         CheckFonts={handleCheckFonts}
+                        isUploadEnabled={templateReadiness.ready}
                         isProcessingPptx={state.isLoading}
                         slides={[]}
                         completedSlides={0}

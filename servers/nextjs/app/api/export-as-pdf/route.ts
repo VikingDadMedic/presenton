@@ -25,10 +25,18 @@ export async function POST(req: NextRequest) {
       presentationId: id,
       title,
     });
-    return NextResponse.json({
-      success: true,
-      path: outPath,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        path: outPath,
+      },
+      {
+        headers: {
+          "x-export-notice":
+            "Audio narration is not embedded in PDF. Use HTML export to include narration audio.",
+        },
+      }
+    );
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error("[export-as-pdf]", message);

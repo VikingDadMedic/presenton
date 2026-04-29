@@ -37,6 +37,8 @@ yarn-error.log*
 dev-debug.log
 # Dependency directories
 node_modules/
+*.egg-info/
+*.egg-info
 # Editor directories and files
 .idea
 .vscode

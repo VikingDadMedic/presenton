@@ -8,7 +8,7 @@ import { TemplateCreationStep } from "../types";
 export const TEMPLATE_STEPS: Record<TemplateCreationStep, { title: string; description: string }> = {
     'file-upload': {
         title: 'Upload Template',
-        description: 'Upload your PPTX file to begin',
+        description: 'Upload your PowerPoint file to begin',
     },
     'font-check': {
         title: 'Font Check',

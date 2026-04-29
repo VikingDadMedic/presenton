@@ -14,6 +14,7 @@ import { RootState } from "@/store/store";
 import { useDispatch, useSelector } from "react-redux";
 import {
   deletePresentationSlide,
+  updateSlideNarration,
   updateSlide,
 } from "@/store/slices/presentationGeneration";
 import { usePathname } from "next/navigation";
@@ -21,6 +22,10 @@ import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { addToHistory } from "@/store/slices/undoRedoSlice";
 import NewSlide from "./NewSlide";
 import SlideScale from "../../components/PresentationRender";
+import AudioTagPill from "@/components/narration/AudioTagPill";
+import NarrationPlayer from "@/components/narration/NarrationPlayer";
+import TonePresetPicker from "@/components/narration/TonePresetPicker";
+import VoicePicker from "@/components/narration/VoicePicker";
 
 interface SlideContentProps {
   slide: any;
@@ -34,6 +39,8 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
   const [showNewSlideSelection, setShowNewSlideSelection] = useState(false);
   const [isEditPopoverOpen, setIsEditPopoverOpen] = useState(false);
   const [isSpeakerPopoverOpen, setIsSpeakerPopoverOpen] = useState(false);
+  const [showRawSpeakerNote, setShowRawSpeakerNote] = useState(false);
+  const [showNarrationOverrides, setShowNarrationOverrides] = useState(false);
   const [editPrompt, setEditPrompt] = useState("");
   const { presentationData, isStreaming } = useSelector(
     (state: RootState) => state.presentationGeneration
@@ -42,6 +49,16 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
   // Use the centralized group layouts hook
 
   const pathname = usePathname();
+
+  const deckDefaultVoiceId = presentationData?.narration_voice_id || null;
+  const deckDefaultTone = presentationData?.narration_tone || null;
+  const deckDefaultModelId = presentationData?.narration_model_id || null;
+  const effectiveVoiceId = slide?.narration_voice_id || deckDefaultVoiceId || null;
+  const effectiveTone = slide?.narration_tone || deckDefaultTone || null;
+  const effectiveModelId =
+    slide?.narration_model_id ||
+    deckDefaultModelId ||
+    null;
 
   const handleSubmit = async () => {
     if (!editPrompt.trim()) {
@@ -102,6 +119,22 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
         description: error.message || "Error deleting slide.",
       });
     }
+  };
+
+  const applySlideNarrationPatch = (patch: {
+    narration_voice_id?: string | null;
+    narration_tone?: string | null;
+    narration_model_id?: string | null;
+    narration_audio_url?: string | null;
+    narration_text_hash?: string | null;
+    narration_generated_at?: string | null;
+  }) => {
+    dispatch(
+      updateSlideNarration({
+        slideIndex: slide.index,
+        ...patch,
+      })
+    );
   };
   // Scroll to the new slide when streaming and new slides are being generated
   useEffect(() => {
@@ -273,15 +306,106 @@ const SlideContent = ({ slide, index, presentationId }: SlideContentProps) => {
                   side="bottom"
                   align="center"
                   sideOffset={12}
-                  className="z-30 w-[340px] rounded-2xl border border-border bg-card p-0 shadow-2xl font-display"
+                  className="z-30 w-[420px] rounded-2xl border border-border bg-card p-0 shadow-2xl font-display"
                 >
                   <div className="border-b border-gray-100 px-4 py-3">
-                    <p className="text-sm font-semibold text-foreground">Speaker notes</p>
-
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-foreground">Speaker notes</p>
+                      <button
+                        type="button"
+                        onClick={() => setShowRawSpeakerNote((prev) => !prev)}
+                        className="rounded-md border border-border px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted"
+                      >
+                        {showRawSpeakerNote ? "Rendered" : "Raw"}
+                      </button>
+                    </div>
                   </div>
-                  <div className="space-y-3 p-4">
-                    <div className="max-h-[220px] min-h-[100px] overflow-auto whitespace-pre-wrap rounded-xl border border-border bg-muted p-3 text-sm text-foreground">
-                      {slide?.speaker_note?.trim()}
+                  <div className="space-y-4 p-4">
+                    <div className="max-h-[220px] min-h-[100px] overflow-auto rounded-xl border border-border bg-muted p-3">
+                      {showRawSpeakerNote ? (
+                        <div className="whitespace-pre-wrap text-sm text-foreground">
+                          {slide?.speaker_note?.trim()}
+                        </div>
+                      ) : (
+                        <AudioTagPill text={slide?.speaker_note?.trim() || ""} />
+                      )}
+                    </div>
+
+                    <NarrationPlayer
+                      slideId={String(slide.id)}
+                      audioUrl={slide?.narration_audio_url}
+                      voiceId={effectiveVoiceId}
+                      tone={effectiveTone}
+                      modelId={effectiveModelId}
+                      onGenerated={(result) => {
+                        applySlideNarrationPatch({
+                          narration_voice_id:
+                            result.voice_id ?? slide?.narration_voice_id ?? effectiveVoiceId,
+                          narration_tone:
+                            result.tone ?? slide?.narration_tone ?? effectiveTone,
+                          narration_model_id:
+                            result.model_id ?? slide?.narration_model_id ?? effectiveModelId,
+                          narration_audio_url: result.audio_url ?? null,
+                          narration_text_hash: result.text_hash ?? null,
+                          narration_generated_at: result.generated_at ?? null,
+                        });
+                      }}
+                    />
+
+                    <div className="rounded-xl border border-border p-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowNarrationOverrides((prev) => !prev)}
+                        className="flex w-full items-center justify-between text-xs font-semibold text-foreground"
+                      >
+                        <span>Override voice / tone for this slide</span>
+                        <span className="text-muted-foreground">
+                          {showNarrationOverrides ? "Hide" : "Show"}
+                        </span>
+                      </button>
+                      {showNarrationOverrides ? (
+                        <div className="mt-3 space-y-3">
+                          <div>
+                            <p className="mb-1 text-xs font-medium text-muted-foreground">
+                              Voice
+                            </p>
+                            <VoicePicker
+                              value={slide?.narration_voice_id || undefined}
+                              onChange={(voiceId) =>
+                                applySlideNarrationPatch({
+                                  narration_voice_id: voiceId,
+                                })
+                              }
+                            />
+                          </div>
+                          <div>
+                            <p className="mb-1 text-xs font-medium text-muted-foreground">
+                              Tone
+                            </p>
+                            <TonePresetPicker
+                              value={slide?.narration_tone || undefined}
+                              onChange={(tone) =>
+                                applySlideNarrationPatch({
+                                  narration_tone: tone,
+                                })
+                              }
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              applySlideNarrationPatch({
+                                narration_voice_id: null,
+                                narration_tone: null,
+                                narration_model_id: null,
+                              })
+                            }
+                            className="rounded-md border border-border px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted"
+                          >
+                            Reset to deck default
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 </PopoverContent>

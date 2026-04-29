@@ -5,6 +5,7 @@ from typing import Optional
 from fastapi import HTTPException
 from llmai import get_client
 from llmai.shared import JSONSchemaResponse, Message, SystemMessage, UserMessage
+from constants.narration import TONE_PROMPT_ADDENDA, normalize_tone_preset
 from models.presentation_layout import SlideLayoutModel
 from models.presentation_outline_model import SlideOutlineModel
 from utils.llm_config import get_content_model_config, has_content_model_override
@@ -16,6 +17,28 @@ from utils.schema_utils import (
     strip_length_constraints,
     validate_length_constraints,
 )
+
+
+SPEAKER_NOTE_GENERATION_RULES = """
+# Speaker Note Generation
+- Write `__speaker_note__` as performable narration, not presenter instructions.
+- Voice: world-weary travel-companion narrator. Present tense, sensory, intimate.
+- Include one concrete sensory anchor (smell, sound, texture, taste, or movement).
+- Never write instructions like "Highlight...", "Mention...", "Emphasize...", or "Tell the audience...".
+- Use inline ElevenLabs-style tags in square brackets only where they shape pacing (1 to 3 tags): `[pause]`, `[sigh]`, `[whispering]`, `[reflective]`, `[chuckles softly]`, `[warmly]`.
+- Use em dashes for quick cuts and ellipses for trailing thoughts where natural.
+- Spell out standalone numbers unless they are part of a proper noun.
+- Normalize currency to natural speech (e.g., "two thousand four hundred ninety-nine dollars per person").
+- For non-English proper nouns with pronunciation risk, wrap with SSML phoneme:
+  `<phoneme alphabet="ipa" ph="ˈtʃiŋkwe ˈtɛrre">Cinque Terre</phoneme>`.
+- Maintain narrative continuity using the previous and next slide cues plus presentation synopsis.
+
+## GOOD calibration example
+`[warmly] The harbor is still half-asleep, gulls stitching the air above chipped blue boats, and the smell of espresso drifting out of a doorway no wider than a suitcase. [pause] By the time the first ferry horn rolls across the water, you're already in motion—stones underfoot, salt on your lips, the old quarter opening like a hand-drawn map. [reflective] This is the hinge between arrival and immersion, where the trip stops being an itinerary and starts feeling personal.`
+
+## BAD calibration example
+`This slide introduces the destination. Mention the highlights and explain why the audience should care. Emphasize key numbers and conclude with a transition to the next section.`
+"""
 
 
 SLIDE_CONTENT_SYSTEM_PROMPT = """
@@ -36,10 +59,13 @@ You need to generate structured content json based on the schema.
 - Do not add emoji in the content.
 - Don't provide $schema field in content json.
 {markdown_emphasis_rules}
+{speaker_note_generation_rules}
 
 {user_instructions}
 
 {tone_instructions}
+
+{tone_preset_instructions}
 
 {verbosity_instructions}
 
@@ -56,6 +82,11 @@ English
 
 # Slide Language:
 {language}
+
+# Narrative Continuity Context:
+- Previous Slide Title: {previous_slide_title}
+- Next Slide Title: {next_slide_title}
+- Presentation Synopsis: {presentation_synopsis}
 
 # SLIDE CONTENT: START
 {content}
@@ -84,12 +115,20 @@ def _get_schema_markdown(response_schema: Optional[dict]) -> str:
     return f"- Follow this response schema exactly: {schema_text}"
 
 
+def _normalize_context_value(value: Optional[str], fallback: str) -> str:
+    if not value:
+        return fallback
+    cleaned = value.strip()
+    return cleaned or fallback
+
+
 def get_system_prompt(
     tone: Optional[str] = None,
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
     response_schema: Optional[dict] = None,
     template: str = "",
+    tone_preset: Optional[str] = None,
 ):
     markdown_emphasis_rules = (
         "- Strictly use markdown to emphasize important points, by bolding or "
@@ -100,6 +139,14 @@ def get_system_prompt(
     tone_instructions = (
         f"# Tone Instructions:\nMake slide as {tone} as possible." if tone else ""
     )
+    normalized_tone_preset = normalize_tone_preset(tone_preset)
+    tone_preset_instructions = ""
+    if normalized_tone_preset:
+        tone_preset_instructions = (
+            "# Narration Tone Preset:\n"
+            f"Use `{normalized_tone_preset.value}` for speaker-note performance.\n"
+            f"{TONE_PROMPT_ADDENDA[normalized_tone_preset]}"
+        )
 
     verbosity_instructions = ""
     if verbosity:
@@ -130,17 +177,30 @@ def get_system_prompt(
 
     return SLIDE_CONTENT_SYSTEM_PROMPT.format(
         markdown_emphasis_rules=markdown_emphasis_rules,
+        speaker_note_generation_rules=SPEAKER_NOTE_GENERATION_RULES,
         user_instructions=user_instructions + travel_rules,
         tone_instructions=tone_instructions,
+        tone_preset_instructions=tone_preset_instructions,
         verbosity_instructions=verbosity_instructions,
         output_fields_instructions=output_fields_instructions,
     )
 
 
-def get_user_prompt(outline: str, language: Optional[str]):
+def get_user_prompt(
+    outline: str,
+    language: Optional[str],
+    previous_slide_title: Optional[str] = None,
+    next_slide_title: Optional[str] = None,
+    presentation_synopsis: Optional[str] = None,
+):
     return SLIDE_CONTENT_USER_PROMPT.format(
         current_date_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         language=_resolve_prompt_language(language),
+        previous_slide_title=_normalize_context_value(previous_slide_title, "N/A"),
+        next_slide_title=_normalize_context_value(next_slide_title, "N/A"),
+        presentation_synopsis=_normalize_context_value(
+            presentation_synopsis, "No synopsis provided."
+        ),
         content=outline,
     )
 
@@ -153,6 +213,10 @@ def get_messages(
     instructions: Optional[str] = None,
     response_schema: Optional[dict] = None,
     template: str = "",
+    previous_slide_title: Optional[str] = None,
+    next_slide_title: Optional[str] = None,
+    presentation_synopsis: Optional[str] = None,
+    tone_preset: Optional[str] = None,
 ) -> list[Message]:
 
     return [
@@ -163,10 +227,17 @@ def get_messages(
                 instructions,
                 response_schema,
                 template,
+                tone_preset,
             ),
         ),
         UserMessage(
-            content=get_user_prompt(outline, language),
+            content=get_user_prompt(
+                outline,
+                language,
+                previous_slide_title=previous_slide_title,
+                next_slide_title=next_slide_title,
+                presentation_synopsis=presentation_synopsis,
+            ),
         ),
     ]
 
@@ -179,6 +250,10 @@ async def get_slide_content_from_type_and_outline(
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
     template: str = "",
+    previous_slide_title: Optional[str] = None,
+    next_slide_title: Optional[str] = None,
+    presentation_synopsis: Optional[str] = None,
+    tone_preset: Optional[str] = None,
 ):
     config, model, extra_body = get_content_model_config()
     client = get_client(config=config)
@@ -192,9 +267,12 @@ async def get_slide_content_from_type_and_outline(
         {
             "__speaker_note__": {
                 "type": "string",
-                "minLength": 100,
-                "maxLength": 250,
-                "description": "Speaker note for the slide",
+                "minLength": 250,
+                "maxLength": 800,
+                "description": (
+                    "Narration text for the slide with optional inline audio tags "
+                    "and IPA phoneme hints where needed"
+                ),
             }
         },
         True,
@@ -222,6 +300,10 @@ async def get_slide_content_from_type_and_outline(
             instructions,
             response_schema,
             template,
+            previous_slide_title,
+            next_slide_title,
+            presentation_synopsis,
+            tone_preset,
         )
 
         for attempt in range(3):

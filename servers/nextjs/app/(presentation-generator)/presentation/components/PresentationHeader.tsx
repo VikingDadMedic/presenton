@@ -12,6 +12,8 @@ import {
   Check,
   X,
   Link2,
+  Volume2,
+  Wand2,
 } from "lucide-react";
 import { MotionIcon } from "motion-icons-react";
 import React, { useEffect, useRef, useState } from "react";
@@ -33,6 +35,8 @@ import { usePresentationUndoRedo } from "../hooks/PresentationUndoRedo";
 import ToolTip from "@/components/ToolTip";
 import {
   clearPresentationData,
+  updateNarrationDefaults,
+  updateSlideNarration,
   updateTitle,
 } from "@/store/slices/presentationGeneration";
 import { clearHistory } from "@/store/slices/undoRedoSlice";
@@ -44,12 +48,21 @@ import { Theme } from "../../services/api/types";
 import MarkdownRenderer from "@/components/MarkDownRender";
 import { cn } from "@/lib/utils";
 import EmbedShareDialog from "./EmbedShareDialog";
+import VoicePicker from "@/components/narration/VoicePicker";
+import TonePresetPicker from "@/components/narration/TonePresetPicker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const MAX_EXPORT_TITLE_LENGTH = 40;
 
 const buildSafeExportFileName = (
   rawTitle: string | null | undefined,
-  extension: "pdf" | "pptx" | "html" | "mp4" | "json"
+  extension: "pdf" | "pptx" | "html" | "mp4" | "json" | "zip"
 ) => {
   const normalizedTitle = (rawTitle || "presentation").trim();
   const titleWithoutExtension = normalizedTitle.replace(
@@ -94,6 +107,8 @@ const PresentationHeader = ({
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const [isExporting, setIsExporting] = useState(false);
+  const [narrationPopoverOpen, setNarrationPopoverOpen] = useState(false);
+  const [bulkNarrationLoading, setBulkNarrationLoading] = useState(false);
   const [themes, setThemes] = useState<Theme[]>([]);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [embedDialogOpen, setEmbedDialogOpen] = useState(false);
@@ -111,6 +126,10 @@ const PresentationHeader = ({
     (state: RootState) => state.presentationGeneration
   );
 
+  const deckNarrationVoiceId = presentationData?.narration_voice_id || null;
+  const deckNarrationTone = presentationData?.narration_tone || "travel_companion";
+  const deckNarrationModel = presentationData?.narration_model_id || "eleven_v3";
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -125,7 +144,7 @@ const PresentationHeader = ({
     if (themes.length === 0) {
       load();
     }
-  }, []);
+  }, [themes.length]);
 
   const { onUndo, onRedo, canUndo, canRedo } = usePresentationUndoRedo();
 
@@ -268,6 +287,10 @@ const PresentationHeader = ({
 
       if (response.ok) {
         const { path: pdfPath } = await response.json();
+        const exportNotice = response.headers.get("x-export-notice");
+        if (exportNotice) {
+          toast.info(exportNotice);
+        }
         // window.open(pdfPath, '_blank');
         downloadLink(pdfPath, safePdfFileName);
       } else {
@@ -290,8 +313,8 @@ const PresentationHeader = ({
       toast.info("Exporting HTML...");
       setIsExporting(true);
       await PresentationGenerationApi.updatePresentationContent(presentationData);
-      const safeFileName = buildSafeExportFileName(presentationData?.title, "html");
-      const safeTitle = safeFileName.replace(/\.html$/i, "");
+      const safeFileName = buildSafeExportFileName(presentationData?.title, "zip");
+      const safeTitle = safeFileName.replace(/\.zip$/i, "");
       const { path } = await PresentationGenerationApi.exportAsHTML({
         id: presentation_id,
         title: safeTitle,
@@ -356,6 +379,120 @@ const PresentationHeader = ({
     } catch (error) {
       console.error("Failed to get embed info:", error);
       toast.error("Failed to generate embed link.");
+    }
+  };
+
+  const updateDeckNarrationDefaults = (patch: {
+    narration_voice_id?: string | null;
+    narration_tone?: string | null;
+    narration_model_id?: string | null;
+    narration_pronunciation_dictionary_id?: string | null;
+  }) => {
+    dispatch(updateNarrationDefaults(patch));
+  };
+
+  const handleGenerateAllNarration = async () => {
+    if (!presentationData?.slides?.length) {
+      toast.error("No slides available for narration generation.");
+      return;
+    }
+
+    let estimatedCharacters = presentationData.slides.reduce((acc, slide) => {
+      const note = (slide.speaker_note || "").trim();
+      return acc + note.length;
+    }, 0);
+    let synthesizeableSlides = presentationData.slides.filter((slide) =>
+      Boolean((slide.speaker_note || "").trim())
+    ).length;
+    let maxCharacterLimit: number | null = null;
+
+    try {
+      const estimate: any = await PresentationGenerationApi.getNarrationEstimate(
+        presentation_id
+      );
+      if (typeof estimate?.total_character_count === "number") {
+        estimatedCharacters = estimate.total_character_count;
+      }
+      if (typeof estimate?.synthesizeable_slides === "number") {
+        synthesizeableSlides = estimate.synthesizeable_slides;
+      }
+      if (typeof estimate?.max_character_limit === "number") {
+        maxCharacterLimit = estimate.max_character_limit;
+      }
+    } catch {
+      // Fall back to local estimate when preflight estimate is unavailable.
+    }
+
+    if (synthesizeableSlides <= 0) {
+      toast.error("No slides have speaker notes to synthesize.");
+      return;
+    }
+    if (maxCharacterLimit !== null && estimatedCharacters > maxCharacterLimit) {
+      toast.error("Bulk narration exceeds the configured server limit.", {
+        description: `Estimated ${estimatedCharacters.toLocaleString()} characters (limit ${maxCharacterLimit.toLocaleString()}).`,
+      });
+      return;
+    }
+
+    const slideLabel = synthesizeableSlides === 1 ? "slide" : "slides";
+    const confirmationLines = [
+      `Generate narration for ${synthesizeableSlides.toLocaleString()} ${slideLabel}?`,
+      "",
+      `Estimated characters: ${estimatedCharacters.toLocaleString()}.`,
+    ];
+    if (maxCharacterLimit !== null) {
+      confirmationLines.push(
+        `Server character limit: ${maxCharacterLimit.toLocaleString()}.`
+      );
+    }
+    confirmationLines.push("Pricing depends on your ElevenLabs plan.");
+    const confirmed = window.confirm(
+      confirmationLines.join("\n")
+    );
+    if (!confirmed) return;
+
+    setBulkNarrationLoading(true);
+    try {
+      const result = await PresentationGenerationApi.bulkGenerateNarration(
+        presentation_id,
+        {
+          voice_id: deckNarrationVoiceId || undefined,
+          tone: deckNarrationTone || undefined,
+          model_id: deckNarrationModel || undefined,
+        }
+      );
+
+      const narrationEntries: any[] = Array.isArray((result as any)?.slides)
+        ? ((result as any).slides as any[])
+        : [];
+      const bySlideId = new Map(
+        narrationEntries.map((entry: any) => [String(entry.slide_id), entry])
+      );
+      presentationData.slides.forEach((slide, idx) => {
+        const generated = bySlideId.get(String(slide.id));
+        if (!generated) return;
+        dispatch(
+          updateSlideNarration({
+            slideIndex: idx,
+            narration_voice_id: generated.voice_id ?? slide.narration_voice_id ?? null,
+            narration_tone: generated.tone ?? slide.narration_tone ?? null,
+            narration_model_id: generated.model_id ?? slide.narration_model_id ?? null,
+            narration_audio_url: generated.audio_url ?? null,
+            narration_text_hash: generated.text_hash ?? null,
+            narration_generated_at: generated.generated_at ?? null,
+          })
+        );
+      });
+
+      toast.success("Narration generated for deck", {
+        description: `Characters processed: ${(result?.total_character_count || 0).toLocaleString()}`,
+      });
+    } catch (error: any) {
+      toast.error("Failed to generate narration", {
+        description: error?.message || "Please verify ElevenLabs configuration.",
+      });
+    } finally {
+      setBulkNarrationLoading(false);
     }
   };
 
@@ -558,16 +695,109 @@ const PresentationHeader = ({
           </div>}
           {presentationData && presentationData.slides && presentationData.slides.length > 0 && !presentationData.slides[0]?.layout?.includes("custom") && <ThemeSelector current_theme={presentationData?.theme || {}} themes={themes} />}
 
+          {presentationData && presentationData.slides && presentationData.slides.length > 0 ? (
+            <Popover open={narrationPopoverOpen} onOpenChange={setNarrationPopoverOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
+                >
+                  <Volume2 className="h-3.5 w-3.5 text-primary" />
+                  Narration
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-[360px] rounded-xl p-4">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">
+                      Deck narration defaults
+                    </h4>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Configure voice and tone once, then generate across all slides.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="mb-1 text-xs font-medium text-muted-foreground">
+                      Voice
+                    </p>
+                    <VoicePicker
+                      value={deckNarrationVoiceId || undefined}
+                      onChange={(voiceId) =>
+                        updateDeckNarrationDefaults({ narration_voice_id: voiceId })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <p className="mb-1 text-xs font-medium text-muted-foreground">
+                      Tone preset
+                    </p>
+                    <TonePresetPicker
+                      value={deckNarrationTone}
+                      onChange={(tone) =>
+                        updateDeckNarrationDefaults({ narration_tone: tone })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <p className="mb-1 text-xs font-medium text-muted-foreground">
+                      Model
+                    </p>
+                    <Select
+                      value={deckNarrationModel}
+                      onValueChange={(value) =>
+                        updateDeckNarrationDefaults({ narration_model_id: value })
+                      }
+                    >
+                      <SelectTrigger className="h-9 rounded-lg">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="eleven_v3">Eleven v3</SelectItem>
+                        <SelectItem value="eleven_multilingual_v2">
+                          Eleven Multilingual v2
+                        </SelectItem>
+                        <SelectItem value="eleven_flash_v2_5">
+                          Eleven Flash v2.5
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    type="button"
+                    disabled={bulkNarrationLoading}
+                    onClick={() => void handleGenerateAllNarration()}
+                    className="w-full rounded-lg"
+                  >
+                    {bulkNarrationLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="mr-2 h-4 w-4" />
+                    )}
+                    Generate audio for all slides
+                  </Button>
+                  <a
+                    href="https://elevenlabs.io/pricing"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex text-xs text-primary underline underline-offset-2"
+                  >
+                    View ElevenLabs pricing
+                  </a>
+                </div>
+              </PopoverContent>
+            </Popover>
+          ) : null}
+
           <div className="flex items-center gap-2 bg-muted px-3.5 h-[38px] border border-border rounded-lg">
 
             <ToolTip content="Regenerate Presentation">
-              <button onClick={handleReGenerate} className="group">
+              <button type="button" onClick={handleReGenerate} className="group">
                 <MotionIcon name="RotateCcw" animation="spin" trigger="hover" size={14} />
               </button>
             </ToolTip>
             <Separator orientation="vertical" className="h-4" />
             <ToolTip content="Undo">
-              <button disabled={!canUndo} className=" disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group" onClick={() => {
+              <button type="button" disabled={!canUndo} className=" disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group" onClick={() => {
                 onUndo();
               }}>
 
@@ -578,7 +808,7 @@ const PresentationHeader = ({
             <Separator orientation="vertical" className="h-4" />
             <ToolTip content="Redo">
 
-              <button disabled={!canRedo} className=" disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group" onClick={() => {
+              <button type="button" disabled={!canRedo} className=" disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group" onClick={() => {
 
                 onRedo();
               }}>
@@ -589,6 +819,7 @@ const PresentationHeader = ({
             <Separator orientation="vertical" className="h-4 w-[2px]" />
             <ToolTip content="Present">
               <button
+                type="button"
                 onClick={() => {
                   const to = `?id=${presentation_id}&mode=present&slide=${currentSlide || 0}`;
                   trackEvent(MixpanelEvent.Presentation_Mode_Entered, {
@@ -608,7 +839,7 @@ const PresentationHeader = ({
 
           <Popover open={open} onOpenChange={setOpen} >
             <PopoverTrigger asChild>
-              <button className="flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-semibold bg-primary text-primary-foreground shadow-[var(--shadow-teal-soft)] hover:bg-primary/90 hover:-translate-y-0.5 transition-all"
+              <button type="button" className="flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-semibold bg-primary text-primary-foreground shadow-[var(--shadow-teal-soft)] hover:bg-primary/90 hover:-translate-y-0.5 transition-all"
                 disabled={isExporting || isStreaming === true}
               >
                 {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Export"} <ArrowRightFromLine className="w-3.5 h-3.5" />

@@ -13,6 +13,7 @@ from templates.handler import (
     SaveTemplateResponse,
     TemplateDetail,
     TemplateExample,
+    TemplateReadinessResponse,
     clone_slide_layout,
     clone_template,
     create_slide_layout,
@@ -22,6 +23,7 @@ from templates.handler import (
     get_layouts,
     get_template_by_id,
     get_template_example,
+    get_template_readiness,
     init_create_template,
     save_slide_layout,
     save_template,
@@ -35,6 +37,9 @@ TEMPLATE_ROUTER.get("/all", response_model=list[TemplateDetail])(get_all_templat
 TEMPLATE_ROUTER.get(
     "/{template_id}/layouts", response_model=GetTemplateLayoutsResponse
 )(get_layouts)
+TEMPLATE_ROUTER.get("/readiness", response_model=TemplateReadinessResponse)(
+    get_template_readiness
+)
 TEMPLATE_ROUTER.get("/{id}", response_model=PresentationLayoutModel)(get_template_by_id)
 TEMPLATE_ROUTER.get("/{id}/example", response_model=TemplateExample)(
     get_template_example

@@ -11,7 +11,7 @@
 |---|---|---|---|---|
 | **PPTX** | `/api/v1/ppt/presentation/export` | POST | `.pptx` file | Edit in PowerPoint/Google Slides |
 | **PDF** | `/api/v1/ppt/presentation/export` | POST | `.pdf` file | Print-ready proposals |
-| **HTML** | `/api/v1/ppt/presentation/export` | POST | Self-contained `.html` slideshow | Email to clients, browser sharing |
+| **HTML** | `/api/v1/ppt/presentation/export` | POST | `.zip` bundle (`index.html` + optional `audio/*.mp3`) | Email to clients, browser sharing with optional narration |
 | **Video** | `/api/v1/ppt/presentation/export` | POST | `.mp4` with GSAP transitions | Social media, WhatsApp, video proposals |
 | **JSON** | `/api/v1/ppt/presentation/export/json/{id}` | GET | Structured slide data | CRM integration, API consumers |
 | **Embed** | `/api/export-as-embed` | POST | Embed URL + iframe code | Website embedding, interactive sharing |
@@ -106,6 +106,12 @@ The optional `export_options` object controls format-specific rendering:
 | `transition_duration` | video | `0.8` | Seconds for each transition |
 | `audio_url` | video | null | Background audio URL for the video |
 | `auto_play_interval` | html | `5000` | Auto-play interval in ms for HTML slideshow |
+
+### Narration Behavior in Exports
+
+- HTML export creates a ZIP bundle with `index.html`.
+- When narration exists, the ZIP also includes `audio/slide_{n}.mp3` and `narration_manifest.json`.
+- PDF export does **not** embed narration audio; clients should use HTML export when audio delivery is required.
 
 ---
 

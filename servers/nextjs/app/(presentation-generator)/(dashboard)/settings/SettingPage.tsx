@@ -26,6 +26,7 @@ import { getApiUrl } from "@/utils/api";
 import { toast } from "sonner";
 import LogoutButton from "@/components/Auth/LogoutButton";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import NarrationSettings from "./NarrationSettings";
 
 const STOCK_IMAGE_PROVIDERS = new Set(["pexels", "pixabay"]);
 
@@ -44,7 +45,7 @@ const SettingsPage = () => {
   const pathname = usePathname();
   const [mode, setMode] = useState<'nanobanana' | 'presenton'>('presenton')
   const [selectedProvider, setSelectedProvider] = useState<
-    "text-provider" | "image-provider" | "privacy" | "session" | "appearance"
+    "text-provider" | "image-provider" | "privacy" | "session" | "appearance" | "narration"
   >("text-provider");
   const userConfigState = useSelector((state: RootState) => state.userConfig);
   const [llmConfig, setLlmConfig] = useState<LLMConfig>(
@@ -427,6 +428,17 @@ const SettingsPage = () => {
               </div>
               <ThemeSwitcher />
             </div>
+          )}
+          {selectedProvider === "narration" && (
+            <NarrationSettings
+              llmConfig={llmConfig}
+              onInputChange={(value, field) => {
+                setLlmConfig((prev) => ({
+                  ...prev,
+                  [field]: value,
+                }));
+              }}
+            />
           )}
           {selectedProvider === 'privacy' && <PrivacySettings />}
           {selectedProvider === "session" && (

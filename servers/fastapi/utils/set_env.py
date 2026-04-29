@@ -143,6 +143,18 @@ def set_open_webui_image_api_key_env(value: str):
     os.environ["OPEN_WEBUI_IMAGE_API_KEY"] = value
 
 
+def set_elevenlabs_api_key_env(value: str):
+    os.environ["ELEVENLABS_API_KEY"] = value
+
+
+def set_elevenlabs_default_voice_id_env(value: str):
+    os.environ["ELEVENLABS_DEFAULT_VOICE_ID"] = value
+
+
+def set_elevenlabs_default_model_env(value: str):
+    os.environ["ELEVENLABS_DEFAULT_MODEL"] = value
+
+
 def set_content_model_provider_env(value: str):
     os.environ["CONTENT_MODEL_PROVIDER"] = value
 

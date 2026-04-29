@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import delete, select
 
 from constants.presentation import DEFAULT_TEMPLATES
+from enums.llm_provider import LLMProvider
 from models.sql.presentation_layout_code import PresentationLayoutCodeModel
 from models.sql.template import TemplateModel
 from models.sql.template_create_info import TemplateCreateInfoModel
@@ -30,10 +31,20 @@ from templates.prompts import (
     SLIDE_LAYOUT_EDIT_SECTION_SYSTEM_PROMPT,
     SLIDE_LAYOUT_EDIT_SYSTEM_PROMPT,
 )
-from templates.providers import edit_slide_layout_code, generate_slide_layout_code
+from templates.providers import (
+    edit_slide_layout_code,
+    generate_slide_layout_code,
+    get_template_provider_spec,
+)
 from utils.asset_directory_utils import (
     resolve_app_path_to_filesystem,
     resolve_image_path_to_filesystem,
+)
+from utils.get_env import (
+    get_anthropic_api_key_env,
+    get_codex_access_token_env,
+    get_google_api_key_env,
+    get_openai_api_key_env,
 )
 
 
@@ -68,6 +79,13 @@ class GetTemplateLayoutsResponse(BaseModel):
 class TemplateExample(BaseModel):
     template: str
     slides: List[dict]
+
+
+class TemplateReadinessResponse(BaseModel):
+    ready: bool
+    provider: Optional[str] = None
+    model: Optional[str] = None
+    reason: Optional[str] = None
 
 
 class CreateTemplateInitRequest(BaseModel):
@@ -375,8 +393,54 @@ async def get_template_example(
     return TemplateExample(**build_template_example(id, template))
 
 
+def _provider_api_key_status(provider: LLMProvider) -> tuple[bool, Optional[str]]:
+    if provider == LLMProvider.OPENAI:
+        configured = bool(get_openai_api_key_env())
+        return configured, None if configured else "OPENAI_API_KEY is not set"
+    if provider == LLMProvider.GOOGLE:
+        configured = bool(get_google_api_key_env())
+        return configured, None if configured else "GOOGLE_API_KEY is not set"
+    if provider == LLMProvider.ANTHROPIC:
+        configured = bool(get_anthropic_api_key_env())
+        return configured, None if configured else "ANTHROPIC_API_KEY is not set"
+    if provider == LLMProvider.CODEX:
+        configured = bool(get_codex_access_token_env())
+        return (
+            configured,
+            None
+            if configured
+            else "Codex access token is not set. Please authenticate via /api/v1/ppt/codex/auth/initiate",
+        )
+    return False, f"Unsupported provider: {provider.value}"
+
+
+async def get_template_readiness() -> TemplateReadinessResponse:
+    try:
+        spec = get_template_provider_spec()
+    except HTTPException as exc:
+        return TemplateReadinessResponse(
+            ready=False,
+            reason=str(exc.detail),
+        )
+
+    has_key, key_reason = _provider_api_key_status(spec.provider)
+    if not has_key:
+        return TemplateReadinessResponse(
+            ready=False,
+            provider=spec.provider.value,
+            model=spec.model,
+            reason=key_reason,
+        )
+
+    return TemplateReadinessResponse(
+        ready=True,
+        provider=spec.provider.value,
+        model=spec.model,
+    )
+
+
 async def upload_fonts_and_slides_preview(
-    pptx_file: UploadFile = File(..., description="PPTX file to preview"),
+    pptx_file: UploadFile = File(..., description="PowerPoint file to preview"),
     font_files: Optional[List[UploadFile]] = File(
         default=None, description="Font files to upload"
     ),

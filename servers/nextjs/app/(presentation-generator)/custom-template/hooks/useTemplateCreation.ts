@@ -7,6 +7,7 @@ import {
     TemplateCreationState,
     FontData,
     FontUploadPreviewResponse,
+    TemplateReadinessResponse,
     SlideLayoutResponse,
     UploadedFont,
     ProcessedSlide,
@@ -25,6 +26,8 @@ const initialState: TemplateCreationState = {
     slideLayouts: [],
     currentSlideIndex: 0,
 };
+
+const TEMPLATE_CREATION_CONCURRENCY = 3;
 
 
 export const useTemplateCreation = () => {
@@ -181,6 +184,11 @@ export const useTemplateCreation = () => {
                 isLoading: false
             });
 
+            if (data.total_original_slides > data.processed_slide_count) {
+                toast.warning(
+                    `Your deck has ${data.total_original_slides} slides; only the first ${data.processed_slide_count} will be processed.`
+                );
+            }
             toast.success("Slides preview generated successfully");
             return data;
         } catch (error) {
@@ -190,6 +198,35 @@ export const useTemplateCreation = () => {
             return null;
         }
     }, [uploadedFonts, updateState]);
+
+    const checkReadiness = useCallback(async (
+        signal?: AbortSignal
+    ): Promise<TemplateReadinessResponse | null> => {
+        try {
+            const response = await fetch(getApiUrl(`/api/v1/ppt/template/readiness`), {
+                method: "GET",
+                headers: getHeader(),
+                signal,
+            });
+            const data = await ApiResponseHandler.handleResponse(
+                response,
+                "Failed to check template generation readiness"
+            );
+            return data as TemplateReadinessResponse;
+        } catch (error) {
+            if (error instanceof DOMException && error.name === "AbortError") {
+                return null;
+            }
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "Unable to verify template generation readiness";
+            return {
+                ready: false,
+                reason: errorMessage,
+            };
+        }
+    }, []);
 
     // Step 3: Initialize template creation
     const initTemplateCreation = useCallback(async (): Promise<string | null> => {
@@ -241,14 +278,18 @@ export const useTemplateCreation = () => {
 
             toast.success("Template creation initialized");
 
-            // Automatically start processing the first slide
-            if (typeof data === 'string') {
-                createSlideLayout(data, 0);
-            } else if (data.id) {
-                createSlideLayout(data.id, 0);
+            const resolvedTemplateId = typeof data === "string" ? data : data.id;
+            if (resolvedTemplateId) {
+                const previewSlideCount = state.previewData.slide_image_urls.length;
+                setTimeout(() => {
+                    void processAllSlidesInParallel(
+                        resolvedTemplateId,
+                        previewSlideCount
+                    );
+                }, 0);
             }
 
-            return typeof data === 'string' ? data : data.id;
+            return resolvedTemplateId;
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Initialization failed";
             updateState({ error: errorMessage, isLoading: false });
@@ -257,15 +298,16 @@ export const useTemplateCreation = () => {
             reset();
             return null;
         }
-    }, [state.previewData, updateState]);
+    // biome-ignore lint/correctness/useExhaustiveDependencies: Including processAllSlidesInParallel here causes a declaration-order hook cycle.
+    }, [reset, state.previewData, updateState]);
 
-    // Step 4: Create slide layout for a specific slide (with auto-advance for initial processing)
+    // Step 4: Create slide layout for a specific slide
     const createSlideLayout = useCallback(async (
         templateId: string,
         slideIndex: number,
-        autoAdvance: boolean = true,
         retry: boolean = false,
-        _isAutoRetry: boolean = false
+        _isAutoRetry: boolean = false,
+        showSuccessToast: boolean = false
     ): Promise<SlideLayoutResponse | null> => {
         // Mark slide as processing
         setSlides(prev => prev.map((s, i) =>
@@ -303,29 +345,7 @@ export const useTemplateCreation = () => {
                     } : s
                 );
 
-                // Only auto-advance during initial processing
-                if (autoAdvance) {
-                    const nextIndex = slideIndex + 1;
-                    if (nextIndex < newSlides.length && !newSlides[nextIndex].processed) {
-                        setTimeout(() => {
-                            createSlideLayout(templateId, nextIndex, true);
-                        }, 500);
-                    } else {
-                        // Check if all slides are processed
-                        const allProcessed = newSlides.every(s => s.processed || s.error);
-                        if (allProcessed) {
-                            updateState({ step: 'completed' });
-                            trackEvent(MixpanelEvent.CustomTemplate_Creation_Completed, {
-                                template_id: templateId,
-                                total_slides: newSlides.length,
-                                processed_slides: newSlides.filter(s => s.processed).length,
-                                failed_slides: newSlides.filter(s => Boolean(s.error)).length,
-                            });
-                            toast.success("All slides processed successfully!");
-                        }
-                    }
-                } else {
-                    // Single slide reconstruction - just show success
+                if (showSuccessToast) {
                     toast.success(`Slide ${slideIndex + 1} reconstructed successfully`);
                 }
 
@@ -337,7 +357,7 @@ export const useTemplateCreation = () => {
             // Auto-retry once on failure before showing error
             if (!_isAutoRetry) {
                 console.log(`Auto-retrying slide ${slideIndex + 1} after API failure...`);
-                return createSlideLayout(templateId, slideIndex, autoAdvance, true, true);
+                return createSlideLayout(templateId, slideIndex, true, true, showSuccessToast);
             }
 
             const errorMessage = error instanceof Error ? error.message : "Layout creation failed";
@@ -347,22 +367,6 @@ export const useTemplateCreation = () => {
                 const newSlides = prev.map((s, i) =>
                     i === slideIndex ? { ...s, processing: false, error: errorMessage } : s
                 );
-
-                // Only auto-advance during initial processing
-                if (autoAdvance) {
-                    const nextIndex = slideIndex + 1;
-                    if (nextIndex < newSlides.length && !newSlides[nextIndex].processed) {
-                        setTimeout(() => {
-                            createSlideLayout(templateId, nextIndex, true);
-                        }, 500);
-                    } else {
-                        const allProcessed = newSlides.every(s => s.processed || s.error);
-                        if (allProcessed) {
-                            updateState({ step: 'completed' });
-                        }
-                    }
-                }
-
                 return newSlides;
             });
 
@@ -371,11 +375,49 @@ export const useTemplateCreation = () => {
         }
     }, [updateState]);
 
-    // Reconstruct a single slide (no auto-advance)
+    const processAllSlidesInParallel = useCallback(
+        async (templateId: string, totalSlides: number) => {
+            if (totalSlides <= 0) {
+                return;
+            }
+
+            let nextIndex = 0;
+            const worker = async () => {
+                while (true) {
+                    const currentIndex = nextIndex;
+                    nextIndex += 1;
+                    if (currentIndex >= totalSlides) {
+                        return;
+                    }
+                    await createSlideLayout(templateId, currentIndex, false, false, false);
+                }
+            };
+
+            const workerCount = Math.min(TEMPLATE_CREATION_CONCURRENCY, totalSlides);
+            await Promise.all(Array.from({ length: workerCount }, worker));
+
+            setSlides((prev) => {
+                const allProcessed = prev.every((slide) => slide.processed || slide.error);
+                if (allProcessed) {
+                    updateState({ step: "completed" });
+                    trackEvent(MixpanelEvent.CustomTemplate_Creation_Completed, {
+                        template_id: templateId,
+                        total_slides: prev.length,
+                        processed_slides: prev.filter((slide) => slide.processed).length,
+                        failed_slides: prev.filter((slide) => Boolean(slide.error)).length,
+                    });
+                    toast.success("All slides processed successfully!");
+                }
+                return prev;
+            });
+        },
+        [createSlideLayout, updateState]
+    );
+
+    // Reconstruct a single slide
     const retrySlide = useCallback((slideIndex: number) => {
         if (state.templateId) {
-            // Pass false for autoAdvance to only reconstruct this specific slide
-            createSlideLayout(state.templateId, slideIndex, false, true);
+            void createSlideLayout(state.templateId, slideIndex, true, false, true);
         }
     }, [state.templateId, createSlideLayout]);
 
@@ -403,6 +445,7 @@ export const useTemplateCreation = () => {
 
         // Font operations
         checkFonts,
+        checkReadiness,
         uploadFont,
         removeFont,
         getUnsupportedFonts,

@@ -47,15 +47,15 @@ async def process_pdf_slides(
             status_code=400,
             detail=f"Invalid file type. Expected PDF file, got {pdf_file.content_type}",
         )
-    # Enforce 100MB size limit
+    # Enforce 250MB size limit
     if (
         hasattr(pdf_file, "size")
         and pdf_file.size
-        and pdf_file.size > (100 * 1024 * 1024)
+        and pdf_file.size > (250 * 1024 * 1024)
     ):
         raise HTTPException(
             status_code=400,
-            detail="PDF file exceeded max upload size of 100 MB",
+            detail="PDF file exceeded max upload size of 250 MB",
         )
 
     # Create temporary directory for processing

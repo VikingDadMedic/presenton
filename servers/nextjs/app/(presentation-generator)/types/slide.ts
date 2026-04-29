@@ -33,6 +33,12 @@ export interface Slide {
   graph_id: string | null;
   presentation?: string;
   speaker_note?: string;
+  narration_voice_id?: string | null;
+  narration_tone?: string | null;
+  narration_model_id?: string | null;
+  narration_audio_url?: string | null;
+  narration_text_hash?: string | null;
+  narration_generated_at?: string | null;
   layout?: string;
   layout_group?: string;
   html_content?: string | null;

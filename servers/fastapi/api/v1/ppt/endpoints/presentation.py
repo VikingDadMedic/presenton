@@ -12,6 +12,7 @@ from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 from constants.presentation import DEFAULT_TEMPLATES, MAX_NUMBER_OF_SLIDES
+from constants.narration import get_default_tone_for_template, normalize_tone_preset
 from enums.webhook_event import WebhookEvent
 from models.api_error_model import APIErrorModel
 from models.generate_presentation_request import GeneratePresentationRequest
@@ -90,6 +91,55 @@ def _extract_custom_template_id(layout_name: Optional[str]) -> Optional[uuid.UUI
         return uuid.UUID(layout_name.replace("custom-", ""))
     except Exception:
         return None
+
+
+def _normalize_outline_title(raw: Optional[str]) -> Optional[str]:
+    if not raw:
+        return None
+    cleaned = raw.strip().strip("#").strip()
+    return cleaned or None
+
+
+def _extract_outline_title(outline: SlideOutlineModel, index: int) -> str:
+    explicit = _normalize_outline_title(getattr(outline, "title", None))
+    if explicit:
+        return explicit
+    content = (outline.content or "").strip()
+    if not content:
+        return f"Slide {index + 1}"
+
+    first_line = content.splitlines()[0].strip()
+    if first_line.startswith("-"):
+        first_line = first_line.lstrip("- ").strip()
+    if ":" in first_line and len(first_line.split(":", 1)[0]) < 16:
+        first_line = first_line.split(":", 1)[1].strip() or first_line
+    return _normalize_outline_title(first_line) or f"Slide {index + 1}"
+
+
+def _extract_outline_synopsis(outline: SlideOutlineModel) -> str:
+    explicit = _normalize_outline_title(getattr(outline, "synopsis", None))
+    if explicit:
+        return explicit
+    content = " ".join((outline.content or "").split())
+    if not content:
+        return ""
+    return content[:220]
+
+
+def _build_presentation_synopsis(
+    outlines: List[SlideOutlineModel], presentation_title: Optional[str]
+) -> str:
+    summary_parts = []
+    if presentation_title:
+        summary_parts.append(presentation_title.strip())
+    for outline in outlines[:3]:
+        synopsis = _extract_outline_synopsis(outline)
+        if synopsis:
+            summary_parts.append(synopsis)
+    if not summary_parts:
+        return "A presentation with sequential slides and connected narrative flow."
+    merged = " | ".join(summary_parts)
+    return merged[:500]
 
 
 async def _resolve_presentation_fonts(
@@ -209,6 +259,7 @@ async def create_presentation(
     language: Annotated[Optional[str], Body()] = None,
     file_paths: Annotated[Optional[List[str]], Body()] = None,
     tone: Annotated[Tone, Body()] = Tone.DEFAULT,
+    narration_tone: Annotated[Optional[str], Body()] = None,
     verbosity: Annotated[Verbosity, Body()] = Verbosity.STANDARD,
     instructions: Annotated[Optional[str], Body()] = None,
     include_table_of_contents: Annotated[bool, Body()] = False,
@@ -242,6 +293,9 @@ async def create_presentation(
     language_to_store = (language or "").strip()
     # DB schema stores an int; 0 is used as internal marker for auto slide count.
     n_slides_to_store = n_slides if n_slides is not None else 0
+    normalized_narration_tone = normalize_tone_preset(
+        narration_tone or os.getenv("ELEVENLABS_DEFAULT_TONE")
+    )
 
     presentation = PresentationModel(
         id=presentation_id,
@@ -250,6 +304,12 @@ async def create_presentation(
         language=language_to_store,
         file_paths=file_paths,
         tone=tone.value,
+        narration_tone=normalized_narration_tone.value if normalized_narration_tone else None,
+        narration_voice_id=os.getenv("ELEVENLABS_DEFAULT_VOICE_ID"),
+        narration_model_id=os.getenv("ELEVENLABS_DEFAULT_MODEL") or "eleven_v3",
+        narration_pronunciation_dictionary_id=os.getenv(
+            "ELEVENLABS_PRONUNCIATION_DICTIONARY_ID"
+        ),
         verbosity=verbosity.value,
         instructions=instructions,
         include_table_of_contents=include_table_of_contents,
@@ -384,6 +444,19 @@ async def stream_presentation(
         structure = presentation.get_structure()
         layout = presentation.get_layout()
         outline = presentation.get_presentation_outline()
+        outline_titles = [
+            _extract_outline_title(outline_slide, idx)
+            for idx, outline_slide in enumerate(outline.slides)
+        ]
+        presentation_synopsis = _build_presentation_synopsis(
+            outline.slides, presentation.title
+        )
+        resolved_narration_tone = (
+            normalize_tone_preset(
+                presentation.narration_tone or os.getenv("ELEVENLABS_DEFAULT_TONE")
+            )
+            or get_default_tone_for_template(layout.name)
+        ).value
         image_urls_for_slides = get_images_for_slides_from_outline(outline.slides)
 
         yield SSEResponse(
@@ -430,6 +503,12 @@ async def stream_presentation(
                     presentation.verbosity,
                     enriched_instructions,
                     template=layout.name,
+                    previous_slide_title=outline_titles[i - 1] if i > 0 else None,
+                    next_slide_title=(
+                        outline_titles[i + 1] if i + 1 < len(outline_titles) else None
+                    ),
+                    presentation_synopsis=presentation_synopsis,
+                    tone_preset=resolved_narration_tone,
                 )
             except HTTPException as e:
                 yield SSEErrorResponse(detail=e.detail).to_string()
@@ -451,6 +530,7 @@ async def stream_presentation(
                 layout=slide_layout.id,
                 index=i,
                 speaker_note=slide_content.get("__speaker_note__", ""),
+                narration_tone=resolved_narration_tone,
                 content=slide_content,
             )
             slides.append(slide)
@@ -519,6 +599,10 @@ async def update_presentation(
     n_slides: Annotated[Optional[int], Body()] = None,
     title: Annotated[Optional[str], Body()] = None,
     theme: Annotated[Optional[dict], Body()] = None,
+    narration_voice_id: Annotated[Optional[str], Body()] = None,
+    narration_tone: Annotated[Optional[str], Body()] = None,
+    narration_model_id: Annotated[Optional[str], Body()] = None,
+    narration_pronunciation_dictionary_id: Annotated[Optional[str], Body()] = None,
     slides: Annotated[Optional[List[SlideModel]], Body()] = None,
     sql_session: AsyncSession = Depends(get_async_session),
 ):
@@ -533,6 +617,19 @@ async def update_presentation(
         presentation_update_dict["title"] = title
     if theme or theme is None:
         presentation_update_dict["theme"] = theme
+    if narration_voice_id is not None:
+        presentation_update_dict["narration_voice_id"] = narration_voice_id
+    if narration_tone is not None:
+        normalized_tone = normalize_tone_preset(narration_tone)
+        presentation_update_dict["narration_tone"] = (
+            normalized_tone.value if normalized_tone else narration_tone
+        )
+    if narration_model_id is not None:
+        presentation_update_dict["narration_model_id"] = narration_model_id
+    if narration_pronunciation_dictionary_id is not None:
+        presentation_update_dict["narration_pronunciation_dictionary_id"] = (
+            narration_pronunciation_dictionary_id
+        )
 
     if presentation_update_dict:
         presentation.sqlmodel_update(presentation_update_dict)
@@ -595,6 +692,10 @@ async def export_presentation_as_json(
             updated_at=presentation.updated_at,
             tone=presentation.tone,
             verbosity=presentation.verbosity,
+            narration_voice_id=presentation.narration_voice_id,
+            narration_tone=presentation.narration_tone,
+            narration_model_id=presentation.narration_model_id,
+            narration_pronunciation_dictionary_id=presentation.narration_pronunciation_dictionary_id,
             slides=list(slides),
             theme=presentation.theme,
             fonts=fonts,
@@ -943,6 +1044,13 @@ async def generate_presentation_handler(
         if final_n_slides is None:
             final_n_slides = len(presentation_outlines.slides)
 
+        resolved_narration_tone = (
+            normalize_tone_preset(
+                request.narration_tone or os.getenv("ELEVENLABS_DEFAULT_TONE")
+            )
+            or get_default_tone_for_template(request.template)
+        ).value
+
         enriched_context_for_model = None
         if request.template.startswith("travel") and additional_context:
             enriched_context_for_model = additional_context
@@ -965,6 +1073,12 @@ async def generate_presentation_handler(
             currency=request.currency,
             enriched_context=enriched_context_for_model,
             enriched_data=enriched_data_for_model,
+            narration_tone=resolved_narration_tone,
+            narration_voice_id=os.getenv("ELEVENLABS_DEFAULT_VOICE_ID"),
+            narration_model_id=os.getenv("ELEVENLABS_DEFAULT_MODEL") or "eleven_v3",
+            narration_pronunciation_dictionary_id=os.getenv(
+                "ELEVENLABS_PRONUNCIATION_DICTIONARY_ID"
+            ),
         )
 
         # Updating async status
@@ -982,6 +1096,14 @@ async def generate_presentation_handler(
 
         slide_layout_indices = presentation_structure.slides
         slide_layouts = [layout_model.slides[idx] for idx in slide_layout_indices]
+        outline_titles = [
+            _extract_outline_title(outline_slide, idx)
+            for idx, outline_slide in enumerate(presentation_outlines.slides)
+        ]
+        presentation_synopsis = _build_presentation_synopsis(
+            presentation_outlines.slides,
+            presentation.title,
+        )
 
         enriched_instructions = request.instructions or ""
         if enriched_context_for_model:
@@ -1004,6 +1126,12 @@ async def generate_presentation_handler(
                     request.verbosity.value,
                     enriched_instructions,
                     template=request.template,
+                    previous_slide_title=outline_titles[i - 1] if i > 0 else None,
+                    next_slide_title=(
+                        outline_titles[i + 1] if i + 1 < len(outline_titles) else None
+                    ),
+                    presentation_synopsis=presentation_synopsis,
+                    tone_preset=resolved_narration_tone,
                 )
                 for i in range(start, end)
             ]
@@ -1029,6 +1157,7 @@ async def generate_presentation_handler(
                     layout=slide_layout.id,
                     index=i,
                     speaker_note=slide_content.get("__speaker_note__"),
+                    narration_tone=resolved_narration_tone,
                     content=slide_content,
                 )
                 slides.append(slide)

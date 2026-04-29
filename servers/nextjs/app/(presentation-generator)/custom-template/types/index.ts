@@ -39,11 +39,20 @@ export type TemplateCreationStep =
 
 export interface FontUploadPreviewResponse {
   slide_image_urls: string[];
-  original_pptx_url: string;
+  pptx_url: string;
   modified_pptx_url: string;
   fonts: {
     [key: string]: string;
   };
+  total_original_slides: number;
+  processed_slide_count: number;
+}
+
+export interface TemplateReadinessResponse {
+  ready: boolean;
+  provider?: string | null;
+  model?: string | null;
+  reason?: string | null;
 }
 
 export interface FontInfo {

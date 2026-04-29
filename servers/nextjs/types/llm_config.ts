@@ -56,6 +56,14 @@ export interface LLMConfig {
   CODEX_EMAIL?: string;
   CODEX_IS_PRO?: boolean;
 
+  // ElevenLabs Narration
+  ELEVENLABS_API_KEY?: string;
+  ELEVENLABS_DEFAULT_VOICE_ID?: string;
+  ELEVENLABS_DEFAULT_MODEL?: string;
+  ELEVENLABS_DEFAULT_TONE?: string;
+  ELEVENLABS_PRONUNCIATION_HINTS?: string;
+  ELEVENLABS_PRONUNCIATION_DICTIONARY_ID?: string;
+
   // Only used in UI settings
   USE_CUSTOM_URL?: boolean;
 

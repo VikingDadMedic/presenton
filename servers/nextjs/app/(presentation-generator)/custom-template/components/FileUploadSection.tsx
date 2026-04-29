@@ -1,58 +1,75 @@
-import React, { useState, useRef, useEffect } from "react";
-import { UploadIcon, ChevronRight, Plus, FileText, X, Coins, Edit3, Info } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { UploadIcon, ChevronRight, Plus, FileText, X, Info } from "lucide-react";
 import { ProcessedSlide } from "../types";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 
 interface FileUploadSectionProps {
   selectedFile: File | null;
-  handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  handleFileSelect: (input: React.ChangeEvent<HTMLInputElement> | File) => void;
   removeFile: () => void;
   CheckFonts: () => void;
+  isUploadEnabled?: boolean;
 
   isProcessingPptx: boolean;
   slides: ProcessedSlide[];
   completedSlides: number;
 }
 
-// Credit costs constants
-const COST_PER_SLIDE = 3;
-const COST_EDIT = 1;
-
 export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   selectedFile,
   handleFileSelect,
   removeFile,
   CheckFonts,
+  isUploadEnabled = true,
 
   isProcessingPptx,
   slides,
   completedSlides,
 }) => {
   const isProcessing = isProcessingPptx || slides.some((s) => s.processing);
-  const [isAllowed, setIsAllowed] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { llm_config } = useSelector((state: RootState) => state.userConfig);
-
-
+  const isProviderSupported = !(llm_config?.LLM === "custom" || llm_config?.LLM === "ollama");
+  const isAllowed = isProviderSupported && isUploadEnabled;
 
   const handleCheckFonts = () => {
-
     CheckFonts();
+  };
 
-  }
-
-  useEffect(() => {
-
-
-    if (llm_config?.LLM === 'custom' || llm_config?.LLM === 'ollama') {
-      setIsAllowed(false);
-    } else {
-      setIsAllowed(true);
+  const handleSelectFileClick = () => {
+    if (!isAllowed || isProcessing) {
+      return;
     }
-  }, [llm_config]);
+    fileInputRef.current?.click();
+  };
 
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    if (!isAllowed || isProcessing) {
+      return;
+    }
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragActive(false);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragActive(false);
+    if (!isAllowed || isProcessing) {
+      return;
+    }
+    const droppedFile = event.dataTransfer.files?.[0];
+    if (droppedFile) {
+      handleFileSelect(droppedFile);
+    }
+  };
 
   return (
     <div className="md:h-[calc(100vh-310px)] h-[calc(100vh-450px)] relative overflow-hidden">
@@ -82,9 +99,19 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
             }}
           >
             <UploadIcon className={`w-4 h-4 text-foreground`} />
-            <p className='text-xs font-medium text-foreground'>Upload PPTX File</p>
+            <p className='text-xs font-medium text-foreground'>Upload PowerPoint File</p>
           </div>
         </div>
+        {!isProviderSupported && (
+          <div className="mb-3 rounded-lg border border-amber-300/40 bg-amber-100/40 px-3 py-2 text-xs text-amber-900">
+            <div className="flex items-center gap-2">
+              <Info className="h-4 w-4 shrink-0" />
+              <span>
+                Template generation requires Google, OpenAI, Codex, or Anthropic. Switch your provider in Settings.
+              </span>
+            </div>
+          </div>
+        )}
         <div className=" w-full bg-card rounded-[28px] p-2.5 "
           style={{
             boxShadow: '0 0 16px 0 rgba(80, 71, 230, 0.12)',
@@ -93,15 +120,21 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
         >
           <div className="bg-[#FEFEFF] rounded-[18px] p-2 border border-border ">
             <div className="h-[120px] w-full bg-muted  rounded-[12px] p-1.5">
-              <div className="border border-[#B8B8C1] border-dashed rounded-[12px ] p-1.5 h-full relative">
+              <div
+                className={`border border-dashed rounded-[12px] p-1.5 h-full relative transition-colors ${isDragActive ? "border-primary bg-primary/5" : "border-[#B8B8C1]"}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
                 {!selectedFile ? <>
                   <input
                     id="file-upload"
+                    ref={fileInputRef}
                     type="file"
-                    accept=".pptx"
-                    disabled={!isAllowed}
-                    onChange={handleFileSelect}
-                    className={`opacity-0 w-full h-full ${!isAllowed ? 'cursor-not-allowed' : 'cursor-pointer'} absolute top-0 left-0 z-10`}
+                    accept=".ppt,.pptx,.pptm,.odp"
+                    disabled={!isAllowed || isProcessing}
+                    onChange={(event) => handleFileSelect(event)}
+                    className={`opacity-0 w-full h-full ${!isAllowed || isProcessing ? 'cursor-not-allowed' : 'cursor-pointer'} absolute top-0 left-0 z-10`}
                   />
                   <div className='absolute inset-0 flex flex-col items-center justify-center'>
                     <div className='w-[42px] h-[42px] flex justify-center items-center rounded-full bg-primary/10' >
@@ -110,7 +143,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                       </div>
                     </div>
                     <p className='pt-3 text-xs font-normal text-[#808080] tracking-[-0.12px] text-center'>
-                      <span className='text-[#808080] underline underline-offset-4'>Click to Upload</span> or drag &amp; drop.
+                      <span className='text-[#808080] underline underline-offset-4'>Click to upload</span> or drag &amp; drop.
                     </p>
                   </div>
                 </> : <div className="flex gap-2 items-center justify-center h-full w-fit mx-auto">
@@ -186,19 +219,25 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                   ) : (
                     <div className="flex items-center justify-end gap-2.5">
 
-                      <button className="px-4 py-2.5 text-xs font-semibold bg-primary text-primary-foreground rounded-md font-display tracking-[-0.12px] flex gap-1"
+                      <button
+                        type="button"
+                        className={`px-4 py-2.5 text-xs font-semibold rounded-md font-display tracking-[-0.12px] flex gap-1 ${selectedFile
+                          ? "bg-primary text-primary-foreground"
+                          : "border border-border bg-card text-muted-foreground"}`}
                         style={{
                           cursor: !isAllowed ? 'not-allowed' : 'pointer',
                         }}
-                        onClick={handleCheckFonts}
+                        onClick={selectedFile ? handleCheckFonts : handleSelectFileClick}
                         disabled={isProcessing || !isAllowed}
                       >
                         {isProcessingPptx
                           ? "Checking Fonts..."
                           : !selectedFile
-                            ? "Select a PPTX file"
+                            ? "Select a PowerPoint file"
                             : "Check Fonts"}
-                        <ChevronRight className="w-3.5 h-3.5 text-foreground" />
+                        <ChevronRight
+                          className={`w-3.5 h-3.5 ${selectedFile ? "text-primary-foreground" : "text-muted-foreground"}`}
+                        />
                       </button>
                     </div>
                   )}
@@ -215,13 +254,13 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
               <circle cx="8.5" cy="8.17041" r="4.5" fill="currentColor" className="text-primary/10" />
             </svg>
-            <p className="md:text-sm text-[10px] font-normal text-[#3A3A3A] ">PPTX. Only</p>
+            <p className="md:text-sm text-[10px] font-normal text-[#3A3A3A] ">PowerPoint files</p>
           </li>
           <li className="flex items-center gap-1">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
               <circle cx="8.5" cy="8.17041" r="4.5" fill="currentColor" className="text-primary/10" />
             </svg>
-            <p className="md:text-sm text-[10px] font-normal text-[#3A3A3A] ">Max 100MB</p>
+            <p className="md:text-sm text-[10px] font-normal text-[#3A3A3A] ">Max 250MB</p>
           </li>
           <li className="flex items-center gap-1">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -237,7 +276,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
             <path d="M10 6V10M10 14H10.0088" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
           <p className="text-sm md:text-base font-medium text-[var(--primary)] tracking-[-0.13px]">
-            <span className="font-bold text-[var(--primary)]">Note:</span> Template generation relies on <span className="font-semibold">vision-capable models</span> and is currently supported only by providers: <span className="font-medium text-[var(--primary)]">Google</span>, <span className="font-medium text-[var(--primary)]">OpenAI</span>, and <span className="font-medium text-[var(--primary)]">Anthropic</span>.
+            <span className="font-bold text-[var(--primary)]">Note:</span> Template generation relies on <span className="font-semibold">vision-capable models</span> and is currently supported only by providers: <span className="font-medium text-[var(--primary)]">Google</span>, <span className="font-medium text-[var(--primary)]">OpenAI</span>, <span className="font-medium text-[var(--primary)]">Codex</span>, and <span className="font-medium text-[var(--primary)]">Anthropic</span>.
             For optimal results, use state-of-the-art models from these providers, as performance may degrade with smaller models.
           </p>
         </div>

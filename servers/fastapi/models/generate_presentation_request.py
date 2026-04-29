@@ -14,6 +14,13 @@ class GeneratePresentationRequest(BaseModel):
         default=None, description="The instruction for generating the presentation"
     )
     tone: Tone = Field(default=Tone.DEFAULT, description="The tone to use for the text")
+    narration_tone: Optional[str] = Field(
+        default=None,
+        description=(
+            "Narration tone preset for speaker notes "
+            "(travel_companion, documentary, hype_reel, friendly_tutorial)"
+        ),
+    )
     verbosity: Verbosity = Field(
         default=Verbosity.STANDARD, description="How verbose the presentation should be"
     )

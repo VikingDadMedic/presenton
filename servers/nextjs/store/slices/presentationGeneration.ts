@@ -55,6 +55,10 @@ export interface PresentationData {
   title: string;
   slides: Slide[];
   theme: Theme | null;
+  narration_voice_id?: string | null;
+  narration_tone?: string | null;
+  narration_model_id?: string | null;
+  narration_pronunciation_dictionary_id?: string | null;
 }
 
 export interface SkeletonSlide {
@@ -327,6 +331,63 @@ const presentationGenerationSlice = createSlice({
         state.presentationData['theme'] = action.payload;
       }
     },
+    updateNarrationDefaults: (
+      state,
+      action: PayloadAction<{
+        narration_voice_id?: string | null;
+        narration_tone?: string | null;
+        narration_model_id?: string | null;
+        narration_pronunciation_dictionary_id?: string | null;
+      }>
+    ) => {
+      if (!state.presentationData) return;
+      if (Object.prototype.hasOwnProperty.call(action.payload, "narration_voice_id")) {
+        state.presentationData.narration_voice_id = action.payload.narration_voice_id ?? null;
+      }
+      if (Object.prototype.hasOwnProperty.call(action.payload, "narration_tone")) {
+        state.presentationData.narration_tone = action.payload.narration_tone ?? null;
+      }
+      if (Object.prototype.hasOwnProperty.call(action.payload, "narration_model_id")) {
+        state.presentationData.narration_model_id = action.payload.narration_model_id ?? null;
+      }
+      if (Object.prototype.hasOwnProperty.call(action.payload, "narration_pronunciation_dictionary_id")) {
+        state.presentationData.narration_pronunciation_dictionary_id =
+          action.payload.narration_pronunciation_dictionary_id ?? null;
+      }
+    },
+    updateSlideNarration: (
+      state,
+      action: PayloadAction<{
+        slideIndex: number;
+        narration_voice_id?: string | null;
+        narration_tone?: string | null;
+        narration_model_id?: string | null;
+        narration_audio_url?: string | null;
+        narration_text_hash?: string | null;
+        narration_generated_at?: string | null;
+      }>
+    ) => {
+      const slide = state.presentationData?.slides?.[action.payload.slideIndex];
+      if (!slide) return;
+      if (Object.prototype.hasOwnProperty.call(action.payload, "narration_voice_id")) {
+        slide.narration_voice_id = action.payload.narration_voice_id ?? null;
+      }
+      if (Object.prototype.hasOwnProperty.call(action.payload, "narration_tone")) {
+        slide.narration_tone = action.payload.narration_tone ?? null;
+      }
+      if (Object.prototype.hasOwnProperty.call(action.payload, "narration_model_id")) {
+        slide.narration_model_id = action.payload.narration_model_id ?? null;
+      }
+      if (Object.prototype.hasOwnProperty.call(action.payload, "narration_audio_url")) {
+        slide.narration_audio_url = action.payload.narration_audio_url ?? null;
+      }
+      if (Object.prototype.hasOwnProperty.call(action.payload, "narration_text_hash")) {
+        slide.narration_text_hash = action.payload.narration_text_hash ?? null;
+      }
+      if (Object.prototype.hasOwnProperty.call(action.payload, "narration_generated_at")) {
+        slide.narration_generated_at = action.payload.narration_generated_at ?? null;
+      }
+    },
   },
 
 });
@@ -357,6 +418,8 @@ export const {
   updateSlideIcon,
   addNewSlide,
   updateTheme,
+  updateNarrationDefaults,
+  updateSlideNarration,
 } = presentationGenerationSlice.actions;
 
 export default presentationGenerationSlice.reducer;

@@ -9,7 +9,7 @@ export const TemplateStudioHeader: React.FC = () => {
                 Template Studio
             </h1>
             <p className="text-[#101323CC] text-base md:text-xl font-display font-normal max-w-[600px] mx-auto">
-                Upload your PPTX file to extract slides and convert them to a template which you can use to generate AI presentations.
+                Upload your PowerPoint file to extract slides and convert them to a template which you can use to generate AI presentations.
             </p>
         </div>
     );

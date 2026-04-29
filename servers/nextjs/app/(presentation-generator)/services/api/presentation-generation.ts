@@ -137,6 +137,149 @@ export class PresentationGenerationApi {
     }
   }
 
+  static async getNarrationReadiness(signal?: AbortSignal) {
+    const response = await fetch(
+      getApiUrl(`/api/v1/ppt/narration/readiness`),
+      {
+        method: "GET",
+        headers: getHeader(),
+        cache: "no-cache",
+        signal,
+      }
+    );
+    return ApiResponseHandler.handleResponse(response, "Failed to load narration readiness");
+  }
+
+  static async getNarrationVoices(search?: string) {
+    const query = search ? `?search=${encodeURIComponent(search)}` : "";
+    const response = await fetch(
+      getApiUrl(`/api/v1/ppt/narration/voices${query}`),
+      {
+        method: "GET",
+        headers: getHeader(),
+        cache: "no-cache",
+      }
+    );
+    return ApiResponseHandler.handleResponse(response, "Failed to load narration voices");
+  }
+
+  static async generateSlideNarration(
+    slideId: string,
+    payload?: {
+      voice_id?: string | null;
+      tone?: string | null;
+      model_id?: string | null;
+      force_regenerate?: boolean;
+    }
+  ) {
+    const response = await fetch(
+      getApiUrl(`/api/v1/ppt/narration/slide/${slideId}`),
+      {
+        method: "POST",
+        headers: getHeader(),
+        body: JSON.stringify(payload || {}),
+        cache: "no-cache",
+      }
+    );
+    const data = await ApiResponseHandler.handleResponse(response, "Failed to generate narration");
+    const characterCount = response.headers.get("x-character-count");
+    return {
+      ...data,
+      character_count: characterCount ? Number(characterCount) : data.character_count,
+    };
+  }
+
+  static async bulkGenerateNarration(
+    presentationId: string,
+    payload?: {
+      voice_id?: string | null;
+      tone?: string | null;
+      model_id?: string | null;
+      force_regenerate?: boolean;
+    }
+  ) {
+    const response = await fetch(
+      getApiUrl(`/api/v1/ppt/narration/presentation/${presentationId}/bulk`),
+      {
+        method: "POST",
+        headers: getHeader(),
+        body: JSON.stringify(payload || {}),
+        cache: "no-cache",
+      }
+    );
+    const data = await ApiResponseHandler.handleResponse(response, "Failed to generate narration");
+    const characterCount = response.headers.get("x-character-count");
+    return {
+      ...data,
+      total_character_count: characterCount ? Number(characterCount) : data.total_character_count,
+    };
+  }
+
+  static async getNarrationEstimate(presentationId: string) {
+    const response = await fetch(
+      getApiUrl(`/api/v1/ppt/narration/presentation/${presentationId}/estimate`),
+      {
+        method: "GET",
+        headers: getHeader(),
+        cache: "no-cache",
+      }
+    );
+    return ApiResponseHandler.handleResponse(
+      response,
+      "Failed to estimate narration characters"
+    );
+  }
+
+  static async getPresentationNarrationStatus(presentationId: string) {
+    const response = await fetch(
+      getApiUrl(`/api/v1/ppt/narration/presentation/${presentationId}`),
+      {
+        method: "GET",
+        headers: getHeader(),
+        cache: "no-cache",
+      }
+    );
+    return ApiResponseHandler.handleResponse(response, "Failed to fetch narration status");
+  }
+
+  static async deleteSlideNarration(slideId: string) {
+    const response = await fetch(
+      getApiUrl(`/api/v1/ppt/narration/slide/${slideId}`),
+      {
+        method: "DELETE",
+        headers: getHeader(),
+        cache: "no-cache",
+      }
+    );
+    return ApiResponseHandler.handleResponse(response, "Failed to delete narration audio");
+  }
+
+  static async uploadPronunciationDictionary(
+    rules: Array<{ term: string; ipa: string }>,
+    name?: string
+  ) {
+    const response = await fetch(
+      getApiUrl(`/api/v1/ppt/narration/pronunciation-dictionary`),
+      {
+        method: "POST",
+        headers: getHeader(),
+        body: JSON.stringify({
+          name,
+          rules: rules.map((rule) => ({
+            grapheme: rule.term,
+            phoneme: rule.ipa,
+            alphabet: "ipa",
+          })),
+        }),
+        cache: "no-cache",
+      }
+    );
+    return ApiResponseHandler.handleResponse(
+      response,
+      "Failed to upload pronunciation dictionary"
+    );
+  }
+
   static async editSlideField(
     slideId: string,
     fieldPath: string,

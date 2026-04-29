@@ -17,6 +17,10 @@ class PresentationWithSlides(BaseModel):
     updated_at: datetime
     tone: Optional[str] = None
     verbosity: Optional[str] = None
+    narration_voice_id: Optional[str] = None
+    narration_tone: Optional[str] = None
+    narration_model_id: Optional[str] = None
+    narration_pronunciation_dictionary_id: Optional[str] = None
     slides: List[SlideModel]
     theme: Optional[dict] = None
     fonts: Optional[Any] = None

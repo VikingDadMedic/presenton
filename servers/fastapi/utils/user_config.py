@@ -47,6 +47,9 @@ from utils.get_env import (
     get_codex_model_env,
     get_open_webui_image_url_env,
     get_open_webui_image_api_key_env,
+    get_elevenlabs_api_key_env,
+    get_elevenlabs_default_voice_id_env,
+    get_elevenlabs_default_model_env,
 )
 from utils.parsers import parse_bool_or_none
 from utils.set_env import (
@@ -94,6 +97,20 @@ from utils.set_env import (
     set_open_webui_image_url_env,
     set_open_webui_image_api_key_env,
 )
+
+
+def _prefer_config_value(config_value, env_value):
+    return env_value if config_value is None else config_value
+
+
+def _set_or_clear_env_var(key: str, value) -> None:
+    if value is None:
+        os.environ.pop(key, None)
+        return
+    if isinstance(value, str):
+        os.environ[key] = value.strip()
+        return
+    os.environ[key] = str(value)
 
 
 def get_user_config():
@@ -165,6 +182,27 @@ def get_user_config():
         ),
         OPEN_WEBUI_IMAGE_URL=existing_config.OPEN_WEBUI_IMAGE_URL or get_open_webui_image_url_env(),
         OPEN_WEBUI_IMAGE_API_KEY=existing_config.OPEN_WEBUI_IMAGE_API_KEY or get_open_webui_image_api_key_env(),
+        ELEVENLABS_API_KEY=_prefer_config_value(
+            existing_config.ELEVENLABS_API_KEY, get_elevenlabs_api_key_env()
+        ),
+        ELEVENLABS_DEFAULT_VOICE_ID=_prefer_config_value(
+            existing_config.ELEVENLABS_DEFAULT_VOICE_ID,
+            get_elevenlabs_default_voice_id_env(),
+        ),
+        ELEVENLABS_DEFAULT_MODEL=_prefer_config_value(
+            existing_config.ELEVENLABS_DEFAULT_MODEL, get_elevenlabs_default_model_env()
+        ),
+        ELEVENLABS_DEFAULT_TONE=_prefer_config_value(
+            existing_config.ELEVENLABS_DEFAULT_TONE, os.getenv("ELEVENLABS_DEFAULT_TONE")
+        ),
+        ELEVENLABS_PRONUNCIATION_HINTS=_prefer_config_value(
+            existing_config.ELEVENLABS_PRONUNCIATION_HINTS,
+            os.getenv("ELEVENLABS_PRONUNCIATION_HINTS"),
+        ),
+        ELEVENLABS_PRONUNCIATION_DICTIONARY_ID=_prefer_config_value(
+            existing_config.ELEVENLABS_PRONUNCIATION_DICTIONARY_ID,
+            os.getenv("ELEVENLABS_PRONUNCIATION_DICTIONARY_ID"),
+        ),
         CONTENT_MODEL_PROVIDER=existing_config.CONTENT_MODEL_PROVIDER or get_content_model_provider_env(),
         CONTENT_MODEL_NAME=existing_config.CONTENT_MODEL_NAME or get_content_model_name_env(),
         CONTENT_MODEL_API_KEY=existing_config.CONTENT_MODEL_API_KEY or get_content_model_api_key_env(),
@@ -246,6 +284,21 @@ def update_env_with_user_config():
         set_open_webui_image_url_env(user_config.OPEN_WEBUI_IMAGE_URL)
     if user_config.OPEN_WEBUI_IMAGE_API_KEY:
         set_open_webui_image_api_key_env(user_config.OPEN_WEBUI_IMAGE_API_KEY)
+    _set_or_clear_env_var("ELEVENLABS_API_KEY", user_config.ELEVENLABS_API_KEY)
+    _set_or_clear_env_var(
+        "ELEVENLABS_DEFAULT_VOICE_ID", user_config.ELEVENLABS_DEFAULT_VOICE_ID
+    )
+    _set_or_clear_env_var(
+        "ELEVENLABS_DEFAULT_MODEL", user_config.ELEVENLABS_DEFAULT_MODEL
+    )
+    _set_or_clear_env_var("ELEVENLABS_DEFAULT_TONE", user_config.ELEVENLABS_DEFAULT_TONE)
+    _set_or_clear_env_var(
+        "ELEVENLABS_PRONUNCIATION_HINTS", user_config.ELEVENLABS_PRONUNCIATION_HINTS
+    )
+    _set_or_clear_env_var(
+        "ELEVENLABS_PRONUNCIATION_DICTIONARY_ID",
+        user_config.ELEVENLABS_PRONUNCIATION_DICTIONARY_ID,
+    )
     if user_config.CONTENT_MODEL_PROVIDER:
         set_content_model_provider_env(user_config.CONTENT_MODEL_PROVIDER)
     if user_config.CONTENT_MODEL_NAME:

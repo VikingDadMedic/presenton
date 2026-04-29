@@ -62,6 +62,14 @@ class UserConfig(BaseModel):
     CODEX_EMAIL: Optional[str] = None
     CODEX_IS_PRO: Optional[bool] = None
 
+    # ElevenLabs Narration
+    ELEVENLABS_API_KEY: Optional[str] = None
+    ELEVENLABS_DEFAULT_VOICE_ID: Optional[str] = None
+    ELEVENLABS_DEFAULT_MODEL: Optional[str] = None
+    ELEVENLABS_DEFAULT_TONE: Optional[str] = None
+    ELEVENLABS_PRONUNCIATION_HINTS: Optional[str] = None
+    ELEVENLABS_PRONUNCIATION_DICTIONARY_ID: Optional[str] = None
+
     # Per-call model routing (Mercury / alternative fast models)
     CONTENT_MODEL_PROVIDER: Optional[str] = None
     CONTENT_MODEL_NAME: Optional[str] = None

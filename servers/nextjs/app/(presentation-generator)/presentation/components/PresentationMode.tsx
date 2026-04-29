@@ -10,12 +10,24 @@ import {
   StickyNote,
   EyeOff,
   Keyboard,
+  Volume2,
+  VolumeX,
+  Wand2,
+  Play,
+  Pause,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slide } from "../../types/slide";
 import SlideScale from "../../components/PresentationRender";
 import type { Theme } from "../../services/api/types";
 import { applyPresentationThemeToElement } from "../utils/applyPresentationThemeDom";
+import AudioTagPill from "@/components/narration/AudioTagPill";
+import { PresentationGenerationApi } from "../../services/api/presentation-generation";
+import { resolveBackendAssetUrl } from "@/utils/api";
+import { toast } from "sonner";
+import { useDispatch } from "react-redux";
+import { updateSlideNarration } from "@/store/slices/presentationGeneration";
 
 interface PresentationModeProps {
   slides: Slide[];
@@ -38,10 +50,17 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
   onExit,
   onSlideChange,
 }) => {
+  const dispatch = useDispatch();
   const rootRef = useRef<HTMLDivElement>(null);
   const hideChromeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [showSpeakerNotes, setShowSpeakerNotes] = useState(true);
   const [chromeVisible, setChromeVisible] = useState(true);
+  const [autoNarrate, setAutoNarrate] = useState(false);
+  const [autoAdvanceOnAudioEnd, setAutoAdvanceOnAudioEnd] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isNarrationPlaying, setIsNarrationPlaying] = useState(false);
+  const [isGeneratingAll, setIsGeneratingAll] = useState(false);
 
   const currentSpeakerNote = useMemo(
     () => slides[currentSlide]?.speaker_note?.trim() || "",
@@ -93,6 +112,125 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
   const goPrev = useCallback(() => {
     if (currentSlide > 0) onSlideChange(currentSlide - 1);
   }, [currentSlide, onSlideChange]);
+
+  const ensureAudioRef = useCallback(() => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      audioRef.current.onplay = () => setIsNarrationPlaying(true);
+      audioRef.current.onpause = () => setIsNarrationPlaying(false);
+      audioRef.current.onended = () => {
+        setIsNarrationPlaying(false);
+        if (autoAdvanceOnAudioEnd) {
+          goNext();
+        }
+      };
+    }
+    audioRef.current.muted = isMuted;
+    return audioRef.current;
+  }, [autoAdvanceOnAudioEnd, isMuted, goNext]);
+
+  const playNarrationForSlide = useCallback(
+    async (slideIndex: number, generateIfMissing: boolean) => {
+      const slide = slides[slideIndex];
+      if (!slide) return;
+      let url = resolveBackendAssetUrl(slide.narration_audio_url || "");
+
+      if (!url && generateIfMissing) {
+        try {
+          const generated = await PresentationGenerationApi.generateSlideNarration(
+            String(slide.id),
+            {
+              voice_id: slide.narration_voice_id || undefined,
+              tone: slide.narration_tone || undefined,
+              model_id: slide.narration_model_id || undefined,
+            }
+          );
+          url = resolveBackendAssetUrl(generated.audio_url || "");
+          dispatch(
+            updateSlideNarration({
+              slideIndex,
+              narration_voice_id: generated.voice_id ?? slide.narration_voice_id ?? null,
+              narration_tone: generated.tone ?? slide.narration_tone ?? null,
+              narration_model_id:
+                generated.model_id ?? slide.narration_model_id ?? null,
+              narration_audio_url: generated.audio_url ?? null,
+              narration_text_hash: generated.text_hash ?? null,
+              narration_generated_at: generated.generated_at ?? null,
+            })
+          );
+        } catch (error: any) {
+          toast.error("Unable to generate narration", {
+            description: error?.message || "Check ElevenLabs configuration.",
+          });
+          return;
+        }
+      }
+
+      if (!url) return;
+      try {
+        const audio = ensureAudioRef();
+        audio.src = url;
+        await audio.play();
+      } catch {
+        toast.error("Unable to play narration audio.");
+      }
+    },
+    [dispatch, ensureAudioRef, slides]
+  );
+
+  const prefetchNextSlideAudio = useCallback(() => {
+    const nextSlide = slides[currentSlide + 1];
+    if (!nextSlide?.narration_audio_url) return;
+    const nextUrl = resolveBackendAssetUrl(nextSlide.narration_audio_url);
+    if (!nextUrl) return;
+    const preloadAudio = new Audio();
+    preloadAudio.preload = "metadata";
+    preloadAudio.src = nextUrl;
+  }, [slides, currentSlide]);
+
+  const handleGenerateAllNarration = useCallback(async () => {
+    const presentationId = slides[0]?.presentation;
+    if (!presentationId) {
+      toast.error("Missing presentation id for narration generation.");
+      return;
+    }
+    setIsGeneratingAll(true);
+    try {
+      const result = await PresentationGenerationApi.bulkGenerateNarration(
+        String(presentationId),
+        {}
+      );
+      const narrationEntries: any[] = Array.isArray((result as any)?.slides)
+        ? ((result as any).slides as any[])
+        : [];
+      const bySlideId = new Map(
+        narrationEntries.map((entry: any) => [String(entry.slide_id), entry])
+      );
+      slides.forEach((slide, idx) => {
+        const generated = bySlideId.get(String(slide.id));
+        if (!generated) return;
+        dispatch(
+          updateSlideNarration({
+            slideIndex: idx,
+            narration_voice_id: generated.voice_id ?? slide.narration_voice_id ?? null,
+            narration_tone: generated.tone ?? slide.narration_tone ?? null,
+            narration_model_id:
+              generated.model_id ?? slide.narration_model_id ?? null,
+            narration_audio_url: generated.audio_url ?? null,
+            narration_text_hash: generated.text_hash ?? null,
+            narration_generated_at: generated.generated_at ?? null,
+          })
+        );
+      });
+      toast.success("Narration generated for all slides.");
+    } catch (error: any) {
+      toast.error("Bulk narration generation failed", {
+        description: error?.message || "Please try again.",
+      });
+    } finally {
+      setIsGeneratingAll(false);
+    }
+  }, [dispatch, slides]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -160,6 +298,12 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
             setShowSpeakerNotes((prev) => !prev);
           }
           break;
+        case "m":
+        case "M":
+          if (!event.ctrlKey && !event.metaKey && !event.altKey) {
+            setIsMuted((prev) => !prev);
+          }
+          break;
         default:
           break;
       }
@@ -171,6 +315,25 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+  useEffect(() => {
+    if (autoNarrate) {
+      void playNarrationForSlide(currentSlide, true);
+      prefetchNextSlideAudio();
+      return;
+    }
+    const audio = audioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  }, [autoNarrate, currentSlide, playNarrationForSlide, prefetchNextSlideAudio]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
 
   const handleSlideAreaClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest(".presentation-controls")) return;
@@ -313,13 +476,77 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
           <ChevronRight className="h-6 w-6" />
         </Button>
         <div className="mx-1 hidden h-6 w-px bg-gray-200 sm:block" />
+        <Button
+          type="button"
+          variant={autoNarrate ? "default" : "outline"}
+          size="sm"
+          className="h-8 rounded-full px-3 text-xs"
+          onClick={(e) => {
+            e.stopPropagation();
+            setAutoNarrate((prev) => !prev);
+          }}
+        >
+          <Volume2 className="mr-1 h-3.5 w-3.5" />
+          Auto-narrate
+        </Button>
+        <Button
+          type="button"
+          variant={autoAdvanceOnAudioEnd ? "default" : "outline"}
+          size="sm"
+          className="h-8 rounded-full px-3 text-xs"
+          onClick={(e) => {
+            e.stopPropagation();
+            setAutoAdvanceOnAudioEnd((prev) => !prev);
+          }}
+          disabled={!autoNarrate}
+        >
+          Auto-advance
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 rounded-full px-3 text-xs"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMuted((prev) => !prev);
+          }}
+        >
+          {isMuted ? (
+            <VolumeX className="mr-1 h-3.5 w-3.5" />
+          ) : (
+            <Volume2 className="mr-1 h-3.5 w-3.5" />
+          )}
+          {isMuted ? "Muted" : "Mute"}
+        </Button>
+        {slides.some((slide) => !slide.narration_audio_url) ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 rounded-full px-3 text-xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              void handleGenerateAllNarration();
+            }}
+            disabled={isGeneratingAll}
+          >
+            {isGeneratingAll ? (
+              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Wand2 className="mr-1 h-3.5 w-3.5" />
+            )}
+            Generate all
+          </Button>
+        ) : null}
+        <div className="mx-1 hidden h-6 w-px bg-gray-200 sm:block" />
         <div
           className="hidden max-w-[200px] items-center gap-1.5 text-[11px] leading-tight text-gray-500 sm:flex"
           title="Keyboard shortcuts"
         >
           <Keyboard className="h-3.5 w-3.5 shrink-0" />
           <span>
-            ← → space · Home/End · F fullscreen · N notes · Esc exit
+            ← → space · Home/End · F fullscreen · N notes · M mute · Esc exit
           </span>
         </div>
       </div>
@@ -336,22 +563,44 @@ const PresentationMode: React.FC<PresentationModeProps> = ({
                   <StickyNote className="h-4 w-4 text-amber-600" />
                   Speaker notes
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowSpeakerNotes(false);
-                  }}
-                  className="h-8 px-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                >
-                  <EyeOff className="mr-1 h-4 w-4" />
-                  Hide
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isNarrationPlaying && audioRef.current) {
+                        audioRef.current.pause();
+                        return;
+                      }
+                      void playNarrationForSlide(currentSlide, true);
+                    }}
+                    className="h-8 px-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    {isNarrationPlaying ? (
+                      <Pause className="h-4 w-4" />
+                    ) : (
+                      <Play className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowSpeakerNotes(false);
+                    }}
+                    className="h-8 px-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    <EyeOff className="mr-1 h-4 w-4" />
+                    Hide
+                  </Button>
+                </div>
               </div>
-              <div className="max-h-[min(28vh,220px)] overflow-auto whitespace-pre-wrap px-3 py-2.5 text-sm leading-relaxed text-gray-700">
-                {currentSpeakerNote}
+              <div className="max-h-[min(28vh,220px)] overflow-auto px-3 py-2.5 text-sm leading-relaxed text-gray-700">
+                <AudioTagPill text={currentSpeakerNote} />
               </div>
             </div>
           ) : (

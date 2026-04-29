@@ -1,9 +1,11 @@
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 
 
 class SlideOutlineModel(BaseModel):
     content: str
+    title: Optional[str] = None
+    synopsis: Optional[str] = None
 
 
 class PresentationOutlineModel(BaseModel):

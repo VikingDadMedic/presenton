@@ -13,7 +13,7 @@ from typing import Dict, List, Optional
 from fastapi import File, HTTPException, UploadFile
 from pydantic import BaseModel
 
-from constants.documents import PPTX_MIME_TYPES
+from constants.documents import POWERPOINT_MIME_TYPES
 from services.documents_loader import DocumentsLoader
 from templates.font_utils import (
     collect_normalized_fonts_from_xmls,
@@ -36,6 +36,7 @@ SUPPORTED_FONT_EXTENSIONS = {
     ".woff2": "font/woff2",
     ".eot": "application/vnd.ms-fontobject",
 }
+SUPPORTED_POWERPOINT_EXTENSIONS = {".ppt", ".pptx", ".pptm", ".odp"}
 
 
 class FontInfo(BaseModel):
@@ -53,6 +54,8 @@ class FontsUploadAndSlidesPreviewResponse(BaseModel):
     pptx_url: str
     modified_pptx_url: str
     fonts: dict
+    total_original_slides: int
+    processed_slide_count: int
 
 
 @dataclass
@@ -147,18 +150,92 @@ def _extract_font_name_from_file(file_path: str) -> str:
     return base_name
 
 
-def _validate_pptx_file(pptx_file: UploadFile) -> None:
+def _validate_powerpoint_file(pptx_file: UploadFile) -> None:
     filename = getattr(pptx_file, "filename", "") or ""
-    if not filename.lower().endswith(".pptx"):
+    extension = os.path.splitext(filename)[1].lower()
+    if extension not in SUPPORTED_POWERPOINT_EXTENSIONS:
         raise HTTPException(
             status_code=400,
-            detail="Invalid file type. Expected PPTX file",
+            detail="Invalid file type. Expected PowerPoint file",
         )
-    if pptx_file.content_type and pptx_file.content_type not in PPTX_MIME_TYPES:
+    if pptx_file.content_type and pptx_file.content_type not in POWERPOINT_MIME_TYPES:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid file type. Expected PPTX file, got {pptx_file.content_type}",
+            detail=f"Invalid file type. Expected PowerPoint file, got {pptx_file.content_type}",
         )
+
+
+def convert_to_pptx_if_needed(input_path: str, temp_dir: str) -> str:
+    extension = os.path.splitext(input_path)[1].lower()
+    if extension == ".pptx":
+        return input_path
+
+    try:
+        subprocess.run(
+            [
+                _get_soffice_binary(),
+                "--headless",
+                "--convert-to",
+                "pptx",
+                "--outdir",
+                temp_dir,
+                input_path,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=500,
+            **_windows_hidden_subprocess_kwargs(),
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="LibreOffice PPTX conversion timed out after 500 seconds",
+        ) from exc
+    except FileNotFoundError as exc:
+        binary_path = _get_soffice_binary()
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "LibreOffice is required to convert legacy PowerPoint files (.ppt/.pptm/.odp). "
+                f"Could not find binary '{binary_path}'. Install LibreOffice or set SOFFICE_PATH."
+            ),
+        ) from exc
+    except OSError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"LibreOffice PPTX conversion failed to start: {exc}",
+        ) from exc
+    except subprocess.CalledProcessError as exc:
+        error_message = exc.stderr if exc.stderr else str(exc)
+        raise HTTPException(
+            status_code=500,
+            detail=f"LibreOffice PPTX conversion failed: {error_message}",
+        ) from exc
+
+    expected_path = os.path.join(
+        temp_dir, f"{Path(input_path).stem}.pptx"
+    )
+    if os.path.isfile(expected_path):
+        return expected_path
+
+    converted_candidates = sorted(
+        [
+            os.path.join(temp_dir, file_name)
+            for file_name in os.listdir(temp_dir)
+            if file_name.lower().endswith(".pptx")
+        ],
+        key=os.path.getmtime,
+        reverse=True,
+    )
+    for candidate in converted_candidates:
+        if os.path.abspath(candidate) != os.path.abspath(input_path):
+            return candidate
+
+    raise HTTPException(
+        status_code=500,
+        detail="LibreOffice PPTX conversion did not produce a .pptx file",
+    )
 
 
 def _ensure_valid_font_file(font_file: UploadFile) -> None:
@@ -394,14 +471,19 @@ async def get_available_and_unavailable_fonts_for_pptx(
 
 
 async def check_fonts_in_pptx_handler(
-    pptx_file: UploadFile = File(..., description="PPTX file to analyze fonts from")
+    pptx_file: UploadFile = File(..., description="PowerPoint file to analyze fonts from")
 ) -> FontCheckResponse:
-    _validate_pptx_file(pptx_file)
+    _validate_powerpoint_file(pptx_file)
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        pptx_path = os.path.join(temp_dir, "presentation.pptx")
+        input_extension = (
+            os.path.splitext((pptx_file.filename or "presentation.pptx"))[1].lower()
+            or ".pptx"
+        )
+        uploaded_path = os.path.join(temp_dir, f"presentation{input_extension}")
         pptx_content = await pptx_file.read()
-        await asyncio.to_thread(_write_bytes_to_path, pptx_path, pptx_content)
+        await asyncio.to_thread(_write_bytes_to_path, uploaded_path, pptx_content)
+        pptx_path = await asyncio.to_thread(convert_to_pptx_if_needed, uploaded_path, temp_dir)
 
         available_fonts_data, unavailable_fonts_data = (
             await get_available_and_unavailable_fonts_for_pptx(pptx_path, temp_dir)
@@ -436,12 +518,17 @@ async def upload_fonts_and_slides_preview_handler(
             detail="Number of font files must match number of original font names",
         )
 
-    _validate_pptx_file(pptx_file)
+    _validate_powerpoint_file(pptx_file)
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        pptx_path = os.path.join(temp_dir, "presentation.pptx")
+        input_extension = (
+            os.path.splitext((pptx_file.filename or "presentation.pptx"))[1].lower()
+            or ".pptx"
+        )
+        uploaded_path = os.path.join(temp_dir, f"presentation{input_extension}")
         pptx_content = await pptx_file.read()
-        await asyncio.to_thread(_write_bytes_to_path, pptx_path, pptx_content)
+        await asyncio.to_thread(_write_bytes_to_path, uploaded_path, pptx_content)
+        pptx_path = await asyncio.to_thread(convert_to_pptx_if_needed, uploaded_path, temp_dir)
 
         stored_fonts = await _persist_custom_fonts(
             font_files=font_files,
@@ -456,8 +543,10 @@ async def upload_fonts_and_slides_preview_handler(
             pdf_path, temp_dir
         )
 
+        total_original_slides = len(screenshot_paths)
         if max_slides and len(screenshot_paths) > max_slides:
             screenshot_paths = screenshot_paths[:max_slides]
+        processed_slide_count = len(screenshot_paths)
 
         session_id = uuid.uuid4()
         slide_image_urls = await store_slide_images(screenshot_paths, session_id)
@@ -474,4 +563,6 @@ async def upload_fonts_and_slides_preview_handler(
             pptx_url=pptx_url,
             modified_pptx_url=pptx_url,
             fonts=fonts,
+            total_original_slides=total_original_slides,
+            processed_slide_count=processed_slide_count,
         )

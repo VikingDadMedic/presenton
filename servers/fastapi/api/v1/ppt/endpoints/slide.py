@@ -1,8 +1,10 @@
 import copy
 import json
+import os
 from typing import Annotated, Optional
 from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 import uuid
 
 from models.sql.presentation import PresentationModel
@@ -20,6 +22,24 @@ from utils.process_slides import process_old_and_new_slides_and_fetch_assets
 
 
 SLIDE_ROUTER = APIRouter(prefix="/slide", tags=["Slide"])
+
+
+def _extract_slide_title(slide: SlideModel) -> str:
+    content = slide.content or {}
+    title = content.get("title") if isinstance(content, dict) else None
+    if isinstance(title, str) and title.strip():
+        return title.strip()
+    return f"Slide {slide.index + 1}"
+
+
+def _build_presentation_synopsis(presentation: PresentationModel) -> str:
+    if presentation.title and presentation.content:
+        return f"{presentation.title.strip()}: {presentation.content.strip()[:420]}"
+    if presentation.title:
+        return presentation.title.strip()
+    if presentation.content:
+        return presentation.content.strip()[:420]
+    return "Presentation narrative flow."
 
 
 @SLIDE_ROUTER.post("/edit")
@@ -48,6 +68,30 @@ async def edit_slide(
         memory_context,
     )
 
+    sibling_slides = list(
+        (
+            await sql_session.scalars(
+                select(SlideModel)
+                .where(SlideModel.presentation == presentation.id)
+                .order_by(SlideModel.index)
+            )
+        ).all()
+    )
+    current_pos = next(
+        (idx for idx, sibling in enumerate(sibling_slides) if sibling.id == slide.id),
+        None,
+    )
+    previous_slide_title = (
+        _extract_slide_title(sibling_slides[current_pos - 1])
+        if current_pos is not None and current_pos > 0
+        else None
+    )
+    next_slide_title = (
+        _extract_slide_title(sibling_slides[current_pos + 1])
+        if current_pos is not None and current_pos + 1 < len(sibling_slides)
+        else None
+    )
+
     edited_slide_content = await get_edited_slide_content(
         prompt,
         slide,
@@ -58,6 +102,10 @@ async def edit_slide(
         presentation.instructions,
         memory_context,
         template=slide.layout_group or "",
+        previous_slide_title=previous_slide_title,
+        next_slide_title=next_slide_title,
+        presentation_synopsis=_build_presentation_synopsis(presentation),
+        tone_preset=presentation.narration_tone or os.getenv("ELEVENLABS_DEFAULT_TONE"),
     )
 
     image_generation_service = ImageGenerationService(get_images_directory())

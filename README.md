@@ -19,7 +19,7 @@ TripStory generates polished destination showcases, itineraries, deal packages, 
 - **26 travel slide layouts** in 3 categories: emotional/sensory hooks, logistics/practical, and conversion
 - **6 narrative arcs** as ordered template sequences (itinerary, reveal, contrast, audience, micro, local)
 - **17 enrichers + 1 derived** pull real hotels, flights, activities, weather, reviews, maps, dining, events, deals, visa info, transportation, cuisine, language, and connectivity data from external APIs
-- **6 export formats**: PPTX, PDF, HTML slideshow, Video/MP4 (GSAP transitions), JSON, interactive embed
+- **6 export formats**: PPTX, PDF, HTML slideshow ZIP (with narration audio bundle when available), Video/MP4 (GSAP transitions), JSON, interactive embed
 - **Per-call model routing**: different LLM models for outline generation, layout assignment, and content filling
 - **Built-in MCP server** at `/mcp/` for AI agent integration (10 tools)
 - **Single-admin auth** with HTTP Basic on all `/api/v1/*` routes
@@ -92,6 +92,13 @@ Next.js dev server proxies `/api/v1/*` to `http://localhost:8000` via `next.conf
 
 See [`DEPLOYMENT.md`](DEPLOYMENT.md) for the full Azure deployment reference (ACR build, App Service config, env vars, troubleshooting).
 
+### Template Studio Upload Constraints
+
+- Accepted file types: `.ppt`, `.pptx`, `.pptm`, `.odp` (legacy formats are converted to `.pptx` server-side via LibreOffice)
+- Upload size cap: **250MB** (aligned across frontend validation, backend validators, and nginx)
+- Processing cap: first **25 slides** per deck; UI warns when truncation occurs
+- Readiness gate: Template generation requires `google`, `openai`, `codex`, or `anthropic` with valid credentials
+
 ---
 
 ## Authentication
@@ -155,6 +162,12 @@ See [`EXPORTS.md`](EXPORTS.md) for the full 6-format export reference, transitio
 | `CUSTOM_LLM_URL` / `CUSTOM_LLM_API_KEY` / `CUSTOM_MODEL` | OpenAI-compatible endpoint |
 | `CAN_CHANGE_KEYS` | If `false`, API keys are hidden and unmodifiable in the UI |
 | `WEB_GROUNDING` | If `true`, enables web search tool during outline generation |
+| `ELEVENLABS_API_KEY` | Enables narration generation endpoints and playback controls |
+| `ELEVENLABS_DEFAULT_VOICE_ID` / `ELEVENLABS_DEFAULT_MODEL` | Default narration voice/model for new decks |
+| `ELEVENLABS_DEFAULT_TONE` | Default narration tone preset (`travel_companion`, `documentary`, `hype_reel`, `friendly_tutorial`) |
+| `ELEVENLABS_PRONUNCIATION_DICTIONARY_ID` | Optional ElevenLabs pronunciation dictionary ID used during synthesis |
+| `ELEVENLABS_BULK_MAX_CHARACTERS` | Optional hard cap for bulk narration generation (sum of synthesizeable speaker-note chars) |
+| `ELEVENLABS_BULK_CONCURRENCY` | Optional bounded worker count for bulk narration generation (default `3`, max `12`) |
 
 ### Image Generation
 

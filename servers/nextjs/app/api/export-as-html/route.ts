@@ -2,6 +2,50 @@ import { NextResponse, NextRequest } from "next/server";
 import puppeteer, { Browser, Page } from "puppeteer";
 import fs from "fs";
 import path from "path";
+import JSZip from "jszip";
+
+interface SlideCapture {
+  html: string;
+  note: string;
+  audioUrl: string;
+  narrationGeneratedAt: string;
+  narrationTextHash: string;
+}
+
+interface AudioAsset {
+  slideIndex: number;
+  relativePath: string;
+  filePath: string;
+}
+
+function resolveAudioFilesystemPath(audioUrl: string): string | null {
+  const trimmed = (audioUrl || "").trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("/app_data/audio/")) {
+    const appDataRoot = process.env.APP_DATA_DIRECTORY || "/tmp/presenton";
+    const relative = trimmed.replace(/^\/app_data\/audio\//, "");
+    return path.join(appDataRoot, "audio", relative);
+  }
+  if (path.isAbsolute(trimmed)) {
+    return trimmed;
+  }
+  return null;
+}
+
+function htmlAttributeEscape(raw: string): string {
+  return raw
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function htmlTextEscape(raw: string): string {
+  return raw
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
 
 export async function POST(req: NextRequest) {
   const { id, title, autoPlayInterval } = await req.json();
@@ -58,7 +102,13 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const slides: { html: string; note: string }[] = [];
+      const slides: {
+        html: string;
+        note: string;
+        audioUrl: string;
+        narrationGeneratedAt: string;
+        narrationTextHash: string;
+      }[] = [];
       slideWrappers.forEach((wrapper) => {
         const slideEl = wrapper.querySelector(
           ".aspect-video, [class*='aspect-video']"
@@ -68,7 +118,20 @@ export async function POST(req: NextRequest) {
           : (wrapper as HTMLElement).innerHTML;
         const note =
           (wrapper as HTMLElement).getAttribute("data-speaker-note") || "";
-        slides.push({ html, note });
+        const audioUrl =
+          (wrapper as HTMLElement).getAttribute("data-narration-audio") || "";
+        const narrationGeneratedAt =
+          (wrapper as HTMLElement).getAttribute("data-narration-generated-at") ||
+          "";
+        const narrationTextHash =
+          (wrapper as HTMLElement).getAttribute("data-narration-text-hash") || "";
+        slides.push({
+          html,
+          note,
+          audioUrl,
+          narrationGeneratedAt,
+          narrationTextHash,
+        });
       });
 
       const stylesheets: string[] = [];
@@ -96,25 +159,44 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const audioAssets: AudioAsset[] = [];
+    const slideAudioPathByIndex: Record<number, string> = {};
+    (slideData.slides as SlideCapture[]).forEach((slide, index) => {
+      const candidatePath = resolveAudioFilesystemPath(slide.audioUrl);
+      if (!candidatePath || !fs.existsSync(candidatePath)) return;
+      const relativePath = `audio/slide_${index + 1}.mp3`;
+      audioAssets.push({
+        slideIndex: index,
+        relativePath,
+        filePath: candidatePath,
+      });
+      slideAudioPathByIndex[index] = relativePath;
+    });
+
     const themeStyle = Object.entries(slideData.themeVars)
       .map(([k, v]) => `${k}: ${v};`)
       .join("\n      ");
 
-    const slidesHtml = slideData.slides
+    const slidesHtml = (slideData.slides as SlideCapture[])
       .map(
         (s, i) =>
-          `    <div class="ts-slide" data-index="${i}"${s.note ? ` data-note="${s.note.replace(/"/g, "&quot;")}"` : ""}>\n      ${s.html}\n    </div>`
+          `    <div class="ts-slide" data-index="${i}"${s.note ? ` data-note="${htmlAttributeEscape(s.note)}"` : ""}${slideAudioPathByIndex[i] ? ` data-audio-src="${slideAudioPathByIndex[i]}"` : ""}>\n      ${s.html}\n    </div>`
       )
       .join("\n");
 
-    const safeTitle = title || "TripStory Presentation";
+    const narrationAudioElements = Object.entries(slideAudioPathByIndex)
+      .map(([idx, src]) => `  <audio data-slide-index="${idx}" src="${src}" preload="metadata"></audio>`)
+      .join("\n");
+
+    const safeTitle = (title || "TripStory Presentation").trim() || "TripStory Presentation";
+    const escapedDocumentTitle = htmlTextEscape(safeTitle);
 
     const htmlBundle = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${safeTitle} - TripStory</title>
+  <title>${escapedDocumentTitle} - TripStory</title>
   <meta name="generator" content="TripStory">
   ${slideData.stylesheets.join("\n  ")}
   <style>
@@ -162,27 +244,53 @@ export async function POST(req: NextRequest) {
 ${slidesHtml}
     </div>
   </div>
+${narrationAudioElements}
   <div id="ts-controls">
     <button id="ts-prev" title="Previous (←)">&#9664; Prev</button>
     <span id="ts-counter">1 / ${slideData.slides.length}</span>
     <button id="ts-next" title="Next (→)">Next &#9654;</button>
     <button id="ts-auto" title="Auto-play (Space)">&#9654; Play</button>
+    <button id="ts-audio" title="Narration toggle (M)">Narration On</button>
   </div>
   <script>
     (function() {
       var current = 0;
       var total = ${slideData.slides.length};
       var autoTimer = null;
+      var narrationEnabled = true;
+      var narrationAudios = Array.from(document.querySelectorAll('audio[data-slide-index]'));
       var slides = document.querySelectorAll('.ts-slide');
       var counter = document.getElementById('ts-counter');
       var progress = document.getElementById('ts-progress');
       var autoBtn = document.getElementById('ts-auto');
+      var audioBtn = document.getElementById('ts-audio');
+
+      function stopNarration() {
+        narrationAudios.forEach(function(audioEl) {
+          audioEl.pause();
+          try { audioEl.currentTime = 0; } catch (_) {}
+        });
+      }
+
+      function playNarrationForCurrentSlide() {
+        stopNarration();
+        if (!narrationEnabled) return;
+        var active = narrationAudios.find(function(audioEl) {
+          return Number(audioEl.getAttribute('data-slide-index')) === current;
+        });
+        if (!active) return;
+        active.onended = function() {
+          if (!autoTimer && current < total - 1) next();
+        };
+        active.play().catch(function() {});
+      }
 
       function show(idx) {
         current = ((idx % total) + total) % total;
         slides.forEach(function(s, i) { s.classList.toggle('active', i === current); });
         counter.textContent = (current + 1) + ' / ' + total;
         progress.style.width = ((current + 1) / total * 100) + '%';
+        playNarrationForCurrentSlide();
       }
 
       function next() { show(current + 1); }
@@ -193,15 +301,24 @@ ${slidesHtml}
         else { autoTimer = setInterval(next, ${autoPlayInterval || 5000}); autoBtn.innerHTML = '&#9632; Stop'; }
       }
 
+      function toggleNarration() {
+        narrationEnabled = !narrationEnabled;
+        audioBtn.textContent = narrationEnabled ? 'Narration On' : 'Narration Off';
+        if (narrationEnabled) playNarrationForCurrentSlide();
+        else stopNarration();
+      }
+
       document.getElementById('ts-next').onclick = next;
       document.getElementById('ts-prev').onclick = prev;
       autoBtn.onclick = toggleAuto;
+      audioBtn.onclick = toggleNarration;
 
       document.addEventListener('keydown', function(e) {
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next();
         else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prev();
         else if (e.key === ' ') { e.preventDefault(); toggleAuto(); }
         else if (e.key === 'Escape' && autoTimer) toggleAuto();
+        else if (e.key === 'm' || e.key === 'M') toggleNarration();
       });
 
       // Fit to viewport
@@ -236,9 +353,39 @@ ${slidesHtml}
         : path.join("/tmp", "presenton", "exports");
     fs.mkdirSync(exportDir, { recursive: true });
 
-    const filename = `${safeTitle.replace(/[^a-zA-Z0-9_-]/g, "_")}.html`;
-    const outPath = path.join(exportDir, filename);
-    fs.writeFileSync(outPath, htmlBundle, "utf-8");
+    const bundleName = `${safeTitle.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+    const outPath = path.join(exportDir, `${bundleName}.zip`);
+
+    const zip = new JSZip();
+    zip.file("index.html", htmlBundle);
+    for (const asset of audioAssets) {
+      zip.file(asset.relativePath, fs.readFileSync(asset.filePath));
+    }
+    if (audioAssets.length > 0) {
+      const capturedSlides = slideData.slides as SlideCapture[];
+      const narrationManifest = {
+        generated_at: new Date().toISOString(),
+        total_slides: capturedSlides.length,
+        total_audio_assets: audioAssets.length,
+        audio_assets: audioAssets.map((asset) => {
+          const slideMeta = capturedSlides[asset.slideIndex];
+          return {
+            slide_index: asset.slideIndex,
+            slide_number: asset.slideIndex + 1,
+            relative_path: asset.relativePath,
+            source_audio_url: slideMeta?.audioUrl || "",
+            narration_generated_at: slideMeta?.narrationGeneratedAt || null,
+            narration_text_hash: slideMeta?.narrationTextHash || null,
+          };
+        }),
+      };
+      zip.file("narration_manifest.json", JSON.stringify(narrationManifest, null, 2));
+    }
+    const zipBuffer = await zip.generateAsync({
+      type: "nodebuffer",
+      compression: "DEFLATE",
+    });
+    fs.writeFileSync(outPath, zipBuffer);
 
     return NextResponse.json({ success: true, path: outPath });
   } catch (e) {

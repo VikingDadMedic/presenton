@@ -127,6 +127,16 @@ Set via `az webapp config appsettings`. These are injected as env vars into the 
 
 > Narration usage is persisted in `narration_usage_logs`; the `/api/v1/ppt/narration/usage/summary` endpoint powers the settings dashboard.
 
+#### Video soundtrack rendering on App Service
+
+`POST /api/export-as-video` with `useNarrationAsSoundtrack: true` reuses the standard Hyperframes renderer to mux per-slide narration audio into the MP4 timeline. On Azure App Service the bundled Chromium build does not expose `HeadlessExperimental.beginFrame`, so Hyperframes falls back to screenshot-mode capture which currently measures ~800 ms per frame at p95. Combined with Azure's 230 second nginx ceiling and our 10-minute `npx hyperframes render` timeout, sync HTTP requests can only complete short compositions (<= ~30 seconds of total narrated video) before either timeout fires.
+
+Operational guidance:
+
+- Local Docker / self-hosted Chromium with `beginFrame` support renders full decks in seconds and is the recommended environment for soundtrack mode today.
+- On App Service, prefer per-slide narration playback via the in-app player and reserve soundtrack-mode video exports for short trailers until the renderer is moved to an async/queued path.
+- The HTML zip export already bundles slide audio and a `narration_manifest.json`, so post-process video composition (e.g., `ffmpeg` outside Azure) is a viable workaround for full-deck soundtracked videos.
+
 ### System
 
 | Variable | Value | Purpose |

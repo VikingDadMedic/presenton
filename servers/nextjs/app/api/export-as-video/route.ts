@@ -386,7 +386,7 @@ export async function POST(req: NextRequest) {
       execSync(
         `cd ${JSON.stringify(tempDir)} && npx hyperframes render --output ${JSON.stringify(outPath)}`,
         {
-          timeout: 180000,
+          timeout: 600000,
           env: {
             ...process.env,
             PUPPETEER_EXECUTABLE_PATH:

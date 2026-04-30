@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from api.v1.ppt.endpoints.narration import (
     _enforce_monthly_character_budget_or_raise,
     _record_narration_usage,
+    _resolve_character_count,
 )
 from models.sql.narration_usage_log import NarrationUsageLog
 
@@ -60,3 +61,39 @@ async def test_record_narration_usage_adds_log_row():
     assert usage_row.slide_id == slide_id
     assert usage_row.character_count == 321
     assert usage_row.request_id == "req-abc"
+
+
+# -----------------------------------------------------------------------------
+# Regression tests for the v1d production fix where ElevenLabs response headers
+# occasionally omit "x-character-count". Without the fallback to len(text), the
+# bulk narration response and the usage summary both reported 0 characters even
+# when audio was successfully generated. See commit 1635a50d.
+# -----------------------------------------------------------------------------
+
+
+def test_resolve_character_count_uses_header_when_valid():
+    headers = {"x-character-count": "517"}
+    assert _resolve_character_count(headers, "ignored text") == 517
+
+
+def test_resolve_character_count_falls_back_when_header_missing():
+    # ElevenLabs intermittently omits this header on eleven_v3 responses.
+    headers = {}
+    text = "Hello there, traveler."
+    assert _resolve_character_count(headers, text) == len(text)
+
+
+def test_resolve_character_count_falls_back_when_header_zero():
+    headers = {"x-character-count": "0"}
+    text = "x" * 42
+    assert _resolve_character_count(headers, text) == 42
+
+
+def test_resolve_character_count_falls_back_when_header_non_numeric():
+    headers = {"x-character-count": "n/a"}
+    text = "fallback"
+    assert _resolve_character_count(headers, text) == len(text)
+
+
+def test_resolve_character_count_handles_none_headers():
+    assert _resolve_character_count(None, "hello") == 5

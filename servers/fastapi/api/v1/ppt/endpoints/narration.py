@@ -226,6 +226,26 @@ async def _enforce_monthly_character_budget_or_raise(
         )
 
 
+def _resolve_character_count(headers, text: str) -> int:
+    """Parse x-character-count from ElevenLabs response headers, with len(text) fallback.
+
+    ElevenLabs occasionally omits or zeros the x-character-count header (observed
+    intermittently on eleven_v3). Without a fallback, our usage logs and monthly
+    budget enforcement would understate spend. This helper guarantees a positive,
+    deterministic value derived from the synthesized text.
+    """
+    character_count = 0
+    raw_character_count = headers.get("x-character-count") if headers is not None else None
+    if raw_character_count:
+        try:
+            character_count = int(raw_character_count)
+        except (TypeError, ValueError):
+            character_count = 0
+    if character_count <= 0:
+        character_count = len(text)
+    return character_count
+
+
 async def _record_narration_usage(
     sql_session: AsyncSession,
     *,
@@ -600,17 +620,7 @@ async def _generate_slide_audio(
     with open(output_path, "wb") as f:
         f.write(audio_bytes)
 
-    character_count = 0
-    raw_character_count = headers.get("x-character-count")
-    if raw_character_count:
-        try:
-            character_count = int(raw_character_count)
-        except Exception:
-            character_count = 0
-    if character_count <= 0:
-        # ElevenLabs headers can occasionally omit x-character-count; use
-        # a deterministic fallback so usage logs and budget checks stay meaningful.
-        character_count = len(text)
+    character_count = _resolve_character_count(headers, text)
     request_id = _clean_optional_string(headers.get("request-id"))
 
     now = datetime.now(timezone.utc)

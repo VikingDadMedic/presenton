@@ -162,6 +162,21 @@ Changes take effect on next container restart.
 ### Quick Reference (copy-paste)
 
 ```bash
+# Single-command deploy: build, container set with creds, restart, health poll
+./scripts/redeploy-azure.sh
+
+# Smoke validation against the deployed instance
+BASE_URL="https://presenton-app.azurewebsites.net" \
+  PRESENTATION_ID="<existing-uuid>" \
+  ADMIN_USER="admin" ADMIN_PASS="..." \
+  ./scripts/smoke-narration.sh
+```
+
+The redeploy script wraps the manual sequence below: it refuses to push a local arm64 image (App Service runs amd64), retries `az acr build` on Docker Hub anonymous pull-rate limits, sets the container with explicit ACR creds (digest pulls require this), restarts, and polls `/health` until 200.
+
+Manual fallback (if you prefer step-by-step):
+
+```bash
 # 1. Build on ACR (builds AMD64 remotely -- required for Apple Silicon devs)
 cd /path/to/presenton
 az acr build --registry presentonacr --image presenton:latest --file Dockerfile .
@@ -172,6 +187,21 @@ az webapp restart --name presenton-app --resource-group presenton-rg
 # 3. Tail logs to verify startup
 az webapp log tail --name presenton-app --resource-group presenton-rg
 ```
+
+### Registry Credentials on App Service
+
+For digest-pinned image references (`@sha256:...`) and reliable cold pulls, App Service must have these app settings populated explicitly:
+
+```bash
+ACR_USER=$(az acr credential show --name presentonacr --query username -o tsv)
+ACR_PASS=$(az acr credential show --name presentonacr --query 'passwords[0].value' -o tsv)
+az webapp config appsettings set \
+  --name presenton-app --resource-group presenton-rg \
+  --settings DOCKER_REGISTRY_SERVER_USERNAME="$ACR_USER" \
+             DOCKER_REGISTRY_SERVER_PASSWORD="$ACR_PASS"
+```
+
+Without these, digest pulls fail with `ImagePullUnauthorizedFailure` even when the registry URL is set. Tag-only pulls (`presenton:latest`) sometimes work via inferred AAD identity but the digest path requires explicit creds. Setting them once permanently eliminates the recurring auth surprise.
 
 ### Step-by-Step Explanation
 

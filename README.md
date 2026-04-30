@@ -267,12 +267,20 @@ All enricher keys are optional. Missing keys mean that enricher returns empty da
 | [`CODEBASE_DESIGNS.md`](CODEBASE_DESIGNS.md) | Frontend styling, CSS, UI components, theme architecture |
 | [`EXPORTS.md`](EXPORTS.md) | All 6 export formats, API reference, MCP tools, enricher table |
 | [`README.md#narration-via-api`](README.md#narration-via-api) | Narration endpoint quickstart (readiness, voices, bulk, usage) |
-| [`DEPLOYMENT.md`](DEPLOYMENT.md) | Azure App Service deployment, resource topology, troubleshooting |
+| [`DEPLOYMENT.md`](DEPLOYMENT.md) | Azure App Service deployment, resource topology, redeploy script |
+| [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) | Production failure modes (manifest mismatch, ACR auth, Hyperframes timeout, etc.) |
 | [`REFACTOR-PIVOT.MD`](REFACTOR-PIVOT.MD) | Travel pivot implementation history (Phases 0-12) |
 | [`FEAT-EXPANSION.md`](FEAT-EXPANSION.md) | Enrichment pipeline reference (18 enricher modules, API keys, schemas) |
 | [`VISION.md`](VISION.md) | Project vision and guiding principles |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to contribute, development setup |
 | [`AGENTS.md`](AGENTS.md) | Workspace facts and preferences for AI agents |
+
+### Operational Scripts
+
+| Script | What It Does |
+|---|---|
+| [`scripts/redeploy-azure.sh`](scripts/redeploy-azure.sh) | Single-command Azure deploy: arm64 manifest guardrail, `az acr build` with retry, container set with explicit ACR creds, restart, poll `/health`. |
+| [`scripts/smoke-narration.sh`](scripts/smoke-narration.sh) | End-to-end smoke (login + readiness + voices + estimate + usage_summary + HTML zip + PDF). Usable locally and against prod. Env: `BASE_URL`, `PRESENTATION_ID`, `ADMIN_USER`, `ADMIN_PASS`. |
 
 ---
 

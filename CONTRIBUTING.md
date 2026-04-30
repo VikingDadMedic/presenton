@@ -93,12 +93,32 @@ If you are working on narration features, also set `ELEVENLABS_API_KEY` (and opt
 
 ### Running Tests
 
+Backend (FastAPI / Pytest):
+
 ```bash
 cd servers/fastapi
 uv run pytest tests/ -v
 ```
 
-The test suite includes 47 enricher tests and 4 API validation tests.
+The backend test suite includes 47 enricher tests, 4 API validation tests, and the narration suite (hardening, usage, auto-IPA, strict-schema response).
+
+Frontend (Next.js / Node native test runner):
+
+```bash
+cd servers/nextjs
+npm test
+```
+
+Runs `node --test __tests__/*.test.mjs` against esbuild-compiled TS imports — no jest/vitest dependency. Current coverage: video composition + GSAP timeline parse, video export job lifecycle.
+
+Production smoke (works locally and against deployed environments):
+
+```bash
+BASE_URL="http://localhost:5000" \
+  PRESENTATION_ID="<existing-uuid>" \
+  ADMIN_USER="admin" ADMIN_PASS="..." \
+  ./scripts/smoke-narration.sh
+```
 
 ---
 

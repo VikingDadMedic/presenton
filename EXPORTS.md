@@ -160,6 +160,31 @@ curl -X POST https://your-host/api/v1/ppt/presentation/generate \
   }'
 ```
 
+### Async Video Export with Status Polling
+
+The Next.js video export route supports both sync and async modes. Async mode is required when narration soundtrack is enabled because the render typically exceeds the upstream HTTP timeout on App Service.
+
+```bash
+# Kick off (async defaults to true under useNarrationAsSoundtrack=true)
+curl -sS -b cookies.txt -X POST https://your-host/api/export-as-video \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "d3000f96-...",
+    "title": "Mediterranean Cruise",
+    "useNarrationAsSoundtrack": true
+  }'
+# => { "success": true, "jobId": "f2200194-...", "statusUrl": "/api/export-as-video/status?jobId=f2200194-...", "status": "queued" }
+
+# Poll status (Cache-Control: no-store)
+curl -sS -b cookies.txt "https://your-host/api/export-as-video/status?jobId=f2200194-..."
+# => { "status": "running", "progressPct": 35, "currentFrame": 1748, "totalFrames": 4994, "message": "...", ... }
+# => terminal shapes: { "status": "completed", "resultPath": "/app_data/exports/Title.mp4" } or { "status": "failed", "error": "..." }
+```
+
+Force the async path even without soundtrack mode by passing `"async": true`. Force the sync path under soundtrack mode with `"async": false` (not recommended on App Service due to the Chromium screenshot-mode constraint documented in [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md)).
+
+Job records persist at `${APP_DATA_DIRECTORY}/video-jobs/{jobId}.json` and are reaped automatically after 24 h.
+
 ---
 
 ## 4. JSON Export

@@ -3,11 +3,12 @@ import re
 from typing import Any, Iterable, Optional
 
 from llmai import get_client
-from llmai.shared import JSONSchemaResponse, Message, SystemMessage, UserMessage
+from llmai.shared import Message, SystemMessage, UserMessage
 
 from constants.ipa_dictionary import CURATED_IPA_DICTIONARY
 from utils.llm_config import get_content_model_config
 from utils.llm_utils import extract_structured_content, get_generate_kwargs
+from utils.schema_utils import make_strict_json_schema_response
 
 _PHONEME_TAG_PATTERN = re.compile(r"(<phoneme\b[^>]*>.*?</phoneme>)", flags=re.IGNORECASE | re.DOTALL)
 _PROPER_NOUN_PATTERN = re.compile(r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2}\b")
@@ -141,11 +142,7 @@ async def _llm_ipa_fallback(terms: list[str]) -> dict[str, str]:
             "required": ["items"],
             "additionalProperties": False,
         }
-        response_format = JSONSchemaResponse(
-            name="ipa_map",
-            json_schema=schema,
-            strict=True,
-        )
+        response_format = make_strict_json_schema_response(schema, name="ipa_map")
         messages: list[Message] = [
             SystemMessage(
                 content=(

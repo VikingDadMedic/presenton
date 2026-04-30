@@ -1,7 +1,10 @@
 from copy import deepcopy
-from typing import Any, List
+from typing import Any, List, Type, Union
 
 from openai import NOT_GIVEN
+from pydantic import BaseModel
+
+from llmai.shared import JSONSchemaResponse
 
 from utils.dict_utils import (
     get_dict_paths_with_key,
@@ -85,6 +88,42 @@ def add_field_in_schema(schema: dict, field: dict, required: bool = False) -> di
         updated_schema.pop("required", None)
 
     return updated_schema
+
+
+def make_strict_json_schema_response(
+    schema_or_model: Union[Type[BaseModel], dict],
+    *,
+    name: str = "response",
+) -> JSONSchemaResponse:
+    """Construct a strict JSONSchemaResponse with proper schema preprocessing.
+
+    Direct callsites that pass `model.model_json_schema()` to
+    `JSONSchemaResponse(strict=True, ...)` bypass `services/llm_client.py`'s
+    automatic preprocessing and trip OpenAI's strict-mode validator with:
+
+        Invalid schema for response_format 'response': In context=(),
+        'required' is required to be supplied and to be an array including
+        every key in properties.
+
+    OpenAI strict mode requires every property to be in `required` and every
+    object to set `additionalProperties: false`. `ensure_strict_json_schema`
+    rewrites the schema accordingly, allowing optional fields by typing them
+    as nullable (`["string", "null"]`) while remaining in `required`.
+
+    See also: regression test in tests/test_strict_schema_response.py.
+    """
+    if isinstance(schema_or_model, type) and issubclass(schema_or_model, BaseModel):
+        raw_schema = schema_or_model.model_json_schema()
+    elif isinstance(schema_or_model, dict):
+        raw_schema = deepcopy(schema_or_model)
+    else:
+        raise TypeError(
+            "make_strict_json_schema_response requires a pydantic model class "
+            f"or a dict; got {type(schema_or_model).__name__}"
+        )
+
+    strict_schema = ensure_strict_json_schema(raw_schema, path=(), root=raw_schema)
+    return JSONSchemaResponse(name=name, json_schema=strict_schema, strict=True)
 
 
 # From OpenAI

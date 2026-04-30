@@ -1,13 +1,14 @@
 import asyncio
 from fastapi import HTTPException
 from llmai import get_client
-from llmai.shared import JSONSchemaResponse, Message, SystemMessage, UserMessage
+from llmai.shared import Message, SystemMessage, UserMessage
 from models.presentation_layout import PresentationLayoutModel, SlideLayoutModel
 from models.slide_layout_index import SlideLayoutIndex
 from models.sql.slide import SlideModel
 from utils.llm_config import get_structure_model_config
 from utils.llm_client_error_handler import handle_llm_client_exceptions
 from utils.llm_utils import extract_structured_content, get_generate_kwargs
+from utils.schema_utils import make_strict_json_schema_response
 
 
 def get_messages(
@@ -59,11 +60,7 @@ async def get_slide_layout_from_prompt(
     slide_layout_index = layout.get_slide_layout_index(slide.layout)
 
     try:
-        response_format = JSONSchemaResponse(
-            name="response",
-            json_schema=SlideLayoutIndex.model_json_schema(),
-            strict=True,
-        )
+        response_format = make_strict_json_schema_response(SlideLayoutIndex)
         messages = get_messages(
             prompt,
             slide.content,

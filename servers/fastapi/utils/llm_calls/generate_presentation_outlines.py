@@ -3,7 +3,6 @@ from typing import Optional
 
 from llmai import get_client
 from llmai.shared import (
-    JSONSchemaResponse,
     Message,
     ResponseStreamCompletionChunk,
     SystemMessage,
@@ -21,6 +20,7 @@ from utils.llm_utils import (
     serialize_structured_content,
     stream_generate_events,
 )
+from utils.schema_utils import make_strict_json_schema_response
 
 
 def get_system_prompt(
@@ -206,11 +206,7 @@ async def generate_ppt_outline(
     use_search_tool = web_search and enable_web_grounding()
 
     try:
-        response_format = JSONSchemaResponse(
-            name="response",
-            json_schema=response_model.model_json_schema(),
-            strict=True,
-        )
+        response_format = make_strict_json_schema_response(response_model)
         emitted_content = False
         async for event in stream_generate_events(
             client,

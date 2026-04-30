@@ -3,14 +3,17 @@ from typing import Optional
 
 from fastapi import HTTPException
 from llmai import get_client
-from llmai.shared import JSONSchemaResponse, Message, SystemMessage, UserMessage
+from llmai.shared import Message, SystemMessage, UserMessage
 from models.presentation_layout import PresentationLayoutModel
 from models.presentation_outline_model import PresentationOutlineModel
 from utils.llm_config import get_structure_model_config, has_structure_model_override
 from utils.llm_client_error_handler import handle_llm_client_exceptions
 from utils.llm_utils import extract_structured_content, get_generate_kwargs
 from utils.get_dynamic_models import get_presentation_structure_model_with_n_slides
-from utils.schema_utils import strip_length_constraints
+from utils.schema_utils import (
+    make_strict_json_schema_response,
+    strip_length_constraints,
+)
 from models.presentation_structure_model import PresentationStructureModel
 
 
@@ -166,12 +169,7 @@ async def generate_presentation_structure(
 
         raw_schema = response_model.model_json_schema()
         llm_schema = strip_length_constraints(raw_schema) if use_override else raw_schema
-
-        response_format = JSONSchemaResponse(
-            name="response",
-            json_schema=llm_schema,
-            strict=True,
-        )
+        response_format = make_strict_json_schema_response(llm_schema)
 
         for attempt in range(3):
             kwargs = get_generate_kwargs(

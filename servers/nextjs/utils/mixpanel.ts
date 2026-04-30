@@ -128,6 +128,9 @@ export enum MixpanelEvent {
   Narration_Mute_Toggled = 'Narration Mute Toggled',
   Pronunciation_Dictionary_Uploaded = 'Pronunciation Dictionary Uploaded',
   Narration_Usage_Viewed = 'Narration Usage Viewed',
+  Narration_Video_Job_Started = 'Narration Video Job Started',
+  Narration_Video_Job_Completed = 'Narration Video Job Completed',
+  Narration_Video_Job_Failed = 'Narration Video Job Failed',
 }
 
 export type MixpanelProps = Record<string, unknown>;

@@ -473,6 +473,7 @@ export class PresentationGenerationApi {
     transitionDuration?: number;
     audioUrl?: string;
     useNarrationAsSoundtrack?: boolean;
+    async?: boolean;
   }) {
     const response = await fetch("/api/export-as-video", {
       method: "POST",
@@ -480,7 +481,35 @@ export class PresentationGenerationApi {
       body: JSON.stringify(params),
     });
     if (!response.ok) throw new Error("Failed to export video");
-    return response.json() as Promise<{ path: string }>;
+    // Sync path: { success, path }. Async path: { success, jobId, statusUrl, status }.
+    return response.json() as Promise<
+      | { success: true; path: string }
+      | { success: true; jobId: string; statusUrl: string; status: string }
+    >;
+  }
+
+  static async getVideoExportStatus(jobId: string) {
+    const response = await fetch(
+      `/api/export-as-video/status?jobId=${encodeURIComponent(jobId)}`,
+      { cache: "no-store" },
+    );
+    if (!response.ok) throw new Error("Failed to fetch video export status");
+    return response.json() as Promise<{
+      jobId: string;
+      presentationId: string;
+      title: string;
+      useNarrationAsSoundtrack: boolean;
+      status: "queued" | "running" | "completed" | "failed";
+      createdAt: string;
+      startedAt?: string;
+      completedAt?: string;
+      progressPct: number;
+      currentFrame?: number;
+      totalFrames?: number;
+      message?: string;
+      resultPath?: string;
+      error?: string;
+    }>;
   }
 
   static async getEmbedInfo(params: { id: string }) {

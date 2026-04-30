@@ -336,6 +336,65 @@ const PresentationHeader = ({
     }
   };
 
+  const pollVideoExportJob = async (
+    jobId: string,
+    safeFileName: string,
+    narrationSoundtrackEnabled: boolean,
+  ): Promise<void> => {
+    const POLL_INTERVAL_MS = 2000;
+    const MAX_DURATION_MS = 60 * 60 * 1000;
+    const start = Date.now();
+    let lastReportedPct = -1;
+
+    while (Date.now() - start < MAX_DURATION_MS) {
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+      const status = await PresentationGenerationApi.getVideoExportStatus(jobId);
+
+      if (
+        typeof status.progressPct === "number" &&
+        status.progressPct !== lastReportedPct &&
+        status.progressPct % 10 === 0 &&
+        status.progressPct > 0 &&
+        status.progressPct < 100
+      ) {
+        toast.info(`Rendering video: ${status.progressPct}%`, {
+          id: `video-export-${jobId}`,
+        });
+        lastReportedPct = status.progressPct;
+      }
+
+      if (status.status === "completed" && status.resultPath) {
+        downloadLink(status.resultPath, safeFileName);
+        toast.success("Video exported successfully!", {
+          id: `video-export-${jobId}`,
+        });
+        trackEvent(MixpanelEvent.Narration_Video_Job_Completed, {
+          presentation_id,
+          job_id: jobId,
+          use_narration_as_soundtrack: narrationSoundtrackEnabled,
+          duration_ms: Date.now() - start,
+        });
+        return;
+      }
+      if (status.status === "failed") {
+        trackEvent(MixpanelEvent.Narration_Video_Job_Failed, {
+          presentation_id,
+          job_id: jobId,
+          use_narration_as_soundtrack: narrationSoundtrackEnabled,
+          error: status.error,
+        });
+        throw new Error(status.error || "Video render failed");
+      }
+    }
+    trackEvent(MixpanelEvent.Narration_Video_Job_Failed, {
+      presentation_id,
+      job_id: jobId,
+      use_narration_as_soundtrack: narrationSoundtrackEnabled,
+      error: "Polling timeout",
+    });
+    throw new Error("Video export polling timed out after 1 hour");
+  };
+
   const handleExportVideo = async (options?: { useNarrationAsSoundtrack?: boolean }) => {
     if (isStreaming) return;
     const narrationSoundtrackEnabled = Boolean(options?.useNarrationAsSoundtrack);
@@ -354,12 +413,14 @@ const PresentationHeader = ({
         slide_count: presentationData?.slides?.length || 0,
         use_narration_as_soundtrack: narrationSoundtrackEnabled,
       });
-      toast.info("Rendering video... this may take a minute or two.", { duration: 10000 });
+      toast.info("Rendering video... this may take a few minutes for full decks.", {
+        duration: 10000,
+      });
       setIsExporting(true);
       await PresentationGenerationApi.updatePresentationContent(presentationData);
       const safeFileName = buildSafeExportFileName(presentationData?.title, "mp4");
       const safeTitle = safeFileName.replace(/\.mp4$/i, "");
-      const { path } = await PresentationGenerationApi.exportAsVideo({
+      const response = await PresentationGenerationApi.exportAsVideo({
         id: presentation_id,
         title: safeTitle,
         slideDuration: 5,
@@ -367,8 +428,25 @@ const PresentationHeader = ({
         transitionDuration: 0.8,
         useNarrationAsSoundtrack: narrationSoundtrackEnabled,
       });
-      if (path) {
-        downloadLink(path, safeFileName);
+
+      if ("jobId" in response) {
+        // Async path: server will run the render off the request lifecycle.
+        trackEvent(MixpanelEvent.Narration_Video_Job_Started, {
+          presentation_id,
+          job_id: response.jobId,
+          use_narration_as_soundtrack: narrationSoundtrackEnabled,
+        });
+        toast.info("Render queued. Tracking progress...", {
+          id: `video-export-${response.jobId}`,
+          duration: 5000,
+        });
+        await pollVideoExportJob(
+          response.jobId,
+          safeFileName,
+          narrationSoundtrackEnabled,
+        );
+      } else if ("path" in response && response.path) {
+        downloadLink(response.path, safeFileName);
         toast.success("Video exported successfully!");
       } else {
         throw new Error("No path returned from video export");
@@ -376,7 +454,8 @@ const PresentationHeader = ({
     } catch (error) {
       console.error("Video export failed:", error);
       toast.error("Having trouble exporting!", {
-        description: "Video export failed. Please try again.",
+        description:
+          error instanceof Error ? error.message : "Video export failed. Please try again.",
       });
     } finally {
       setIsExporting(false);

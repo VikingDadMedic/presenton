@@ -63,3 +63,13 @@ class GeneratePresentationRequest(BaseModel):
     transition_style: Optional[str] = Field(
         default=None, description="Video transition: scale-zoom, slide-right, clip-reveal, cycle, random"
     )
+    transition_duration: Optional[float] = Field(
+        default=None, description="Video transition duration in seconds"
+    )
+    use_narration_as_soundtrack: Optional[bool] = Field(
+        default=None,
+        description="When exporting video, use per-slide narration audio as soundtrack",
+    )
+    export_options: Optional[dict] = Field(
+        default=None, description="Additional format-specific export options"
+    )

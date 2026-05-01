@@ -58,6 +58,73 @@ const INTEREST_OPTIONS = [
   "Wellness",
 ] as const;
 
+type TravelArcTemplateId =
+  | "travel-itinerary"
+  | "travel-reveal"
+  | "travel-contrast"
+  | "travel-audience"
+  | "travel-micro"
+  | "travel-local"
+  | "travel-series"
+  | "travel-recap"
+  | "travel-deal-flash"
+  | "travel-partner-spotlight";
+
+const DEFAULT_TRAVEL_ARC: TravelArcTemplateId = "travel-itinerary";
+
+const TRAVEL_ARC_OPTIONS: Array<{
+  value: TravelArcTemplateId;
+  label: string;
+  tooltip?: string;
+}> = [
+  { value: "travel-itinerary", label: "Itinerary" },
+  {
+    value: "travel-reveal",
+    label: "Reveal",
+    tooltip: "Builds anticipation with a destination-first reveal flow.",
+  },
+  {
+    value: "travel-contrast",
+    label: "Contrast",
+    tooltip: "Highlights trade-offs and before/after moments.",
+  },
+  {
+    value: "travel-audience",
+    label: "Audience",
+    tooltip: "Tailors pacing for solo, couple, or family travelers.",
+  },
+  {
+    value: "travel-micro",
+    label: "Micro",
+    tooltip: "Focuses on a short, high-impact micro-adventure.",
+  },
+  {
+    value: "travel-local",
+    label: "Local",
+    tooltip: "Frames the trip through a local's perspective.",
+  },
+  {
+    value: "travel-series",
+    label: "Series",
+    tooltip: "Compares multiple destinations in one coherent decision deck.",
+  },
+  {
+    value: "travel-recap",
+    label: "Recap",
+    tooltip: "Turns a past trip into a memory-led re-engagement story.",
+  },
+  {
+    value: "travel-deal-flash",
+    label: "Deal Flash",
+    tooltip: "Pushes urgency with countdown offer framing and inclusions.",
+  },
+  {
+    value: "travel-partner-spotlight",
+    label: "Partner",
+    tooltip: "Highlights a hotel, airline, or DMO co-marketing partner.",
+  },
+];
+
 const TravelUploadPage = () => {
   const router = useRouter();
   const pathname = usePathname();
@@ -72,6 +139,9 @@ const TravelUploadPage = () => {
   const [travelers, setTravelers] = useState(2);
   const [interests, setInterests] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
+  const [selectedTravelArc, setSelectedTravelArc] = useState<TravelArcTemplateId | null>(
+    DEFAULT_TRAVEL_ARC
+  );
 
   const [loadingState, setLoadingState] = useState<LoadingState>({
     isLoading: false,
@@ -131,6 +201,7 @@ const TravelUploadPage = () => {
       includeTitleSlide: true,
       webSearch: true,
     };
+    const selectedTemplate = selectedTravelArc ?? DEFAULT_TRAVEL_ARC;
 
     try {
       setLoadingState({
@@ -162,7 +233,7 @@ const TravelUploadPage = () => {
         from: pathname,
         to: "/outline",
       });
-      router.push("/outline?template=travel");
+      router.push(`/outline?template=${encodeURIComponent(selectedTemplate)}`);
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Error generating presentation.";
@@ -287,6 +358,34 @@ const TravelUploadPage = () => {
             </select>
           </div>
         </div>
+
+        <div className="border-t border-border" />
+
+        {/* Template Arc */}
+        <fieldset className="p-4 md:p-6 border-0">
+          <legend className="text-base font-normal font-display text-foreground mb-3 block">
+            Template Arc
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {TRAVEL_ARC_OPTIONS.map((arc) => (
+              <button
+                key={arc.value}
+                type="button"
+                title={arc.tooltip}
+                aria-label={arc.tooltip ? `${arc.label}: ${arc.tooltip}` : arc.label}
+                onClick={() => setSelectedTravelArc(arc.value)}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-xs font-instrument_sans font-medium transition-all",
+                  selectedTravelArc === arc.value
+                    ? "border-primary bg-primary/5 text-primary ring-2 ring-primary/25"
+                    : "border-border bg-card text-foreground hover:border-border hover:bg-muted"
+                )}
+              >
+                {arc.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
 
         <div className="border-t border-border" />
 

@@ -21,6 +21,7 @@ class PresentationWithSlides(BaseModel):
     narration_tone: Optional[str] = None
     narration_model_id: Optional[str] = None
     narration_pronunciation_dictionary_id: Optional[str] = None
+    is_public: bool = False
     slides: List[SlideModel]
     theme: Optional[dict] = None
     fonts: Optional[Any] = None

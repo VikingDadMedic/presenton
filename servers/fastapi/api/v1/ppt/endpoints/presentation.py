@@ -1,19 +1,25 @@
 import asyncio
 from datetime import datetime
+from enum import Enum
 import json
 import os
 import random
 import shutil
 import traceback
-from typing import Annotated, List, Literal, Optional, Tuple
+from typing import Annotated, Dict, List, Literal, Optional, Tuple
 import dirtyjson
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Path
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 from constants.presentation import DEFAULT_TEMPLATES, MAX_NUMBER_OF_SLIDES
-from constants.narration import get_default_tone_for_template, normalize_tone_preset
+from constants.narration import (
+    TONE_DEFAULT_VOICE_IDS,
+    get_default_tone_for_template,
+    normalize_tone_preset,
+)
 from enums.webhook_event import WebhookEvent
 from models.api_error_model import APIErrorModel
 from models.generate_presentation_request import GeneratePresentationRequest
@@ -38,6 +44,10 @@ from services.mem0_presentation_memory_service import (
     MEM0_PRESENTATION_MEMORY_SERVICE,
 )
 from utils.dict_utils import deep_update
+from utils.agent_profile_overlay import (
+    apply_agent_profile_overlays,
+    build_agent_profile_slide_instructions,
+)
 from utils.export_utils import export_presentation
 from utils.llm_calls.generate_presentation_outlines import (
     generate_ppt_outline,
@@ -84,10 +94,141 @@ from utils.process_slides import (
 from utils.get_layout_by_name import get_layout_by_name
 from utils.llm_utils import message_content_to_text
 from models.presentation_layout import PresentationLayoutModel
+from utils.user_config import get_agent_profile
 import uuid
 
 
 PRESENTATION_ROUTER = APIRouter(prefix="/presentation", tags=["Presentation"])
+
+
+class PresentationVisibilityRequest(BaseModel):
+    is_public: bool
+
+
+class RecapMode(str, Enum):
+    WELCOME_HOME = "welcome_home"
+    ANNIVERSARY = "anniversary"
+    NEXT_PLANNING_WINDOW = "next_planning_window"
+
+
+class RecapPresentationRequest(BaseModel):
+    mode: RecapMode = Field(..., description="Recap mode to generate")
+    source_presentation_id: Optional[uuid.UUID] = Field(
+        default=None,
+        description="Existing presentation id to derive recap context from",
+    )
+    source_json: Optional[dict] = Field(
+        default=None,
+        description="Raw source context JSON exported from a prior presentation",
+    )
+    template: Optional[str] = Field(
+        default=None,
+        description="Optional template override for recap generation",
+    )
+    n_slides: Optional[int] = Field(
+        default=None,
+        description="Optional slide count override; otherwise auto-detected",
+    )
+    language: Optional[str] = Field(
+        default=None,
+        description="Optional language override for the recap deck",
+    )
+    tone: Optional[Tone] = Field(
+        default=None,
+        description="Optional text tone override for recap generation",
+    )
+    narration_tone: Optional[str] = Field(
+        default=None,
+        description="Optional narration tone preset override",
+    )
+    verbosity: Verbosity = Field(
+        default=Verbosity.STANDARD,
+        description="Verbosity preset for generated slide content",
+    )
+    instructions: Optional[str] = Field(
+        default=None,
+        description="Additional user instructions appended to recap instructions",
+    )
+    web_search: bool = Field(
+        default=False,
+        description="Whether to enable web grounding for recap generation",
+    )
+    include_table_of_contents: bool = Field(
+        default=False, description="Include table of contents slide(s)"
+    )
+    include_title_slide: bool = Field(
+        default=True, description="Include a title slide"
+    )
+    export_as: Literal["pptx", "pdf", "html", "video"] = Field(
+        default="pptx", description="Export format"
+    )
+    origin: Optional[str] = Field(
+        default=None, description="Departure city override for enrichment hints"
+    )
+    currency: Optional[str] = Field(
+        default=None, description="Currency override for pricing formatting"
+    )
+    slide_duration: Optional[int] = Field(
+        default=None, description="Seconds per slide for html/video export"
+    )
+    transition_style: Optional[str] = Field(
+        default=None, description="Video transition style override"
+    )
+    transition_duration: Optional[float] = Field(
+        default=None, description="Video transition duration override in seconds"
+    )
+    use_narration_as_soundtrack: Optional[bool] = Field(
+        default=None,
+        description="When exporting video, use per-slide narration as soundtrack",
+    )
+    export_options: Optional[dict] = Field(
+        default=None, description="Additional export options passthrough"
+    )
+
+    @model_validator(mode="after")
+    def validate_source_input(self):
+        if self.source_presentation_id is None and not self.source_json:
+            raise ValueError(
+                "Either source_presentation_id or source_json is required"
+            )
+        return self
+
+
+class RecapPresentationResponse(PresentationPathAndEditPath):
+    mode: RecapMode
+    source_presentation_id: Optional[uuid.UUID] = None
+
+
+_RECAP_MODE_DEFAULTS: Dict[RecapMode, Dict[str, object]] = {
+    RecapMode.WELCOME_HOME: {
+        "template": "travel-itinerary",
+        "tone": Tone.INSPIRATIONAL,
+        "narration_tone": "documentary",
+        "instruction": (
+            "Frame the narrative as a warm welcome-home memory reel. "
+            "Focus on sensory highlights, moments of gratitude, and what made the trip "
+            "personally meaningful."
+        ),
+    },
+    RecapMode.ANNIVERSARY: {
+        "template": "travel-itinerary",
+        "tone": Tone.ADVENTUROUS,
+        "narration_tone": "hype_reel",
+        "instruction": (
+            "Frame the narrative as a one-year anniversary lookback. "
+            "Keep nostalgia high, pacing brisk, and celebrate standout moments from the trip."
+        ),
+    },
+    RecapMode.NEXT_PLANNING_WINDOW: {
+        "template": "travel-itinerary",
+        "tone": Tone.PROFESSIONAL,
+        "narration_tone": "travel_companion",
+        "instruction": (
+            "Frame the narrative as a bridge from past memories to the next planning window. "
+            "Briefly recap what worked and end with practical next-trip inspiration."
+        ),
+    },
+}
 
 
 def _extract_custom_template_id(layout_name: Optional[str]) -> Optional[uuid.UUID]:
@@ -146,6 +287,160 @@ def _build_presentation_synopsis(
         return "A presentation with sequential slides and connected narrative flow."
     merged = " | ".join(summary_parts)
     return merged[:500]
+
+
+def _truncate_text(value: Optional[str], *, limit: int) -> str:
+    compact = " ".join((value or "").split())
+    if len(compact) <= limit:
+        return compact
+    return f"{compact[: limit - 3]}..."
+
+
+def _compact_json(value: object, *, limit: int = 900) -> str:
+    try:
+        serialized = json.dumps(value, ensure_ascii=True, default=str)
+    except Exception:
+        serialized = str(value)
+    if len(serialized) <= limit:
+        return serialized
+    return f"{serialized[: limit - 3]}..."
+
+
+def _extract_slide_title_for_recap(slide: SlideModel) -> str:
+    if isinstance(slide.content, dict):
+        for key in ("title", "heading", "destination", "name"):
+            candidate = slide.content.get(key)
+            if isinstance(candidate, str):
+                normalized = _normalize_outline_title(candidate)
+                if normalized:
+                    return normalized
+    return f"Slide {slide.index + 1}"
+
+
+def _build_recap_source_from_presentation(
+    presentation: PresentationModel, slides: List[SlideModel]
+) -> dict:
+    template_name = ""
+    if isinstance(presentation.layout, dict):
+        raw_name = presentation.layout.get("name")
+        if isinstance(raw_name, str):
+            template_name = raw_name
+
+    return {
+        "presentation_id": str(presentation.id),
+        "title": presentation.title,
+        "summary": _truncate_text(presentation.content, limit=500),
+        "language": presentation.language,
+        "template": template_name,
+        "n_slides": presentation.n_slides,
+        "origin": presentation.origin,
+        "currency": presentation.currency,
+        "enriched_data": presentation.enriched_data,
+        "slides": [
+            {
+                "index": slide.index,
+                "layout": slide.layout,
+                "layout_group": slide.layout_group,
+                "title": _extract_slide_title_for_recap(slide),
+                "speaker_note": _truncate_text(slide.speaker_note, limit=400),
+                "content_snapshot": _compact_json(slide.content),
+            }
+            for slide in slides
+        ],
+    }
+
+
+async def _resolve_recap_source_context(
+    request: RecapPresentationRequest,
+    sql_session: AsyncSession,
+) -> Tuple[dict, Optional[str], Optional[str], Optional[str]]:
+    source_context: dict = {}
+    source_language: Optional[str] = None
+    source_origin: Optional[str] = None
+    source_currency: Optional[str] = None
+
+    if request.source_presentation_id:
+        source_presentation = await sql_session.get(
+            PresentationModel, request.source_presentation_id
+        )
+        if not source_presentation:
+            raise HTTPException(status_code=404, detail="Source presentation not found")
+        source_slides_result = await sql_session.scalars(
+            select(SlideModel)
+            .where(SlideModel.presentation == request.source_presentation_id)
+            .order_by(SlideModel.index)
+        )
+        source_slides = list(source_slides_result)
+        source_context["source_presentation"] = _build_recap_source_from_presentation(
+            source_presentation, source_slides
+        )
+        source_language = source_presentation.language
+        source_origin = source_presentation.origin
+        source_currency = source_presentation.currency
+
+    if request.source_json:
+        source_context["source_json"] = request.source_json
+
+    return source_context, source_language, source_origin, source_currency
+
+
+def _resolve_recap_voice_id(narration_tone: str) -> Optional[str]:
+    normalized = normalize_tone_preset(narration_tone)
+    if normalized and normalized in TONE_DEFAULT_VOICE_IDS:
+        return TONE_DEFAULT_VOICE_IDS[normalized]
+    fallback_voice = os.getenv("ELEVENLABS_DEFAULT_VOICE_ID")
+    return fallback_voice.strip() if fallback_voice and fallback_voice.strip() else None
+
+
+def _build_recap_generation_request(
+    request: RecapPresentationRequest,
+    source_context: dict,
+    source_language: Optional[str],
+    source_origin: Optional[str],
+    source_currency: Optional[str],
+) -> GeneratePresentationRequest:
+    mode_defaults = _RECAP_MODE_DEFAULTS[request.mode]
+    mode_narration_tone = str(mode_defaults["narration_tone"])
+    normalized_tone = normalize_tone_preset(request.narration_tone or mode_narration_tone)
+    resolved_narration_tone = (
+        normalized_tone.value if normalized_tone else mode_narration_tone
+    )
+    mode_instruction = str(mode_defaults["instruction"])
+    source_blob = json.dumps(source_context, ensure_ascii=True, default=str)
+    recap_content = (
+        f"Generate a travel recap presentation in mode '{request.mode.value}'.\n"
+        f"Use this source context as factual grounding:\n{source_blob}"
+    )
+    recap_instruction = (
+        f"Recap mode: {request.mode.value}.\n"
+        f"{mode_instruction}\n"
+        "Write in retrospective voice grounded in the source trip details. "
+        "Avoid generic planning language that ignores source specifics."
+    )
+    if request.instructions and request.instructions.strip():
+        recap_instruction = f"{recap_instruction}\n\nAdditional instructions:\n{request.instructions.strip()}"
+
+    return GeneratePresentationRequest(
+        content=recap_content,
+        instructions=recap_instruction,
+        tone=request.tone or mode_defaults["tone"],
+        narration_tone=resolved_narration_tone,
+        verbosity=request.verbosity,
+        web_search=request.web_search,
+        n_slides=request.n_slides,
+        language=request.language or source_language,
+        template=request.template or str(mode_defaults["template"]),
+        include_table_of_contents=request.include_table_of_contents,
+        include_title_slide=request.include_title_slide,
+        export_as=request.export_as,
+        origin=request.origin if request.origin is not None else source_origin,
+        currency=request.currency or source_currency or "USD",
+        slide_duration=request.slide_duration,
+        transition_style=request.transition_style,
+        transition_duration=request.transition_duration,
+        use_narration_as_soundtrack=request.use_narration_as_soundtrack,
+        export_options=request.export_options,
+    )
 
 
 async def _resolve_presentation_fonts(
@@ -244,6 +539,23 @@ async def get_presentation(
         slides=slides,
         fonts=fonts,
     )
+
+
+@PRESENTATION_ROUTER.patch("/{id}/visibility")
+async def update_presentation_visibility(
+    id: uuid.UUID,
+    body: PresentationVisibilityRequest,
+    sql_session: AsyncSession = Depends(get_async_session),
+):
+    presentation = await sql_session.get(PresentationModel, id)
+    if not presentation:
+        raise HTTPException(status_code=404, detail="Presentation not found")
+
+    presentation.is_public = body.is_public
+    sql_session.add(presentation)
+    await sql_session.commit()
+
+    return {"id": str(presentation.id), "is_public": presentation.is_public}
 
 
 @PRESENTATION_ROUTER.delete("/{id}", status_code=204)
@@ -493,6 +805,10 @@ async def stream_presentation(
                 if enriched_instructions
                 else presentation.enriched_context
             )
+        try:
+            agent_profile = get_agent_profile()
+        except Exception:
+            agent_profile = None
 
         async_assets_generation_tasks = []
 
@@ -503,6 +819,11 @@ async def stream_presentation(
         ).to_string()
         for i, slide_layout_index in enumerate(structure.slides):
             slide_layout = layout.slides[slide_layout_index]
+            slide_instructions = build_agent_profile_slide_instructions(
+                enriched_instructions,
+                slide_layout.id,
+                agent_profile,
+            )
 
             try:
                 slide_content = await get_slide_content_from_type_and_outline(
@@ -511,7 +832,7 @@ async def stream_presentation(
                     presentation.language,
                     presentation.tone,
                     presentation.verbosity,
-                    enriched_instructions,
+                    slide_instructions,
                     template=layout.name,
                     previous_slide_title=outline_titles[i - 1] if i > 0 else None,
                     next_slide_title=(
@@ -534,6 +855,11 @@ async def stream_presentation(
                     logging.getLogger(__name__).warning(
                         f"Enricher overlay failed for slide {i} (continuing without overlay): {overlay_err}"
                     )
+            slide_content = apply_agent_profile_overlays(
+                slide_content,
+                slide_layout.id,
+                agent_profile,
+            )
 
             slide = SlideModel(
                 presentation=id,
@@ -726,6 +1052,7 @@ async def export_presentation_as_json(
             narration_tone=presentation.narration_tone,
             narration_model_id=presentation.narration_model_id,
             narration_pronunciation_dictionary_id=presentation.narration_pronunciation_dictionary_id,
+            is_public=presentation.is_public,
             slides=list(slides),
             theme=presentation.theme,
             fonts=fonts,
@@ -840,6 +1167,71 @@ async def check_if_api_request_is_valid(
             )
 
     return (presentation_id,)
+
+
+@PRESENTATION_ROUTER.post("/recap", response_model=RecapPresentationResponse)
+async def generate_recap_presentation(
+    request: RecapPresentationRequest,
+    sql_session: AsyncSession = Depends(get_async_session),
+):
+    source_context, source_language, source_origin, source_currency = (
+        await _resolve_recap_source_context(request, sql_session)
+    )
+    recap_generation_request = _build_recap_generation_request(
+        request=request,
+        source_context=source_context,
+        source_language=source_language,
+        source_origin=source_origin,
+        source_currency=source_currency,
+    )
+    (presentation_id,) = await check_if_api_request_is_valid(
+        recap_generation_request, sql_session
+    )
+    response = await generate_presentation_handler(
+        recap_generation_request, presentation_id, None, sql_session
+    )
+
+    generated_presentation = await sql_session.get(PresentationModel, response.presentation_id)
+    if generated_presentation:
+        generated_presentation.narration_tone = recap_generation_request.narration_tone
+        resolved_voice_id = _resolve_recap_voice_id(
+            recap_generation_request.narration_tone or ""
+        )
+        if resolved_voice_id:
+            generated_presentation.narration_voice_id = resolved_voice_id
+        sql_session.add(generated_presentation)
+        await sql_session.commit()
+
+    return RecapPresentationResponse(
+        **response.model_dump(),
+        mode=request.mode,
+        source_presentation_id=request.source_presentation_id,
+    )
+
+
+def _build_export_options_from_request(
+    request: GeneratePresentationRequest,
+) -> Optional[dict]:
+    export_options = dict(request.export_options or {})
+
+    if request.slide_duration is not None and "slide_duration" not in export_options:
+        export_options["slide_duration"] = request.slide_duration
+    if request.transition_style and "transition_style" not in export_options:
+        export_options["transition_style"] = request.transition_style
+    if (
+        request.transition_duration is not None
+        and "transition_duration" not in export_options
+    ):
+        export_options["transition_duration"] = request.transition_duration
+    if (
+        request.use_narration_as_soundtrack is not None
+        and "use_narration_as_soundtrack" not in export_options
+    ):
+        export_options["use_narration_as_soundtrack"] = (
+            request.use_narration_as_soundtrack
+        )
+
+    return export_options or None
 
 
 async def generate_presentation_handler(
@@ -1142,6 +1534,10 @@ async def generate_presentation_handler(
                 if enriched_instructions
                 else enriched_context_for_model
             )
+        try:
+            agent_profile = get_agent_profile()
+        except Exception:
+            agent_profile = None
 
         batch_size = 10
         for start in range(0, len(slide_layouts), batch_size):
@@ -1154,7 +1550,11 @@ async def generate_presentation_handler(
                     language_to_use,
                     request.tone.value,
                     request.verbosity.value,
-                    enriched_instructions,
+                    build_agent_profile_slide_instructions(
+                        enriched_instructions,
+                        slide_layouts[i].id,
+                        agent_profile,
+                    ),
                     template=request.template,
                     previous_slide_title=outline_titles[i - 1] if i > 0 else None,
                     next_slide_title=(
@@ -1182,6 +1582,11 @@ async def generate_presentation_handler(
                         logging.getLogger(__name__).warning(
                             f"Enricher overlay failed for slide {i} (continuing without overlay): {overlay_err}"
                         )
+                slide_content = apply_agent_profile_overlays(
+                    slide_content,
+                    slide_layout.id,
+                    agent_profile,
+                )
                 slide = SlideModel(
                     presentation=presentation_id,
                     layout_group=layout_model.name,
@@ -1238,8 +1643,12 @@ async def generate_presentation_handler(
             sql_session.add(async_status)
 
         # 9. Export
+        export_options = _build_export_options_from_request(request)
         presentation_and_path = await export_presentation(
-            presentation_id, presentation.title or str(uuid.uuid4()), request.export_as
+            presentation_id,
+            presentation.title or str(uuid.uuid4()),
+            request.export_as,
+            export_options=export_options,
         )
 
         response = PresentationPathAndEditPath(

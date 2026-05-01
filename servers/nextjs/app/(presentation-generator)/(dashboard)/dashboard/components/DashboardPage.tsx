@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import { DashboardApi } from "@/app/(presentation-generator)/services/api/dashboard";
 import { PresentationGrid } from "@/app/(presentation-generator)/(dashboard)/dashboard/components/PresentationGrid";
 import Link from "next/link";
-import { ChevronRight, Plane } from "lucide-react";
+import { ChevronRight, History, Plane } from "lucide-react";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { usePathname } from "next/navigation";
 
@@ -77,6 +77,16 @@ const DashboardPage: React.FC = () => {
               <Plane className="w-4 h-4" />
               <span className="hidden md:inline">Travel Presentation</span>
               <span className="md:hidden">Travel</span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+            <Link
+              href="/past-trips"
+              className="inline-flex items-center gap-2 rounded-md px-4 py-2.5 border border-border bg-card text-foreground text-sm font-semibold font-display shadow-sm hover:bg-accent transition-colors"
+              aria-label="Create recap from past trips"
+            >
+              <History className="w-4 h-4" />
+              <span className="hidden md:inline">Past trips</span>
+              <span className="md:hidden">Recaps</span>
               <ChevronRight className="w-4 h-4" />
             </Link>
             <Link

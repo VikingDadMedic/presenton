@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { LayoutDashboard, Star, Brain, Settings, Palette, HelpCircle } from "lucide-react";
+import { LayoutDashboard, Star, Brain, Settings, Palette, HelpCircle, Megaphone, History } from "lucide-react";
 import { MotionIcon } from "motion-icons-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -10,6 +10,8 @@ import Link from "next/link";
 
 export const defaultNavItems = [
     { key: "dashboard" as const, label: "Dashboard", icon: LayoutDashboard },
+    { key: "campaign" as const, label: "Campaigns", icon: Megaphone },
+    { key: "past-trips" as const, label: "Past trips", icon: History },
     { key: "templates" as const, label: "Standard", icon: Star },
     { key: "designs" as const, label: "Smart", icon: Brain },
 
@@ -72,6 +74,36 @@ const DashboardSidebar = () => {
                             <div className="flex flex-col cursor-pointer tex-center items-center gap-2  transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={`${pathname === "/templates" ? "var(--primary)" : "#475569"}`} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M4 14h6" /><path d="M4 2h10" /><rect x="4" y="18" width="16" height="4" rx="1" /><rect x="4" y="6" width="16" height="4" rx="1" /></svg>
                                 <span className="text-[11px] text-foreground">Templates</span>
+                            </div>
+                        </Link>
+                        <Link
+                            prefetch={false}
+                            href={`/campaign`}
+                            className={[
+                                "flex flex-col tex-center items-center gap-2  transition-colors",
+                                pathname === "/campaign" ? "" : "ring-transparent",
+                            ].join(" ")}
+                            aria-label="Campaigns"
+                            title="Campaigns"
+                        >
+                            <div className="flex flex-col cursor-pointer tex-center items-center gap-2  transition-colors">
+                                <MotionIcon name="Megaphone" animation="bounce" trigger="hover" size={16} className={pathname === "/campaign" ? "text-primary" : "text-muted-foreground"} />
+                                <span className="text-[11px] text-foreground">Campaigns</span>
+                            </div>
+                        </Link>
+                        <Link
+                            prefetch={false}
+                            href={`/past-trips`}
+                            className={[
+                                "flex flex-col tex-center items-center gap-2  transition-colors",
+                                pathname === "/past-trips" ? "" : "ring-transparent",
+                            ].join(" ")}
+                            aria-label="Past trips"
+                            title="Past trips"
+                        >
+                            <div className="flex flex-col cursor-pointer tex-center items-center gap-2  transition-colors">
+                                <MotionIcon name="History" animation="bounce" trigger="hover" size={16} className={pathname === "/past-trips" ? "text-primary" : "text-muted-foreground"} />
+                                <span className="text-[11px] text-foreground">Past trips</span>
                             </div>
                         </Link>
                         <Link

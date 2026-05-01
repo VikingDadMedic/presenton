@@ -112,6 +112,12 @@ class NarrationUsageSummaryResponse(BaseModel):
     rows: List[NarrationUsageSummaryRow]
 
 
+class NarrationBudgetRemainingResponse(BaseModel):
+    budget: Optional[int] = None
+    used: int
+    remaining: Optional[int] = None
+
+
 class UploadPronunciationDictionaryRequest(BaseModel):
     rules: List[Dict[str, str]]
     name: Optional[str] = "Presenton Pronunciation Dictionary"
@@ -1026,6 +1032,29 @@ async def get_narration_usage_summary(
         total_character_count=total_character_count,
         total_request_count=total_request_count,
         rows=rows,
+    )
+
+
+@NARRATION_ROUTER.get(
+    "/usage/budget-remaining",
+    response_model=NarrationBudgetRemainingResponse,
+)
+async def get_narration_budget_remaining(
+    sql_session: AsyncSession = Depends(get_async_session),
+):
+    used_characters = await _get_monthly_character_usage(sql_session)
+    monthly_budget = _read_optional_positive_int_env(
+        "ELEVENLABS_MONTHLY_CHARACTER_BUDGET"
+    )
+    remaining = (
+        max(monthly_budget - used_characters, 0)
+        if monthly_budget is not None
+        else None
+    )
+    return NarrationBudgetRemainingResponse(
+        budget=monthly_budget,
+        used=used_characters,
+        remaining=remaining,
     )
 
 

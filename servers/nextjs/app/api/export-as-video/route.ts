@@ -18,6 +18,7 @@ import {
   type VideoExportJob,
 } from "@/lib/video-export-jobs";
 import { runVideoRender } from "@/lib/video-export-runner";
+import { resolveExportAspectRatio } from "@/lib/export-aspect-ratio";
 
 let staleJobsReaped = false;
 
@@ -78,6 +79,9 @@ export async function POST(req: NextRequest) {
     transitionDuration,
     audioUrl,
     useNarrationAsSoundtrack,
+    aspectRatio,
+    aspect_ratio,
+    export_options,
     async: asyncFlag,
   } = body;
 
@@ -110,6 +114,11 @@ export async function POST(req: NextRequest) {
       transitionDuration !== undefined ? Number(transitionDuration) : undefined,
     audioUrl: audioUrl ? String(audioUrl) : undefined,
     useNarrationAsSoundtrack: soundtrackModeEnabled,
+    aspectRatio: resolveExportAspectRatio(
+      aspectRatio,
+      aspect_ratio,
+      export_options?.aspect_ratio,
+    ),
     sessionCookie,
   };
 

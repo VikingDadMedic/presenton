@@ -2,6 +2,11 @@
 // for video export. Extracted from the API route handler so the script-generation
 // logic can be regression-tested in isolation. Kept side-effect free (no fs/puppeteer).
 
+import {
+  getExportDimensions,
+  type ExportDimensions,
+} from "./export-aspect-ratio";
+
 const TITLE_SELECTORS =
   'h1, h2, [class*="title"], [class*="Title"], [class*="heading"], [class*="Heading"]';
 const CARD_SELECTORS =
@@ -23,11 +28,94 @@ export interface SlideHtmlInput {
   note: string;
 }
 
+export interface BrandStampOptions {
+  agentName?: string | null;
+  agencyName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  bookingUrl?: string | null;
+  tagline?: string | null;
+  logoUrl?: string | null;
+}
+
 const STYLE_NAMES: SlideTransitionStyle[] = [
   "scale-zoom",
   "slide-right",
   "clip-reveal",
 ];
+
+const escapeHtml = (value: string): string =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+
+const normalizeField = (value?: string | null): string | null => {
+  if (!value) {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+function buildBrandStampOverlay(branding?: BrandStampOptions): string {
+  if (!branding) {
+    return "";
+  }
+
+  const agencyName = normalizeField(branding.agencyName);
+  const agentName = normalizeField(branding.agentName);
+  const email = normalizeField(branding.email);
+  const phone = normalizeField(branding.phone);
+  const bookingUrl = normalizeField(branding.bookingUrl);
+  const tagline = normalizeField(branding.tagline);
+  const logoUrl = normalizeField(branding.logoUrl);
+
+  if (!agencyName && !agentName && !email && !phone && !bookingUrl && !logoUrl) {
+    return "";
+  }
+
+  const contactLine = [phone, email, bookingUrl]
+    .filter(Boolean)
+    .map((item) => escapeHtml(item as string))
+    .join("  •  ");
+
+  return `
+      <div style="position:absolute;inset:0;pointer-events:none;z-index:50;">
+        ${
+          logoUrl
+            ? `<div style="position:absolute;top:18px;right:18px;background:rgba(255,255,255,0.9);padding:8px 10px;border-radius:10px;">
+            <img src="${escapeHtml(logoUrl)}" alt="brand logo" style="max-width:84px;max-height:28px;object-fit:contain;display:block;" />
+          </div>`
+            : ""
+        }
+        <div style="position:absolute;left:20px;right:20px;bottom:18px;background:rgba(16,20,20,0.78);color:#f8f4ec;border:1px solid rgba(248,244,236,0.16);border-radius:12px;padding:10px 14px;font-family:'DM Sans',sans-serif;">
+          ${
+            agencyName
+              ? `<div style="font-size:14px;font-weight:700;letter-spacing:0.01em;">${escapeHtml(agencyName)}</div>`
+              : ""
+          }
+          ${
+            tagline
+              ? `<div style="margin-top:2px;font-size:11px;opacity:0.86;">${escapeHtml(tagline)}</div>`
+              : ""
+          }
+          ${
+            agentName
+              ? `<div style="margin-top:4px;font-size:12px;font-weight:600;">${escapeHtml(agentName)}</div>`
+              : ""
+          }
+          ${
+            contactLine
+              ? `<div style="margin-top:4px;font-size:11px;opacity:0.92;">${contactLine}</div>`
+              : ""
+          }
+        </div>
+      </div>
+    `;
+}
 
 function seededRandom(seed: number): () => number {
   let s = seed;
@@ -114,18 +202,23 @@ export function buildHyperframesComposition(
   transitionDuration: number,
   narrationTracks: SlideNarrationTrack[] = [],
   backgroundAudioUrl?: string,
+  branding?: BrandStampOptions,
+  dimensions?: ExportDimensions,
 ): string {
+  const resolvedDimensions = dimensions ?? getExportDimensions(undefined);
   const totalSlides = slides.length;
   const totalDuration = totalSlides * slideDuration;
 
   const slideClips = slides
     .map((slide, i) => {
       const startRef = i === 0 ? "0" : `slide-${i - 1}`;
+      const brandingOverlay = buildBrandStampOverlay(branding);
       return `    <div id="slide-${i}" class="clip"
          data-start="${startRef}" data-duration="${slideDuration}"
          data-track-index="0"
-         style="position:absolute;inset:0;width:1280px;height:720px;overflow:hidden;">
+         style="position:absolute;inset:0;width:${resolvedDimensions.width}px;height:${resolvedDimensions.height}px;overflow:hidden;">
       ${slide.html}
+      ${brandingOverlay}
     </div>`;
     })
     .join("\n\n");
@@ -165,15 +258,15 @@ export function buildHyperframesComposition(
   ${stylesheets.join("\n  ")}
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 1280px; height: 720px; overflow: hidden; background: #13151c; }
+    html, body { width: ${resolvedDimensions.width}px; height: ${resolvedDimensions.height}px; overflow: hidden; background: #13151c; }
     .clip { visibility: hidden; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.7/gsap.min.js"></script>
 </head>
 <body>
 <div id="root" data-composition-id="tripstory-video"
-     data-start="0" data-width="1280" data-height="720"
-     style="position:relative;width:1280px;height:720px;overflow:hidden;
+     data-start="0" data-width="${resolvedDimensions.width}" data-height="${resolvedDimensions.height}"
+     style="position:relative;width:${resolvedDimensions.width}px;height:${resolvedDimensions.height}px;overflow:hidden;
 ${themeStyle}">
 
 ${slideClips}

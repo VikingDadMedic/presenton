@@ -11,18 +11,28 @@ from models.presentation_and_path import PresentationAndPath
 from services.pptx_presentation_creator import PptxPresentationCreator
 from services.temp_file_service import TEMP_FILE_SERVICE
 from utils.asset_directory_utils import get_exports_directory
-import uuid
 
 
 async def export_presentation(
     presentation_id: uuid.UUID, title: str, export_as: Literal["pptx", "pdf", "html", "video"],
     export_options: Optional[dict] = None,
 ) -> PresentationAndPath:
+    opts = export_options or {}
+    aspect_ratio = opts.get("aspect_ratio") or opts.get("aspectRatio")
+
     if export_as == "pptx":
+        query_params = {"id": str(presentation_id)}
+        for key in ("utm_source", "utm_medium", "utm_campaign", "utm_content"):
+            value = opts.get(key)
+            if value:
+                query_params[key] = str(value)
+        if aspect_ratio:
+            query_params["aspect_ratio"] = str(aspect_ratio)
 
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"http://localhost/api/presentation_to_pptx_model?id={presentation_id}"
+                "http://localhost/api/presentation_to_pptx_model",
+                params=query_params,
             ) as response:
                 if response.status != 200:
                     error_text = await response.text()
@@ -50,15 +60,25 @@ async def export_presentation(
             path=pptx_path,
         )
     elif export_as == "html":
-        opts = export_options or {}
+        auto_play_interval = opts.get("auto_play_interval")
+        if auto_play_interval is None and opts.get("slide_duration") is not None:
+            try:
+                auto_play_interval = int(float(opts.get("slide_duration")) * 1000)
+            except Exception:
+                auto_play_interval = None
+        payload = {
+            "id": str(presentation_id),
+            "title": sanitize_filename(title or str(uuid.uuid4())),
+            "autoPlayInterval": auto_play_interval or 5000,
+            "export_options": opts,
+        }
+        if aspect_ratio:
+            payload["aspect_ratio"] = str(aspect_ratio)
+            payload["aspectRatio"] = str(aspect_ratio)
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 "http://localhost/api/export-as-html",
-                json={
-                    "id": str(presentation_id),
-                    "title": sanitize_filename(title or str(uuid.uuid4())),
-                    "autoPlayInterval": opts.get("auto_play_interval", 5000),
-                },
+                json=payload,
                 timeout=aiohttp.ClientTimeout(total=120),
             ) as response:
                 if response.status != 200:
@@ -75,18 +95,27 @@ async def export_presentation(
             path=response_json["path"],
         )
     elif export_as == "video":
-        opts = export_options or {}
+        payload = {
+            "id": str(presentation_id),
+            "title": sanitize_filename(title or str(uuid.uuid4())),
+            "slideDuration": opts.get("slide_duration", 5),
+            "transitionStyle": opts.get("transition_style", "cycle"),
+            "transitionDuration": opts.get("transition_duration", 0.8),
+            "audioUrl": opts.get("audio_url"),
+            "export_options": opts,
+        }
+        if "use_narration_as_soundtrack" in opts:
+            payload["useNarrationAsSoundtrack"] = bool(
+                opts.get("use_narration_as_soundtrack")
+            )
+        if aspect_ratio:
+            payload["aspectRatio"] = str(aspect_ratio)
+            payload["aspect_ratio"] = str(aspect_ratio)
+
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 "http://localhost/api/export-as-video",
-                json={
-                    "id": str(presentation_id),
-                    "title": sanitize_filename(title or str(uuid.uuid4())),
-                    "slideDuration": opts.get("slide_duration", 5),
-                    "transitionStyle": opts.get("transition_style", "cycle"),
-                    "transitionDuration": opts.get("transition_duration", 0.8),
-                    "audioUrl": opts.get("audio_url"),
-                },
+                json=payload,
                 timeout=aiohttp.ClientTimeout(total=300),
             ) as response:
                 if response.status != 200:
@@ -103,13 +132,18 @@ async def export_presentation(
             path=response_json["path"],
         )
     else:
+        payload = {
+            "id": str(presentation_id),
+            "title": sanitize_filename(title or str(uuid.uuid4())),
+            "export_options": opts,
+        }
+        if aspect_ratio:
+            payload["aspect_ratio"] = str(aspect_ratio)
+            payload["aspectRatio"] = str(aspect_ratio)
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 "http://localhost/api/export-as-pdf",
-                json={
-                    "id": str(presentation_id),
-                    "title": sanitize_filename(title or str(uuid.uuid4())),
-                },
+                json=payload,
             ) as response:
                 response_json = await response.json()
 

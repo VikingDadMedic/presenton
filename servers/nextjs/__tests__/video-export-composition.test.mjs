@@ -43,7 +43,7 @@ async function loadCompositionModule() {
   await build({
     entryPoints: [COMPOSITION_TS],
     outfile: outFile,
-    bundle: false,
+    bundle: true,
     format: "esm",
     target: "node20",
     platform: "node",
@@ -193,4 +193,23 @@ test("buildHyperframesComposition: background audio url renders only when provid
     "https://example.com/bg.mp3",
   );
   assert.match(withBg, /data-track-index="11"[^>]*src="https:\/\/example\.com\/bg\.mp3"/);
+});
+
+test("buildHyperframesComposition: custom dimensions are applied to composition canvas", async () => {
+  const { buildHyperframesComposition } = await compositionModulePromise;
+  const html = buildHyperframesComposition(
+    SAMPLE_SLIDES,
+    5,
+    {},
+    [],
+    "cycle",
+    0.8,
+    [],
+    undefined,
+    undefined,
+    { aspectRatio: "vertical", width: 720, height: 1280 },
+  );
+  assert.match(html, /data-width="720" data-height="1280"/);
+  assert.match(html, /html, body \{ width: 720px; height: 1280px;/);
+  assert.match(html, /id="slide-0"[\s\S]*width:720px;height:1280px/);
 });

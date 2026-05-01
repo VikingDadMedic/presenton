@@ -60,8 +60,10 @@ class PptxPresentationCreator:
         self._slide_models = ppt_model.slides
 
         self._ppt = Presentation()
-        self._ppt.slide_width = Pt(1280)
-        self._ppt.slide_height = Pt(720)
+        slide_width = ppt_model.slide_width or 1280
+        slide_height = ppt_model.slide_height or 720
+        self._ppt.slide_width = Pt(slide_width)
+        self._ppt.slide_height = Pt(slide_height)
 
     def get_sub_element(self, parent, tagname, **kwargs):
         """Helper method to create XML elements"""

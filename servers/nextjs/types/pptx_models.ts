@@ -333,6 +333,9 @@ export interface PptxSlideModel {
 export interface PptxPresentationModel {
   name?: string;
   shapes?: PptxShapeModel[];
+  aspect_ratio?: "landscape" | "vertical" | "square" | string;
+  slide_width?: number;
+  slide_height?: number;
   slides: PptxSlideModel[];
 }
 

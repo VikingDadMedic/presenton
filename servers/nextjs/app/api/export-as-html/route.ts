@@ -3,6 +3,17 @@ import puppeteer, { type Browser, type Page } from "puppeteer";
 import fs from "fs";
 import path from "path";
 import JSZip from "jszip";
+import {
+  type AgentProfile,
+  escapeHtml,
+  getAgentProfileFromUserConfig,
+} from "@/lib/agent-profile";
+import { applyUtmTagsToHtml, applyUtmToUrl } from "@/lib/apply-utm-tags";
+import {
+  EXPORT_SLIDE_SELECTOR,
+  getExportDimensions,
+  resolveExportAspectRatio,
+} from "@/lib/export-aspect-ratio";
 
 interface SlideCapture {
   html: string;
@@ -47,8 +58,144 @@ function htmlTextEscape(raw: string): string {
     .replaceAll(">", "&gt;");
 }
 
+function buildBrandOverlay(
+  profile: AgentProfile | null,
+  bookingUrlWithUtm: string | null
+): string {
+  if (!profile) {
+    return "";
+  }
+  const agencyName = profile.agency_name?.trim();
+  const agentName = profile.agent_name?.trim();
+  const phone = profile.phone?.trim();
+  const email = profile.email?.trim();
+  const logoUrl = profile.logo_url?.trim();
+  const tagline = profile.tagline?.trim();
+  const bookingUrl = bookingUrlWithUtm?.trim();
+  const hasContent = Boolean(
+    agencyName || agentName || phone || email || logoUrl || bookingUrl
+  );
+  if (!hasContent) {
+    return "";
+  }
+
+  const contactLine = [phone, email, bookingUrl]
+    .filter(Boolean)
+    .map((value) => escapeHtml(value as string))
+    .join(" • ");
+
+  return `
+      <div style="position:absolute;inset:0;pointer-events:none;z-index:30;">
+        ${
+          logoUrl
+            ? `<div style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.92);padding:8px 10px;border-radius:10px;">
+            <img src="${escapeHtml(logoUrl)}" alt="Agency logo" style="display:block;max-width:96px;max-height:30px;object-fit:contain;" />
+          </div>`
+            : ""
+        }
+        <div style="position:absolute;left:18px;right:18px;bottom:14px;background:rgba(16,20,20,0.8);border:1px solid rgba(248,244,236,0.18);border-radius:12px;padding:10px 14px;color:#f8f4ec;font-family:'DM Sans',sans-serif;">
+          ${
+            agencyName
+              ? `<div style="font-size:14px;font-weight:700;">${escapeHtml(agencyName)}</div>`
+              : ""
+          }
+          ${
+            tagline
+              ? `<div style="margin-top:2px;font-size:11px;opacity:0.86;">${escapeHtml(tagline)}</div>`
+              : ""
+          }
+          ${
+            agentName
+              ? `<div style="margin-top:4px;font-size:12px;font-weight:600;">${escapeHtml(agentName)}</div>`
+              : ""
+          }
+          ${
+            contactLine
+              ? `<div style="margin-top:4px;font-size:11px;opacity:0.92;">${contactLine}</div>`
+              : ""
+          }
+        </div>
+      </div>
+  `;
+}
+
+function buildEmailHeader(
+  profile: AgentProfile | null,
+  bookingUrlWithUtm: string | null
+): string {
+  if (!profile) {
+    return "";
+  }
+  const agencyName = profile.agency_name?.trim();
+  const agentName = profile.agent_name?.trim();
+  const email = profile.email?.trim();
+  const phone = profile.phone?.trim();
+  const tagline = profile.tagline?.trim();
+  const logoUrl = profile.logo_url?.trim();
+  const bookingUrl = bookingUrlWithUtm?.trim();
+
+  if (
+    !agencyName &&
+    !agentName &&
+    !email &&
+    !phone &&
+    !tagline &&
+    !logoUrl &&
+    !bookingUrl
+  ) {
+    return "";
+  }
+
+  return `
+      <tr>
+        <td style="padding:18px 20px;background:#101414;color:#f8f4ec;">
+          ${
+            logoUrl
+              ? `<img src="${escapeHtml(logoUrl)}" alt="Agency logo" style="max-width:130px;max-height:40px;display:block;margin-bottom:10px;" />`
+              : ""
+          }
+          ${
+            agencyName
+              ? `<div style="font-family:Arial,sans-serif;font-size:18px;font-weight:700;line-height:1.2;">${escapeHtml(agencyName)}</div>`
+              : ""
+          }
+          ${
+            tagline
+              ? `<div style="margin-top:6px;font-family:Arial,sans-serif;font-size:13px;line-height:1.4;opacity:0.88;">${escapeHtml(tagline)}</div>`
+              : ""
+          }
+          ${
+            agentName
+              ? `<div style="margin-top:8px;font-family:Arial,sans-serif;font-size:13px;font-weight:600;">${escapeHtml(agentName)}</div>`
+              : ""
+          }
+          <div style="margin-top:4px;font-family:Arial,sans-serif;font-size:12px;line-height:1.45;opacity:0.92;">
+            ${[phone, email].filter(Boolean).map((item) => escapeHtml(item as string)).join(" • ")}
+          </div>
+          ${
+            bookingUrl
+              ? `<div style="margin-top:12px;">
+                <a href="${escapeHtml(bookingUrl)}" style="display:inline-block;background:#047C7A;color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:12px;font-weight:700;padding:8px 12px;border-radius:6px;">Book your trip</a>
+              </div>`
+              : ""
+          }
+        </td>
+      </tr>
+  `;
+}
+
 export async function POST(req: NextRequest) {
-  const { id, title, autoPlayInterval } = await req.json();
+  const payload = await req.json();
+  const { id, title, autoPlayInterval, export_options } = payload;
+  const emailSafe = Boolean(export_options?.email_safe || payload.email_safe);
+  const aspectRatio = resolveExportAspectRatio(
+    payload.aspectRatio,
+    payload.aspect_ratio,
+    export_options?.aspect_ratio
+  );
+  const dimensions = getExportDimensions(aspectRatio);
+  const responsiveMaxWidth = dimensions.width + 20;
+  const responsiveMaxHeight = dimensions.height + 20;
   if (!id) {
     return NextResponse.json(
       { error: "Missing Presentation ID" },
@@ -81,7 +228,11 @@ export async function POST(req: NextRequest) {
         url: "http://localhost",
       });
     }
-    await page.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1 });
+    await page.setViewport({
+      width: dimensions.width,
+      height: dimensions.height,
+      deviceScaleFactor: 1,
+    });
     page.setDefaultNavigationTimeout(120000);
     page.setDefaultTimeout(120000);
 
@@ -93,7 +244,8 @@ export async function POST(req: NextRequest) {
     await page.waitForSelector("[data-speaker-note]", { timeout: 60000 });
     await new Promise((r) => setTimeout(r, 2000));
 
-    const slideData = await page.evaluate(() => {
+    const slideSelector = EXPORT_SLIDE_SELECTOR;
+    const slideData = await page.evaluate((selector) => {
       const slideWrappers = document.querySelectorAll("[data-speaker-note]");
       const presentationWrapper = document.getElementById(
         "presentation-slides-wrapper"
@@ -118,9 +270,7 @@ export async function POST(req: NextRequest) {
         narrationTextHash: string;
       }[] = [];
       slideWrappers.forEach((wrapper) => {
-        const slideEl = wrapper.querySelector(
-          ".aspect-video, [class*='aspect-video']"
-        );
+        const slideEl = wrapper.querySelector(selector);
         const html = slideEl
           ? slideEl.outerHTML
           : (wrapper as HTMLElement).innerHTML;
@@ -153,7 +303,7 @@ export async function POST(req: NextRequest) {
         });
 
       return { slides, themeVars, stylesheets };
-    });
+    }, slideSelector);
 
     await page.close();
     await browser.close();
@@ -185,10 +335,29 @@ export async function POST(req: NextRequest) {
       .map(([k, v]) => `${k}: ${v};`)
       .join("\n      ");
 
+    const agentProfile = getAgentProfileFromUserConfig();
+    const utmBase = {
+      utm_source: agentProfile?.default_utm_source || "tripstory",
+      utm_medium: agentProfile?.default_utm_medium || (emailSafe ? "newsletter" : "html"),
+      utm_campaign: agentProfile?.default_utm_campaign || "tripstory_export",
+    };
+    const bookingUrlWithUtm = agentProfile?.booking_url
+      ? applyUtmToUrl(agentProfile.booking_url, {
+          ...utmBase,
+          utm_content: emailSafe ? "newsletter_brand_stamp" : "html_brand_stamp",
+        })
+      : null;
+    const brandOverlay = buildBrandOverlay(agentProfile, bookingUrlWithUtm);
+
     const slidesHtml = (slideData.slides as SlideCapture[])
       .map(
-        (s, i) =>
-          `    <div class="ts-slide" data-index="${i}"${s.note ? ` data-note="${htmlAttributeEscape(s.note)}"` : ""}${slideAudioPathByIndex[i] ? ` data-audio-src="${slideAudioPathByIndex[i]}"` : ""}>\n      ${s.html}\n    </div>`
+        (s, i) => {
+          const taggedSlideHtml = applyUtmTagsToHtml(s.html, {
+            ...utmBase,
+            utm_content: `slide_${i + 1}`,
+          });
+          return `    <div class="ts-slide" data-index="${i}"${s.note ? ` data-note="${htmlAttributeEscape(s.note)}"` : ""}${slideAudioPathByIndex[i] ? ` data-audio-src="${slideAudioPathByIndex[i]}"` : ""}>\n      ${taggedSlideHtml}\n      ${brandOverlay}\n    </div>`;
+        }
       )
       .join("\n");
 
@@ -199,7 +368,7 @@ export async function POST(req: NextRequest) {
     const safeTitle = (title || "TripStory Presentation").trim() || "TripStory Presentation";
     const escapedDocumentTitle = htmlTextEscape(safeTitle);
 
-    const htmlBundle = `<!DOCTYPE html>
+    const interactiveHtmlBundle = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -216,7 +385,7 @@ export async function POST(req: NextRequest) {
       position: relative;
     }
     #ts-stage {
-      width: 1280px; height: 720px;
+      width: ${dimensions.width}px; height: ${dimensions.height}px;
       transform-origin: center center;
       position: relative; overflow: hidden;
       ${themeStyle}
@@ -238,7 +407,7 @@ export async function POST(req: NextRequest) {
     #ts-counter { color: rgba(244,240,232,0.6); font-size: 12px; font-family: 'DM Mono', monospace; letter-spacing: 0.08em; }
     #ts-progress { position: fixed; top: 0; left: 0; height: 3px; background: #c9a84c; transition: width 0.3s ease; z-index: 100; }
     #ts-brand { position: fixed; top: 12px; right: 16px; color: rgba(244,240,232,0.4); font-size: 11px; font-family: 'DM Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; z-index: 100; }
-    @media (max-width: 1300px) or (max-height: 740px) {
+    @media (max-width: ${responsiveMaxWidth}px), (max-height: ${responsiveMaxHeight}px) {
       #ts-stage { transform: scale(var(--ts-scale, 1)); }
     }
   </style>
@@ -332,8 +501,8 @@ ${narrationAudioElements}
       // Fit to viewport
       function resize() {
         var stage = document.getElementById('ts-stage');
-        var sw = window.innerWidth / 1280;
-        var sh = window.innerHeight / 720;
+        var sw = window.innerWidth / ${dimensions.width};
+        var sh = window.innerHeight / ${dimensions.height};
         var s = Math.min(sw, sh, 1) * 0.92;
         stage.style.setProperty('--ts-scale', s);
         stage.style.transform = 'scale(' + s + ')';
@@ -354,6 +523,65 @@ ${narrationAudioElements}
   </script>
 </body>
 </html>`;
+
+    const emailHeader = buildEmailHeader(agentProfile, bookingUrlWithUtm);
+    const emailSlideRows = (slideData.slides as SlideCapture[])
+      .map((slide, index) => {
+        const taggedSlideHtml = applyUtmTagsToHtml(slide.html, {
+          ...utmBase,
+          utm_content: `newsletter_slide_${index + 1}`,
+        });
+        const narrationSrc = slideAudioPathByIndex[index];
+        const narrationRow = narrationSrc
+          ? `<tr><td style="padding:0 20px 18px 20px;">
+              <a href="${escapeHtml(
+                narrationSrc
+              )}" style="font-family:Arial,sans-serif;font-size:12px;color:#047C7A;text-decoration:underline;">Listen to slide ${
+                index + 1
+              } narration</a>
+            </td></tr>`
+          : "";
+
+        return `
+          <tr>
+            <td style="padding:20px;">
+              <div style="max-width:600px;margin:0 auto;border:1px solid #E5E7EB;border-radius:10px;overflow:hidden;background:#ffffff;">
+                ${taggedSlideHtml}
+              </div>
+            </td>
+          </tr>
+          ${narrationRow}
+        `;
+      })
+      .join("\n");
+
+    const emailSafeHtmlBundle = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapedDocumentTitle} - TripStory Newsletter</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f5f5;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f5f5f5;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;">
+          ${emailHeader}
+          <tr>
+            <td style="padding:18px 20px 0 20px;">
+              <div style="font-family:Arial,sans-serif;font-size:22px;line-height:1.25;font-weight:700;color:#101414;">${escapedDocumentTitle}</div>
+            </td>
+          </tr>
+          ${emailSlideRows}
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const htmlBundle = emailSafe ? emailSafeHtmlBundle : interactiveHtmlBundle;
 
     const exportDir =
       process.env.APP_DATA_DIRECTORY

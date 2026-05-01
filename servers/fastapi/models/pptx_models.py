@@ -195,4 +195,18 @@ class PptxSlideModel(BaseModel):
 class PptxPresentationModel(BaseModel):
     name: Optional[str] = None
     shapes: Optional[List[PptxShapeModel]] = None
+    aspect_ratio: Optional[Literal["landscape", "vertical", "square"]] = None
+    slide_width: Optional[int] = None
+    slide_height: Optional[int] = None
     slides: List[PptxSlideModel]
+
+    @field_validator("slide_width", "slide_height", mode="before")
+    @classmethod
+    def normalize_slide_dimension(cls, value):
+        if value is None:
+            return None
+        if isinstance(value, float):
+            value = int(round(value))
+        if isinstance(value, int):
+            return value if value > 0 else None
+        return value

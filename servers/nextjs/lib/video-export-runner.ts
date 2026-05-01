@@ -13,6 +13,13 @@ import {
   type SlideNarrationTrack,
 } from "@/lib/video-export-composition";
 import { parseHyperframesProgress } from "@/lib/video-export-jobs";
+import { applyUtmTagsToHtml, applyUtmToUrl } from "@/lib/apply-utm-tags";
+import { getAgentProfileFromUserConfig } from "@/lib/agent-profile";
+import {
+  EXPORT_SLIDE_SELECTOR,
+  getExportDimensions,
+  type ExportAspectRatio,
+} from "./export-aspect-ratio";
 
 export const DEFAULT_SLIDE_DURATION = 5;
 export const DEFAULT_TRANSITION_DURATION = 0.8;
@@ -26,6 +33,7 @@ export interface VideoRenderParams {
   transitionDuration?: number;
   audioUrl?: string;
   useNarrationAsSoundtrack?: boolean;
+  aspectRatio?: ExportAspectRatio | string;
   sessionCookie?: string;
 }
 
@@ -90,11 +98,13 @@ function getMp3DurationSeconds(filePath: string): number {
 
 async function extractSlidesViaPuppeteer(
   presentationId: string,
+  aspectRatio: ExportAspectRatio | string | undefined,
   sessionCookie: string | undefined,
 ): Promise<SlideExtraction> {
   let browser: Browser | null = null;
   let page: Page | null = null;
   try {
+    const dimensions = getExportDimensions(aspectRatio);
     browser = await puppeteer.launch({
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
       headless: true,
@@ -114,7 +124,11 @@ async function extractSlidesViaPuppeteer(
         url: "http://localhost",
       });
     }
-    await page.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1 });
+    await page.setViewport({
+      width: dimensions.width,
+      height: dimensions.height,
+      deviceScaleFactor: 1,
+    });
     page.setDefaultNavigationTimeout(120000);
     page.setDefaultTimeout(120000);
 
@@ -125,7 +139,8 @@ async function extractSlidesViaPuppeteer(
     await page.waitForSelector("[data-speaker-note]", { timeout: 60000 });
     await new Promise((r) => setTimeout(r, 3000));
 
-    const slideData = await page.evaluate(() => {
+    const slideSelector = EXPORT_SLIDE_SELECTOR;
+    const slideData = await page.evaluate((selector) => {
       const slideWrappers = document.querySelectorAll("[data-speaker-note]");
       const presentationWrapper = document.getElementById(
         "presentation-slides-wrapper",
@@ -142,9 +157,7 @@ async function extractSlidesViaPuppeteer(
       }
       const slides: { html: string; note: string; audioUrl: string }[] = [];
       slideWrappers.forEach((wrapper) => {
-        const slideEl = wrapper.querySelector(
-          ".aspect-video, [class*='aspect-video']",
-        );
+        const slideEl = wrapper.querySelector(selector);
         const html = slideEl
           ? slideEl.outerHTML
           : (wrapper as HTMLElement).innerHTML;
@@ -164,7 +177,7 @@ async function extractSlidesViaPuppeteer(
           stylesheets.push((link as HTMLElement).outerHTML);
         });
       return { slides, themeVars, stylesheets };
-    });
+    }, slideSelector);
 
     return slideData as SlideExtraction;
   } finally {
@@ -288,11 +301,13 @@ async function runScreenshotFallback(
   tempDir: string,
   outPath: string,
   duration: number,
+  aspectRatio: ExportAspectRatio | string | undefined,
   sessionCookie: string | undefined,
 ): Promise<void> {
   let browser: Browser | null = null;
   let page: Page | null = null;
   try {
+    const dimensions = getExportDimensions(aspectRatio);
     browser = await puppeteer.launch({
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
       headless: true,
@@ -311,7 +326,11 @@ async function runScreenshotFallback(
         url: "http://localhost",
       });
     }
-    await page.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1 });
+    await page.setViewport({
+      width: dimensions.width,
+      height: dimensions.height,
+      deviceScaleFactor: 1,
+    });
     page.setDefaultNavigationTimeout(120000);
     await page.goto(`http://localhost/pdf-maker?id=${presentationId}`, {
       waitUntil: "networkidle0",
@@ -327,7 +346,7 @@ async function runScreenshotFallback(
     let frameIndex = 0;
     for (let i = 0; i < slideElements.length; i++) {
       const inner = await slideElements[i].$(
-        ".aspect-video, [class*='aspect-video']",
+        `${EXPORT_SLIDE_SELECTOR}`,
       );
       const target = inner || slideElements[i];
       const screenshotPath = path.join(framesDir, `slide-${i}.png`) as `${string}.png`;
@@ -368,6 +387,7 @@ export async function runVideoRender(
     transitionDuration,
     audioUrl,
     useNarrationAsSoundtrack,
+    aspectRatio,
     sessionCookie,
   } = params;
   const { onProgress } = options;
@@ -386,6 +406,7 @@ export async function runVideoRender(
     onProgress?.({ message: "Extracting slides via puppeteer", progressPct: 5 });
     const slideData = await extractSlidesViaPuppeteer(
       presentationId,
+      aspectRatio,
       sessionCookie,
     );
     if (!slideData.slides.length) {
@@ -410,9 +431,28 @@ export async function runVideoRender(
     const duration = Math.max(baseDuration, longestNarrationSeconds);
     const style = transitionStyle || "cycle";
     const transDur = transitionDuration || DEFAULT_TRANSITION_DURATION;
+    const agentProfile = getAgentProfileFromUserConfig();
+    const defaultUtm = {
+      utm_source: agentProfile?.default_utm_source || "tripstory",
+      utm_medium: agentProfile?.default_utm_medium || "video",
+      utm_campaign: agentProfile?.default_utm_campaign || "tripstory_export",
+    };
+    const slidesWithTaggedUrls = slideData.slides.map((slide, index) => ({
+      ...slide,
+      html: applyUtmTagsToHtml(slide.html, {
+        ...defaultUtm,
+        utm_content: `slide_${index + 1}`,
+      }),
+    }));
+    const bookingUrlWithUtm = agentProfile?.booking_url
+      ? applyUtmToUrl(agentProfile.booking_url, {
+          ...defaultUtm,
+          utm_content: "video_brand_stamp",
+        })
+      : null;
 
     const compositionHtml = buildHyperframesComposition(
-      slideData.slides,
+      slidesWithTaggedUrls,
       duration,
       slideData.themeVars,
       slideData.stylesheets,
@@ -420,6 +460,16 @@ export async function runVideoRender(
       transDur,
       narrationTracks,
       audioUrl,
+      {
+        agentName: agentProfile?.agent_name ?? null,
+        agencyName: agentProfile?.agency_name ?? null,
+        email: agentProfile?.email ?? null,
+        phone: agentProfile?.phone ?? null,
+        bookingUrl: bookingUrlWithUtm,
+        tagline: agentProfile?.tagline ?? null,
+        logoUrl: agentProfile?.logo_url ?? null,
+      },
+      getExportDimensions(aspectRatio),
     );
 
     const compositionPath = path.join(tempDir, "index.html");
@@ -456,6 +506,7 @@ export async function runVideoRender(
         tempDir,
         outPath,
         duration,
+        aspectRatio,
         sessionCookie,
       );
     }

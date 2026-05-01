@@ -3,6 +3,126 @@ import { IconSearch, ImageGenerate, ImageSearch, PreviousGeneratedImagesResponse
 import { ApiResponseHandler } from "./api-error-handler";
 import { getApiUrl } from "@/utils/api";
 
+export interface AgentProfilePayload {
+  agent_name?: string | null;
+  agency_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  booking_url?: string | null;
+  tagline?: string | null;
+  logo_url?: string | null;
+  default_utm_source?: string | null;
+  default_utm_medium?: string | null;
+  default_utm_campaign?: string | null;
+}
+
+export type CampaignVariantExportType =
+  | "video"
+  | "html"
+  | "pdf"
+  | "pptx"
+  | string;
+
+export interface CampaignVariantConfig {
+  name: string;
+  template: string;
+  export_as: CampaignVariantExportType;
+  n_slides?: number;
+  tone?: string;
+  narration_tone?: string;
+  slide_duration?: number;
+  transition_style?: string;
+  transition_duration?: number;
+  use_narration_as_soundtrack?: boolean;
+  is_public?: boolean;
+  lead_magnet?: boolean;
+  email_safe?: boolean;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  aspect_ratio?: "landscape" | "vertical" | "square" | string;
+  [key: string]: unknown;
+}
+
+export interface CampaignGenerateRequest {
+  content: string;
+  variants: CampaignVariantConfig[];
+  trip_plan?: Record<string, unknown> | null;
+  client_profile?: Record<string, unknown> | null;
+  [key: string]: unknown;
+}
+
+export interface CampaignGenerateResponse {
+  campaign_id: string;
+  statusUrl?: string;
+}
+
+export interface CampaignVariantStatus {
+  variant_id?: string;
+  name?: string;
+  template?: string;
+  export_as?: CampaignVariantExportType;
+  status?: string;
+  message?: string | null;
+  error?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  started_at?: string | null;
+  completed_at?: string | null;
+  presentation_id?: string | null;
+  presentation_url?: string | null;
+  export_url?: string | null;
+  embed_url?: string | null;
+  artifact?: {
+    presentation_id?: string;
+    export_as?: CampaignVariantExportType;
+    path?: string;
+    edit_path?: string;
+    is_public?: boolean | null;
+    aspect_ratio?: string | null;
+  } | null;
+  result?: Record<string, unknown> | null;
+  [key: string]: unknown;
+}
+
+export interface CampaignStatusResponse {
+  campaign_id: string;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
+  started_at?: string | null;
+  completed_at?: string | null;
+  error?: string | null;
+  variants?: CampaignVariantStatus[] | Record<string, CampaignVariantStatus | string>;
+  bundleUrl?: string | null;
+  bundle_url?: string | null;
+  message?: string | null;
+  [key: string]: unknown;
+}
+
+export type RecapMode =
+  | "welcome_home"
+  | "anniversary"
+  | "next_planning_window";
+
+export interface RecapGenerateRequest {
+  mode: RecapMode;
+  source_presentation_id?: string;
+  source_json?: Record<string, unknown>;
+}
+
+export interface RecapGenerateResponse {
+  presentation_id: string;
+  edit_path: string;
+}
+
+export interface NarrationBudgetRemainingResponse {
+  budget: number | null;
+  used: number;
+  remaining: number | null;
+}
+
 export class PresentationGenerationApi {
   static async uploadDoc(documents: File[]) {
     const formData = new FormData();
@@ -110,6 +230,140 @@ export class PresentationGenerationApi {
       console.error("error in presentation creation", error);
       throw error;
     }
+  }
+
+  static async generateCampaign(
+    payload: CampaignGenerateRequest
+  ): Promise<CampaignGenerateResponse> {
+    const response = await fetch(
+      getApiUrl(`/api/v1/ppt/campaign/generate`),
+      {
+        method: "POST",
+        headers: getHeader(),
+        body: JSON.stringify(payload),
+        cache: "no-cache",
+      }
+    );
+
+    const data = await ApiResponseHandler.handleResponse(
+      response,
+      "Failed to start campaign generation"
+    );
+
+    const campaignId =
+      (typeof data?.campaign_id === "string" && data.campaign_id) ||
+      (typeof data?.campaignId === "string" && data.campaignId) ||
+      "";
+
+    if (!campaignId) {
+      throw new Error("Campaign generation response did not include campaign_id");
+    }
+
+    const statusUrl =
+      (typeof data?.statusUrl === "string" && data.statusUrl) ||
+      (typeof data?.status_url === "string" && data.status_url) ||
+      `/api/v1/ppt/campaign/status/${campaignId}`;
+
+    return {
+      campaign_id: campaignId,
+      statusUrl,
+    };
+  }
+
+  static async getCampaignStatus(campaignId: string): Promise<CampaignStatusResponse> {
+    const response = await fetch(
+      getApiUrl(`/api/v1/ppt/campaign/status/${campaignId}`),
+      {
+        method: "GET",
+        headers: getHeader(),
+        cache: "no-cache",
+      }
+    );
+
+    const data = await ApiResponseHandler.handleResponse(
+      response,
+      "Failed to load campaign status"
+    );
+
+    return {
+      ...(data as CampaignStatusResponse),
+      campaign_id:
+        (typeof data?.campaign_id === "string" && data.campaign_id) || campaignId,
+    };
+  }
+
+  static async getCampaignStatusByUrl(statusUrl: string): Promise<CampaignStatusResponse> {
+    const isAbsoluteUrl =
+      statusUrl.startsWith("http://") || statusUrl.startsWith("https://");
+    const normalizedPath = statusUrl.startsWith("/") ? statusUrl : `/${statusUrl}`;
+    const requestUrl = isAbsoluteUrl ? statusUrl : getApiUrl(normalizedPath);
+
+    const response = await fetch(requestUrl, {
+      method: "GET",
+      headers: getHeader(),
+      cache: "no-cache",
+    });
+
+    return ApiResponseHandler.handleResponse(
+      response,
+      "Failed to load campaign status"
+    ) as Promise<CampaignStatusResponse>;
+  }
+
+  static async generateRecap(
+    payload: RecapGenerateRequest
+  ): Promise<RecapGenerateResponse> {
+    const response = await fetch(
+      getApiUrl(`/api/v1/ppt/presentation/recap`),
+      {
+        method: "POST",
+        headers: getHeader(),
+        body: JSON.stringify(payload),
+        cache: "no-cache",
+      }
+    );
+
+    const data = (await ApiResponseHandler.handleResponse(
+      response,
+      "Failed to generate recap"
+    )) as Record<string, unknown> | null;
+
+    const readString = (value: unknown): string =>
+      typeof value === "string" ? value.trim() : "";
+
+    const presentationId =
+      readString(data?.presentation_id) ||
+      readString(data?.presentationId) ||
+      readString(data?.id);
+
+    const editPath =
+      readString(data?.edit_path) ||
+      readString(data?.editPath) ||
+      readString(data?.presentation_url) ||
+      (presentationId
+        ? `/presentation?id=${encodeURIComponent(presentationId)}`
+        : "");
+
+    if (!editPath) {
+      throw new Error("Recap generation response did not include an edit path");
+    }
+
+    if (!presentationId) {
+      const searchParams = new URLSearchParams(editPath.split("?")[1] || "");
+      const idFromPath = readString(searchParams.get("id"));
+      if (!idFromPath) {
+        throw new Error("Recap generation response did not include presentation_id");
+      }
+      return {
+        presentation_id: idFromPath,
+        edit_path: editPath,
+      };
+    }
+
+    return {
+      presentation_id: presentationId,
+      edit_path: editPath,
+    };
   }
 
   static async editSlide(
@@ -268,6 +522,22 @@ export class PresentationGenerationApi {
       response,
       "Failed to load narration usage summary"
     );
+  }
+
+  static async getNarrationBudgetRemaining(signal?: AbortSignal) {
+    const response = await fetch(
+      getApiUrl(`/api/v1/ppt/narration/usage/budget-remaining`),
+      {
+        method: "GET",
+        headers: getHeader(),
+        cache: "no-cache",
+        signal,
+      }
+    );
+    return ApiResponseHandler.handleResponse(
+      response,
+      "Failed to load narration budget remaining"
+    ) as Promise<NarrationBudgetRemainingResponse>;
   }
 
   static async deleteSlideNarration(slideId: string) {
@@ -455,7 +725,11 @@ export class PresentationGenerationApi {
     }
   }
 
-  static async exportAsHTML(params: { id: string; title: string }) {
+  static async exportAsHTML(params: {
+    id: string;
+    title: string;
+    aspectRatio?: "landscape" | "vertical" | "square" | string;
+  }) {
     const response = await fetch("/api/export-as-html", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -473,6 +747,7 @@ export class PresentationGenerationApi {
     transitionDuration?: number;
     audioUrl?: string;
     useNarrationAsSoundtrack?: boolean;
+    aspectRatio?: "landscape" | "vertical" | "square" | string;
     async?: boolean;
   }) {
     const response = await fetch("/api/export-as-video", {
@@ -512,7 +787,10 @@ export class PresentationGenerationApi {
     }>;
   }
 
-  static async getEmbedInfo(params: { id: string }) {
+  static async getEmbedInfo(params: {
+    id: string;
+    aspectRatio?: "landscape" | "vertical" | "square" | string;
+  }) {
     const response = await fetch("/api/export-as-embed", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -524,6 +802,32 @@ export class PresentationGenerationApi {
       iframe_code: string;
       presentation_id: string;
     }>;
+  }
+
+  static async getAgentProfile(signal?: AbortSignal) {
+    const response = await fetch(getApiUrl(`/api/v1/ppt/profile`), {
+      method: "GET",
+      headers: getHeader(),
+      cache: "no-cache",
+      signal,
+    });
+    return ApiResponseHandler.handleResponse(
+      response,
+      "Failed to load agent profile"
+    ) as Promise<AgentProfilePayload>;
+  }
+
+  static async updateAgentProfile(profile: AgentProfilePayload) {
+    const response = await fetch(getApiUrl(`/api/v1/ppt/profile`), {
+      method: "PATCH",
+      headers: getHeader(),
+      body: JSON.stringify(profile),
+      cache: "no-cache",
+    });
+    return ApiResponseHandler.handleResponse(
+      response,
+      "Failed to update agent profile"
+    ) as Promise<AgentProfilePayload>;
   }
 
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useRef } from "react";
+import { type ComponentType, useEffect, useMemo, useRef, useState } from "react";
 import EditableLayoutWrapper from "../components/EditableLayoutWrapper";
 import SlideErrorBoundary from "../components/SlideErrorBoundary";
 import TiptapTextReplacer from "../components/TiptapTextReplacer";
@@ -10,22 +10,112 @@ import { useCustomTemplateDetails } from "@/app/hooks/useCustomTemplates";
 import { updateSlideContent } from "@/store/slices/presentationGeneration";
 import { useDispatch } from "react-redux";
 import { Loader2 } from "lucide-react";
+import { getApiUrl } from "@/utils/api";
+
+
+type AgentProfileView = {
+    agent_name?: string | null;
+    agency_name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    booking_url?: string | null;
+    tagline?: string | null;
+    logo_url?: string | null;
+};
+
+type SlideLike = {
+    id?: string | null;
+    index: number;
+    layout?: string | null;
+    layout_group?: string | null;
+    content?: unknown;
+    properties?: Record<string, unknown> | null;
+};
+
+let cachedAgentProfile: AgentProfileView | null = null;
+let inFlightAgentProfileRequest: Promise<AgentProfileView | null> | null = null;
+
+const normalizeProfileValue = (value: unknown): string | null => {
+    if (typeof value !== "string") {
+        return null;
+    }
+    const normalized = value.trim();
+    return normalized || null;
+};
+
+const readStringField = (value: unknown, key: string): string | null => {
+    if (!value || typeof value !== "object") {
+        return null;
+    }
+    const candidate = (value as Record<string, unknown>)[key];
+    return normalizeProfileValue(candidate);
+};
+
+const resolveThemeBrandValue = (
+    theme: unknown,
+    key: "logo_url" | "company_name"
+): string | null => {
+    const direct = readStringField(theme, key);
+    if (direct) {
+        return direct;
+    }
+    const dataNode =
+        theme && typeof theme === "object"
+            ? (theme as Record<string, unknown>).data
+            : undefined;
+    return readStringField(dataNode, key);
+};
+
+const fetchAgentProfile = async (): Promise<AgentProfileView | null> => {
+    try {
+        const response = await fetch(getApiUrl("/api/v1/ppt/profile"), {
+            method: "GET",
+            cache: "no-cache",
+        });
+        if (!response.ok) {
+            return null;
+        }
+        const payload = (await response.json()) as AgentProfileView;
+        return {
+            agent_name: normalizeProfileValue(payload.agent_name),
+            agency_name: normalizeProfileValue(payload.agency_name),
+            email: normalizeProfileValue(payload.email),
+            phone: normalizeProfileValue(payload.phone),
+            booking_url: normalizeProfileValue(payload.booking_url),
+            tagline: normalizeProfileValue(payload.tagline),
+            logo_url: normalizeProfileValue(payload.logo_url),
+        };
+    } catch {
+        return null;
+    }
+};
 
 
 
 
-export const V1ContentRender = ({ slide, isEditMode, theme }: { slide: any, isEditMode: boolean, theme?: any, enableEditMode?: boolean }) => {
+export const V1ContentRender = ({ slide, isEditMode, theme, viewMode = "deck" }: { slide: SlideLike, isEditMode: boolean, theme?: unknown, enableEditMode?: boolean, viewMode?: "deck" | "showcase" }) => {
     const dispatch = useDispatch();
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const [agentProfile, setAgentProfile] = useState<AgentProfileView | null>(
+        cachedAgentProfile
+    );
 
-
-    const customTemplateId = slide.layout_group.startsWith("custom-") ? slide.layout_group.split("custom-")[1] : slide.layout_group;
-    const isCustomTemplate = uuidValidate(customTemplateId) || slide.layout_group.startsWith("custom-");
+    const layout = slide.layout ?? "";
+    const layoutGroup = slide.layout_group ?? "";
+    const slideContent = useMemo(
+        () =>
+            slide.content && typeof slide.content === "object"
+                ? (slide.content as Record<string, unknown>)
+                : {},
+        [slide.content]
+    );
+    const customTemplateId = layoutGroup.startsWith("custom-") ? layoutGroup.split("custom-")[1] : layoutGroup;
+    const isCustomTemplate = uuidValidate(customTemplateId) || layoutGroup.startsWith("custom-");
 
     // Always call the hook (React hooks rule), but with empty id when not a custom template
     const { template: customTemplate, loading: customLoading } = useCustomTemplateDetails({
         id: isCustomTemplate ? customTemplateId : "",
-        name: isCustomTemplate ? slide.layout_group : "",
+        name: isCustomTemplate ? layoutGroup : "",
         description: ""
     });
 
@@ -34,7 +124,7 @@ export const V1ContentRender = ({ slide, isEditMode, theme }: { slide: any, isEd
     const Layout = useMemo(() => {
         if (isCustomTemplate) {
             if (customTemplate) {
-                const layoutId = slide.layout.startsWith("custom-") ? slide.layout.split(":")[1] : slide.layout;
+                const layoutId = layout.startsWith("custom-") ? layout.split(":")[1] : layout;
 
 
                 const compiledLayout = customTemplate.layouts.find(
@@ -46,10 +136,52 @@ export const V1ContentRender = ({ slide, isEditMode, theme }: { slide: any, isEd
             }
             return null;
         } else {
-            const template = getLayoutByLayoutId(slide.layout);
+            const template = getLayoutByLayoutId(layout);
             return template?.component ?? null;
         }
-    }, [isCustomTemplate, customTemplate, slide.layout]);
+    }, [isCustomTemplate, customTemplate, layout]);
+
+    useEffect(() => {
+        let mounted = true;
+        if (cachedAgentProfile) {
+            return;
+        }
+        if (!inFlightAgentProfileRequest) {
+            inFlightAgentProfileRequest = fetchAgentProfile().finally(() => {
+                inFlightAgentProfileRequest = null;
+            });
+        }
+        inFlightAgentProfileRequest.then((profile) => {
+            if (!mounted) {
+                return;
+            }
+            cachedAgentProfile = profile;
+            setAgentProfile(profile);
+        });
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    const slideDataWithMagicKeys = useMemo(() => {
+        const fallbackCompanyName = resolveThemeBrandValue(theme, "company_name");
+        const fallbackLogoUrl = resolveThemeBrandValue(theme, "logo_url");
+        const agencyName = agentProfile?.agency_name ?? null;
+        const logoUrl = agentProfile?.logo_url ?? fallbackLogoUrl;
+        const companyName = agencyName ?? fallbackCompanyName;
+
+        return {
+            ...slideContent,
+            _logo_url__: logoUrl,
+            __companyName__: companyName,
+            __agentName__: agentProfile?.agent_name ?? null,
+            __agencyName__: agencyName ?? companyName,
+            __agentEmail__: agentProfile?.email ?? null,
+            __agentPhone__: agentProfile?.phone ?? null,
+            __bookingUrl__: agentProfile?.booking_url ?? null,
+            __agencyTagline__: agentProfile?.tagline ?? null,
+        };
+    }, [agentProfile, slideContent, theme]);
 
     // Show loading state for custom templates
     if (isCustomTemplate && customLoading) {
@@ -62,7 +194,7 @@ export const V1ContentRender = ({ slide, isEditMode, theme }: { slide: any, isEd
 
 
     if (!Layout) {
-        if (Object.keys(slide.content).length === 0) {
+        if (Object.keys(slideContent).length === 0) {
             return (
                 <div className="flex flex-col items-center cursor-pointer justify-center aspect-video h-full bg-gray-100 rounded-lg">
                     <p className="text-gray-600 text-center text-base">Blank Slide</p>
@@ -73,13 +205,13 @@ export const V1ContentRender = ({ slide, isEditMode, theme }: { slide: any, isEd
         return (
             <div className="flex flex-col items-center justify-center aspect-video h-full bg-gray-100 rounded-lg">
                 <p className="text-gray-600 text-center text-base">
-                    Layout &quot;{slide.layout}&quot; not found in &quot;
-                    {slide.layout_group}&quot; Template
+                    Layout &quot;{layout}&quot; not found in &quot;
+                    {layoutGroup}&quot; Template
                 </p>
             </div>
         );
     }
-    const LayoutComp = Layout as React.ComponentType<{ data: any }>;
+    const LayoutComp = Layout as ComponentType<{ data: Record<string, unknown>; viewMode?: "deck" | "showcase"; presentationId?: string; slideId?: string }>;
 
     if (isEditMode) {
         return (
@@ -88,12 +220,12 @@ export const V1ContentRender = ({ slide, isEditMode, theme }: { slide: any, isEd
 
                     <EditableLayoutWrapper
                         slideIndex={slide.index}
-                        slideData={slide.content}
+                        slideData={slideContent}
                         properties={slide.properties}
                     >
                         <TiptapTextReplacer
                             key={slide.id}
-                            slideData={slide.content}
+                            slideData={slideDataWithMagicKeys}
                             slideIndex={slide.index}
                             onContentChange={(
                                 content: string,
@@ -111,11 +243,7 @@ export const V1ContentRender = ({ slide, isEditMode, theme }: { slide: any, isEd
                                 }
                             }}
                         >
-                            <LayoutComp data={{
-                                ...slide.content,
-                                _logo_url__: theme ? theme.logo_url : null,
-                                __companyName__: (theme && theme.company_name) ? theme.company_name : null,
-                            }} />
+                            <LayoutComp data={slideDataWithMagicKeys} viewMode={viewMode} slideId={slide.id ?? undefined} />
                         </TiptapTextReplacer>
                     </EditableLayoutWrapper>
 
@@ -127,11 +255,7 @@ export const V1ContentRender = ({ slide, isEditMode, theme }: { slide: any, isEd
         );
     }
     return (
-        <LayoutComp data={{
-            ...slide.content,
-            _logo_url__: theme ? theme.logo_url : null,
-            __companyName__: (theme && theme.company_name) ? theme.company_name : null,
-        }} />
+        <LayoutComp data={slideDataWithMagicKeys} viewMode={viewMode} slideId={slide.id ?? undefined} />
     )
 };
 

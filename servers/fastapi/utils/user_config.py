@@ -1,7 +1,7 @@
 import os
 import json
 
-from models.user_config import UserConfig
+from models.user_config import AgentProfile, UserConfig
 from utils.get_env import (
     get_anthropic_api_key_env,
     get_anthropic_model_env,
@@ -113,17 +113,68 @@ def _set_or_clear_env_var(key: str, value) -> None:
     os.environ[key] = str(value)
 
 
+AGENT_PROFILE_FIELDS = (
+    "agent_name",
+    "agency_name",
+    "email",
+    "phone",
+    "booking_url",
+    "tagline",
+    "logo_url",
+    "default_utm_source",
+    "default_utm_medium",
+    "default_utm_campaign",
+)
+
+
+def _load_user_config_json(user_config_path: str) -> dict:
+    if not user_config_path:
+        return {}
+    if not os.path.exists(user_config_path):
+        return {}
+    with open(user_config_path, "r") as f:
+        payload = json.load(f)
+    return payload if isinstance(payload, dict) else {}
+
+
+def _extract_agent_profile_from_raw_config(raw_config: dict) -> AgentProfile:
+    if not isinstance(raw_config, dict):
+        return AgentProfile()
+
+    nested_profile = raw_config.get("agent_profile")
+    if isinstance(nested_profile, dict):
+        return AgentProfile(**nested_profile)
+
+    nested_profile = raw_config.get("AGENT_PROFILE")
+    if isinstance(nested_profile, dict):
+        return AgentProfile(**nested_profile)
+
+    # Backward compatibility in case flat keys were persisted previously.
+    flattened_profile = {
+        key: raw_config.get(key)
+        for key in AGENT_PROFILE_FIELDS
+        if raw_config.get(key) is not None
+    }
+    if flattened_profile:
+        return AgentProfile(**flattened_profile)
+
+    return AgentProfile()
+
+
 def get_user_config():
     user_config_path = get_user_config_path_env()
 
     existing_config = UserConfig()
+    raw_config: dict = {}
     try:
-        if os.path.exists(user_config_path):
-            with open(user_config_path, "r") as f:
-                existing_config = UserConfig(**json.load(f))
+        raw_config = _load_user_config_json(user_config_path)
+        if raw_config:
+            existing_config = UserConfig(**raw_config)
     except Exception:
         print("Error while loading user config")
         pass
+
+    agent_profile = _extract_agent_profile_from_raw_config(raw_config)
 
     return UserConfig(
         LLM=existing_config.LLM or get_llm_provider_env(),
@@ -213,6 +264,7 @@ def get_user_config():
         STRUCTURE_MODEL_API_KEY=existing_config.STRUCTURE_MODEL_API_KEY or get_structure_model_api_key_env(),
         STRUCTURE_MODEL_BASE_URL=existing_config.STRUCTURE_MODEL_BASE_URL or get_structure_model_base_url_env(),
         STRUCTURE_MODEL_REASONING_EFFORT=existing_config.STRUCTURE_MODEL_REASONING_EFFORT or get_structure_model_reasoning_effort_env(),
+        agent_profile=agent_profile,
     )
 
 
@@ -319,6 +371,33 @@ def update_env_with_user_config():
         set_structure_model_base_url_env(user_config.STRUCTURE_MODEL_BASE_URL)
     if user_config.STRUCTURE_MODEL_REASONING_EFFORT:
         set_structure_model_reasoning_effort_env(user_config.STRUCTURE_MODEL_REASONING_EFFORT)
+
+
+def get_agent_profile() -> AgentProfile:
+    return get_user_config().agent_profile
+
+
+def patch_agent_profile(profile_patch: dict) -> AgentProfile:
+    user_config_path = get_user_config_path_env()
+    if not user_config_path:
+        raise RuntimeError("USER_CONFIG_PATH is not set")
+    existing_config = _load_user_config_json(user_config_path)
+    current_profile = _extract_agent_profile_from_raw_config(existing_config)
+
+    sanitized_updates = {
+        key: profile_patch[key]
+        for key in AGENT_PROFILE_FIELDS
+        if key in profile_patch
+    }
+    merged_profile = AgentProfile(
+        **{**current_profile.model_dump(), **sanitized_updates}
+    )
+
+    existing_config["agent_profile"] = merged_profile.model_dump()
+    with open(user_config_path, "w") as f:
+        json.dump(existing_config, f)
+
+    return merged_profile
 
 
 def save_codex_tokens_to_user_config() -> None:

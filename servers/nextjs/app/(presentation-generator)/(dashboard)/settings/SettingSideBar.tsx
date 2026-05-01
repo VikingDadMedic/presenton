@@ -1,5 +1,5 @@
 import React from 'react'
-import { BarChart3, LogOut, Mic2, Palette, Shield } from 'lucide-react'
+import { BarChart3, BriefcaseBusiness, LogOut, Mic2, Palette, Shield } from 'lucide-react'
 import { IMAGE_PROVIDERS, LLM_PROVIDERS } from '@/utils/providerConstants'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/store'
@@ -12,6 +12,7 @@ type SettingsSection =
     | 'appearance'
     | 'narration'
     | 'narration-usage'
+    | 'agent-profile'
 
 const SettingSideBar = ({ mode, setMode, selectedProvider, setSelectedProvider }: { mode: 'nanobanana' | 'presenton', setMode: (mode: 'nanobanana' | 'presenton') => void, selectedProvider: SettingsSection, setSelectedProvider: (provider: SettingsSection) => void }) => {
     const { llm_config } = useSelector((state: RootState) => state.userConfig)
@@ -108,6 +109,16 @@ const SettingSideBar = ({ mode, setMode, selectedProvider, setSelectedProvider }
                             <BarChart3 className='w-3.5 h-3.5 text-primary' />
                         </div>
                         <p className='text-[#191919] text-xs font-medium'>Narration usage</p>
+                    </button>
+                    <button
+                        type="button"
+                        className={`w-full rounded-[6px] p-3 py-4 flex items-center gap-1.5 border ${selectedProvider === 'agent-profile' ? 'bg-primary/5 border-primary/20' : 'bg-card border-border'}`}
+                        onClick={() => setSelectedProvider('agent-profile')}
+                    >
+                        <div className='relative w-6 h-6 rounded-full overflow-hidden border border-border flex items-center justify-center bg-card'>
+                            <BriefcaseBusiness className='w-3.5 h-3.5 text-primary' />
+                        </div>
+                        <p className='text-[#191919] text-xs font-medium'>Agent profile</p>
                     </button>
                     <button
                         className={`w-full rounded-[6px] p-3 py-4 flex items-center gap-1.5 border ${selectedProvider === 'privacy' ? 'bg-primary/5 border-primary/20' : 'bg-card border-border'}`}

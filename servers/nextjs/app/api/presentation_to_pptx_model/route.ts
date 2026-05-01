@@ -6,11 +6,23 @@ import {
   SlideAttributesResult,
 } from "@/types/element_attibutes";
 import { convertElementAttributesToPptxSlides } from "@/utils/pptx_models_utils";
-import { PptxPresentationModel } from "@/types/pptx_models";
+import {
+  PptxPictureBoxModel,
+  PptxPresentationModel,
+  PptxSlideModel,
+  PptxTextBoxModel,
+} from "@/types/pptx_models";
 import fs from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import sharp from "sharp";
+import { getAgentProfileFromUserConfig } from "@/lib/agent-profile";
+import { applyUtmTagsToObject, applyUtmToUrl } from "@/lib/apply-utm-tags";
+import {
+  getExportDimensions,
+  resolveExportAspectRatio,
+  type ExportDimensions,
+} from "@/lib/export-aspect-ratio";
 
 interface GetAllChildElementsAttributesArgs {
   element: ElementHandle<Element>;
@@ -26,7 +38,101 @@ interface GetAllChildElementsAttributesArgs {
   inheritedBorderRadius?: number[];
   inheritedZIndex?: number;
   inheritedOpacity?: number;
+  fallbackDimensions: ExportDimensions;
   screenshotsDir: string;
+}
+
+function getUtmDefaults(request: NextRequest) {
+  const profile = getAgentProfileFromUserConfig();
+  return {
+    profile,
+    options: {
+      utm_source:
+        request.nextUrl.searchParams.get("utm_source") ||
+        profile?.default_utm_source ||
+        "tripstory",
+      utm_medium:
+        request.nextUrl.searchParams.get("utm_medium") ||
+        profile?.default_utm_medium ||
+        "pptx",
+      utm_campaign:
+        request.nextUrl.searchParams.get("utm_campaign") ||
+        profile?.default_utm_campaign ||
+        "tripstory_export",
+      utm_content: request.nextUrl.searchParams.get("utm_content") || undefined,
+    },
+  };
+}
+
+function appendPptxBrandStamp(
+  slides: PptxSlideModel[],
+  profile: ReturnType<typeof getAgentProfileFromUserConfig>,
+  bookingUrlWithUtm: string | null,
+) {
+  if (!profile) {
+    return;
+  }
+
+  const agencyName = profile.agency_name?.trim();
+  const agentName = profile.agent_name?.trim();
+  const phone = profile.phone?.trim();
+  const email = profile.email?.trim();
+  const logoUrl = profile.logo_url?.trim();
+  const tagline = profile.tagline?.trim();
+  const contactLine = [agentName, phone, email, bookingUrlWithUtm]
+    .filter(Boolean)
+    .join(" • ");
+
+  if (!agencyName && !contactLine && !logoUrl && !tagline) {
+    return;
+  }
+
+  for (const slide of slides) {
+    slide.shapes.push({
+      shape_type: "textbox",
+      position: {
+        left: 18,
+        top: 684,
+        width: 1244,
+        height: 30,
+      },
+      text_wrap: true,
+      fill: {
+        color: "101414",
+        opacity: 0.75,
+      },
+      paragraphs: [
+        {
+          text: [agencyName, tagline, contactLine].filter(Boolean).join(" — "),
+          font: {
+            name: "DM Sans",
+            size: 9,
+            font_weight: 500,
+            italic: false,
+            color: "F8F4EC",
+          },
+        },
+      ],
+    } as PptxTextBoxModel);
+
+    if (logoUrl) {
+      slide.shapes.push({
+        shape_type: "picture",
+        position: {
+          left: 1128,
+          top: 8,
+          width: 132,
+          height: 34,
+        },
+        clip: true,
+        invert: false,
+        picture: {
+          is_network: /^https?:\/\//.test(logoUrl),
+          path: logoUrl,
+        },
+      } as PptxPictureBoxModel);
+    }
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -51,21 +157,47 @@ export async function GET(request: NextRequest) {
 
   try {
     const id = await getPresentationId(request);
-    [browser, page] = await getBrowserAndPage(id);
+    const dimensions = getExportDimensions(
+      resolveExportAspectRatio(
+        request.nextUrl.searchParams.get("aspect_ratio"),
+        request.nextUrl.searchParams.get("aspectRatio")
+      )
+    );
+    [browser, page] = await getBrowserAndPage(id, dimensions);
     const screenshotsDir = getScreenshotsDir();
 
     const { slides, speakerNotes } = await getSlidesAndSpeakerNotes(page);
-    const slides_attributes = await getSlidesAttributes(slides, screenshotsDir);
+    const slides_attributes = await getSlidesAttributes(
+      slides,
+      screenshotsDir,
+      dimensions
+    );
     await postProcessSlidesAttributes(
       slides_attributes,
       screenshotsDir,
       speakerNotes
     );
+    const { profile, options: utmOptions } = getUtmDefaults(request);
     const slides_pptx_models =
       convertElementAttributesToPptxSlides(slides_attributes);
-    const presentation_pptx_model: PptxPresentationModel = {
+    let presentation_pptx_model: PptxPresentationModel = {
       slides: slides_pptx_models,
+      aspect_ratio: dimensions.aspectRatio,
+      slide_width: dimensions.width,
+      slide_height: dimensions.height,
     };
+    presentation_pptx_model = applyUtmTagsToObject(
+      presentation_pptx_model,
+      utmOptions,
+    ) as PptxPresentationModel;
+
+    const bookingUrlWithUtm = profile?.booking_url
+      ? applyUtmToUrl(profile.booking_url, {
+          ...utmOptions,
+          utm_content: "pptx_brand_stamp",
+        })
+      : null;
+    appendPptxBrandStamp(presentation_pptx_model.slides, profile, bookingUrlWithUtm);
 
     await closeBrowserAndPage(browser, page);
 
@@ -91,7 +223,10 @@ async function getPresentationId(request: NextRequest) {
   return id;
 }
 
-async function getBrowserAndPage(id: string): Promise<[Browser, Page]> {
+async function getBrowserAndPage(
+  id: string,
+  dimensions: ExportDimensions
+): Promise<[Browser, Page]> {
   const browser = await puppeteer.launch({
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
     headless: true,
@@ -111,7 +246,11 @@ async function getBrowserAndPage(id: string): Promise<[Browser, Page]> {
 
   const page = await browser.newPage();
 
-  await page.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1 });
+  await page.setViewport({
+    width: dimensions.width,
+    height: dimensions.height,
+    deviceScaleFactor: 1,
+  });
   page.setDefaultNavigationTimeout(300000);
   page.setDefaultTimeout(300000);
   await page.goto(`http://localhost/pdf-maker?id=${id}`, {
@@ -252,11 +391,16 @@ const convertSvgToPng = async (element_attibutes: ElementAttributes) => {
 
 async function getSlidesAttributes(
   slides: ElementHandle<Element>[],
-  screenshotsDir: string
+  screenshotsDir: string,
+  fallbackDimensions: ExportDimensions
 ): Promise<SlideAttributesResult[]> {
   const slideAttributes = await Promise.all(
     slides.map((slide) =>
-      getAllChildElementsAttributes({ element: slide, screenshotsDir })
+      getAllChildElementsAttributes({
+        element: slide,
+        screenshotsDir,
+        fallbackDimensions,
+      })
     )
   );
   return slideAttributes;
@@ -294,6 +438,7 @@ async function getAllChildElementsAttributes({
   inheritedBorderRadius,
   inheritedZIndex,
   inheritedOpacity,
+  fallbackDimensions,
   screenshotsDir,
 }: GetAllChildElementsAttributesArgs): Promise<SlideAttributesResult> {
   if (!rootRect) {
@@ -305,8 +450,8 @@ async function getAllChildElementsAttributes({
     rootRect = {
       left: rootAttributes.position?.left ?? 0,
       top: rootAttributes.position?.top ?? 0,
-      width: rootAttributes.position?.width ?? 1280,
-      height: rootAttributes.position?.height ?? 720,
+      width: rootAttributes.position?.width ?? fallbackDimensions.width,
+      height: rootAttributes.position?.height ?? fallbackDimensions.height,
     };
   }
 
@@ -418,6 +563,7 @@ async function getAllChildElementsAttributes({
       inheritedBorderRadius: attributes.borderRadius || inheritedBorderRadius,
       inheritedZIndex: attributes.zIndex || inheritedZIndex,
       inheritedOpacity: attributes.opacity || inheritedOpacity,
+      fallbackDimensions,
       screenshotsDir,
     });
     allResults.push(
@@ -1004,7 +1150,7 @@ async function getElementAttributes(
       el: Element
     ) {
       const borderRadius = computedStyles.borderRadius;
-      let borderRadiusValue;
+      let borderRadiusValue: number[] | undefined;
 
       if (borderRadius && borderRadius !== "0px") {
         const radiusParts = borderRadius

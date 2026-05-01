@@ -28,6 +28,7 @@ import LogoutButton from "@/components/Auth/LogoutButton";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import NarrationSettings from "./NarrationSettings";
 import NarrationUsageSettings from "./NarrationUsageSettings";
+import AgentProfileSettings from "./AgentProfileSettings";
 
 type SettingsSection =
   | "text-provider"
@@ -36,7 +37,8 @@ type SettingsSection =
   | "session"
   | "appearance"
   | "narration"
-  | "narration-usage";
+  | "narration-usage"
+  | "agent-profile";
 
 const NARRATION_USAGE_PATH = "/settings/narration-usage";
 
@@ -471,6 +473,7 @@ const SettingsPage = () => {
             />
           )}
           {selectedProvider === "narration-usage" && <NarrationUsageSettings />}
+          {selectedProvider === "agent-profile" && <AgentProfileSettings />}
           {selectedProvider === 'privacy' && <PrivacySettings />}
           {selectedProvider === "session" && (
             <div className="w-full max-w-lg space-y-5 rounded-[20px] border border-border bg-card p-7">
@@ -493,7 +496,8 @@ const SettingsPage = () => {
       {/* Fixed Bottom Button — hidden on Sign out and Appearance; nothing to save there */}
       {selectedProvider !== "session" &&
       selectedProvider !== "appearance" &&
-      selectedProvider !== "narration-usage" ? (
+      selectedProvider !== "narration-usage" &&
+      selectedProvider !== "agent-profile" ? (
         <div className=" mx-auto fixed bottom-20 right-5 ">
           <button
             onClick={handleSaveConfig}

@@ -189,7 +189,7 @@ const PresentationPage = ({ presentation_id }: { presentation_id: string }) => {
                         slide={slide}
                         isEditMode={true}
                         theme={presentationData?.theme}
-
+                        viewMode="deck"
                       />
                     </div>
                   ))}

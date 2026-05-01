@@ -1,5 +1,18 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class AgentProfile(BaseModel):
+    agent_name: Optional[str] = None
+    agency_name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    booking_url: Optional[str] = None
+    tagline: Optional[str] = None
+    logo_url: Optional[str] = None
+    default_utm_source: Optional[str] = None
+    default_utm_medium: Optional[str] = None
+    default_utm_campaign: Optional[str] = None
 
 
 class UserConfig(BaseModel):
@@ -82,3 +95,6 @@ class UserConfig(BaseModel):
     STRUCTURE_MODEL_API_KEY: Optional[str] = None
     STRUCTURE_MODEL_BASE_URL: Optional[str] = None
     STRUCTURE_MODEL_REASONING_EFFORT: Optional[str] = None
+
+    # Agent / agency profile context
+    agent_profile: AgentProfile = Field(default_factory=AgentProfile)

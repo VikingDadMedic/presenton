@@ -41,6 +41,7 @@ class PresentationModel(SQLModel, table=True):
     include_table_of_contents: bool = Field(sa_column=Column(Boolean), default=False)
     include_title_slide: bool = Field(sa_column=Column(Boolean), default=True)
     web_search: bool = Field(sa_column=Column(Boolean), default=False)
+    is_public: bool = Field(sa_column=Column(Boolean), default=False)
     theme: Optional[dict] = Field(sa_column=Column(JSON), default=None)
     origin: Optional[str] = Field(sa_column=Column(String), default=None)
     currency: str = Field(sa_column=Column(String), default="USD")
@@ -75,6 +76,7 @@ class PresentationModel(SQLModel, table=True):
             verbosity=self.verbosity,
             include_table_of_contents=self.include_table_of_contents,
             include_title_slide=self.include_title_slide,
+            is_public=self.is_public,
             origin=self.origin,
             currency=self.currency,
             enriched_context=self.enriched_context,

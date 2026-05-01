@@ -22,6 +22,7 @@ class UserConfigEnvUpdateMiddleware(BaseHTTPMiddleware):
 class SessionAuthMiddleware(BaseHTTPMiddleware):
     _EXEMPT_PREFIXES = (
         "/api/v1/auth/",
+        "/api/v1/public/",
     )
     _PROTECTED_NON_API_PATHS = {
         "/docs",

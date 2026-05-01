@@ -200,6 +200,20 @@ This is documented in [DEPLOYMENT.md](DEPLOYMENT.md) under "Video soundtrack ren
 
 Move the render to an async/queued job pattern with a status-poll endpoint. Tracked in `narration_v1d_production_unlock_bc548273` plan, Phase 3.
 
+### Vertical / square export gotchas
+
+If exports are now using `export_options.aspect_ratio`:
+
+- `landscape` uses `1280x720` (baseline).
+- `vertical` uses `720x1280` (similar pixel count to landscape).
+- `square` uses `1080x1080` (higher pixel count than landscape).
+
+Operational implications:
+
+- Vertical usually behaves similarly to landscape for render cost.
+- Square can take noticeably longer (more pixels/frame), especially in Hyperframes screenshot-mode on App Service.
+- When square soundtrack jobs fail or exceed expected windows, force async video export and poll `/api/export-as-video/status`, or run long soundtrack exports off-App-Service (local Docker / beginFrame-capable host).
+
 ---
 
 ## Puppeteer auth on export routes

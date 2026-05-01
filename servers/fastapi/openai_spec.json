@@ -111,7 +111,12 @@
                       "transition_style": { "type": "string", "enum": ["scale-zoom", "slide-right", "clip-reveal", "cycle", "random"] },
                       "transition_duration": { "type": "number", "description": "Transition duration in seconds" },
                       "audio_url": { "type": "string", "description": "Background audio URL for video" },
-                      "auto_play_interval": { "type": "integer", "description": "Auto-play interval in ms for HTML" }
+                      "auto_play_interval": { "type": "integer", "description": "Auto-play interval in ms for HTML" },
+                      "aspect_ratio": {
+                        "type": "string",
+                        "enum": ["landscape", "vertical", "square"],
+                        "description": "Export canvas aspect ratio"
+                      }
                     }
                   }
                 }
@@ -346,6 +351,353 @@
         }
       }
     },
+    "/api/v1/ppt/campaign/generate": {
+      "post": {
+        "tags": ["Campaign"],
+        "summary": "Generate a multi-variant campaign asynchronously.",
+        "operationId": "generate_campaign",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": { "type": "string" },
+                  "instructions": { "type": "string" },
+                  "trip_plan": { "type": "object", "additionalProperties": true },
+                  "n_slides": { "type": "integer" },
+                  "language": { "type": "string" },
+                  "verbosity": { "type": "string" },
+                  "web_search": { "type": "boolean" },
+                  "include_table_of_contents": { "type": "boolean" },
+                  "include_title_slide": { "type": "boolean" },
+                  "origin": { "type": "string" },
+                  "currency": { "type": "string" },
+                  "variants": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string" },
+                        "template": { "type": "string" },
+                        "export_as": {
+                          "type": "string",
+                          "enum": ["pptx", "pdf", "html", "video"]
+                        },
+                        "tone": { "type": "string" },
+                        "narration_tone": { "type": "string" },
+                        "verbosity": { "type": "string" },
+                        "instructions": { "type": "string" },
+                        "n_slides": { "type": "integer" },
+                        "language": { "type": "string" },
+                        "slide_duration": { "type": "integer" },
+                        "transition_style": { "type": "string" },
+                        "transition_duration": { "type": "number" },
+                        "use_narration_as_soundtrack": { "type": "boolean" },
+                        "lead_magnet": { "type": "boolean" },
+                        "email_safe": { "type": "boolean" },
+                        "utm_source": { "type": "string" },
+                        "utm_medium": { "type": "string" },
+                        "utm_campaign": { "type": "string" },
+                        "utm_content": { "type": "string" },
+                        "aspect_ratio": { "type": "string" },
+                        "is_public": { "type": "boolean" }
+                      },
+                      "required": ["name", "template", "export_as"],
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "required": ["content", "variants"],
+                "additionalProperties": true
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Campaign generation started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "campaign_id": { "type": "string" },
+                    "statusUrl": { "type": "string" }
+                  },
+                  "required": ["campaign_id", "statusUrl"]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ppt/campaign/status/{campaign_id}": {
+      "get": {
+        "tags": ["Campaign"],
+        "summary": "Get campaign generation status and variant outcomes.",
+        "operationId": "get_campaign_status",
+        "parameters": [
+          {
+            "name": "campaign_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Campaign status payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "campaign_id": { "type": "string" },
+                    "status": { "type": "string" },
+                    "created_at": { "type": "string" },
+                    "updated_at": { "type": "string" },
+                    "started_at": { "type": "string", "nullable": true },
+                    "completed_at": { "type": "string", "nullable": true },
+                    "error": { "type": "string", "nullable": true },
+                    "variants": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "variant_id": { "type": "string" },
+                          "name": { "type": "string" },
+                          "template": { "type": "string" },
+                          "export_as": { "type": "string" },
+                          "status": { "type": "string" },
+                          "created_at": { "type": "string" },
+                          "updated_at": { "type": "string" },
+                          "started_at": { "type": "string", "nullable": true },
+                          "completed_at": { "type": "string", "nullable": true },
+                          "error": { "type": "string", "nullable": true },
+                          "artifact": {
+                            "type": "object",
+                            "nullable": true,
+                            "additionalProperties": true
+                          }
+                        },
+                        "required": [
+                          "variant_id",
+                          "name",
+                          "template",
+                          "export_as",
+                          "status",
+                          "created_at",
+                          "updated_at"
+                        ],
+                        "additionalProperties": true
+                      }
+                    }
+                  },
+                  "required": [
+                    "campaign_id",
+                    "status",
+                    "created_at",
+                    "updated_at",
+                    "variants"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Campaign not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ppt/profile": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "Get persisted agent profile defaults.",
+        "operationId": "get_agent_profile",
+        "responses": {
+          "200": {
+            "description": "Agent profile payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentProfile"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Profile"],
+        "summary": "Update agent profile defaults.",
+        "operationId": "update_agent_profile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentProfile"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated agent profile payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentProfile"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Logo not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ppt/presentation/recap": {
+      "post": {
+        "tags": ["Presentation"],
+        "summary": "Generate a recap presentation from an existing trip deck or source JSON.",
+        "operationId": "generate_recap",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "welcome_home",
+                      "anniversary",
+                      "next_planning_window"
+                    ]
+                  },
+                  "source_presentation_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "source_json": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "template": { "type": "string" },
+                  "n_slides": { "type": "integer" },
+                  "language": { "type": "string" },
+                  "tone": { "type": "string" },
+                  "narration_tone": { "type": "string" },
+                  "verbosity": { "type": "string" },
+                  "instructions": { "type": "string" },
+                  "web_search": { "type": "boolean" },
+                  "include_table_of_contents": { "type": "boolean" },
+                  "include_title_slide": { "type": "boolean" },
+                  "export_as": {
+                    "type": "string",
+                    "enum": ["pptx", "pdf", "html", "video"]
+                  },
+                  "origin": { "type": "string" },
+                  "currency": { "type": "string" },
+                  "slide_duration": { "type": "integer" },
+                  "transition_style": { "type": "string" },
+                  "transition_duration": { "type": "number" },
+                  "use_narration_as_soundtrack": { "type": "boolean" },
+                  "export_options": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "required": ["mode"],
+                "additionalProperties": true
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Recap presentation generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "presentation_id": { "type": "string", "format": "uuid" },
+                    "path": { "type": "string" },
+                    "edit_path": { "type": "string" },
+                    "mode": { "type": "string" },
+                    "source_presentation_id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    }
+                  },
+                  "required": ["presentation_id", "path", "edit_path", "mode"]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ppt/narration/voices": {
       "get": {
         "tags": ["Narration"],
@@ -458,6 +810,22 @@
   },
   "components": {
     "schemas": {
+      "AgentProfile": {
+        "type": "object",
+        "properties": {
+          "agent_name": { "type": "string", "nullable": true },
+          "agency_name": { "type": "string", "nullable": true },
+          "email": { "type": "string", "nullable": true },
+          "phone": { "type": "string", "nullable": true },
+          "booking_url": { "type": "string", "nullable": true },
+          "tagline": { "type": "string", "nullable": true },
+          "logo_url": { "type": "string", "nullable": true },
+          "default_utm_source": { "type": "string", "nullable": true },
+          "default_utm_medium": { "type": "string", "nullable": true },
+          "default_utm_campaign": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": false
+      },
       "GeneratePresentationRequest": {
         "type": "object",
         "required": ["content"],

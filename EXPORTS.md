@@ -108,6 +108,13 @@ The optional `export_options` object controls format-specific rendering:
 | `audio_url` | video | null | Background audio URL for the video |
 | `use_narration_as_soundtrack` | video | `false` | Uses per-slide narration MP3 as the primary soundtrack and extends slide timing to fit narration length |
 | `auto_play_interval` | html | `5000` | Auto-play interval in ms for HTML slideshow |
+| `email_safe` | html | `false` | Generates newsletter-safe HTML (single-column, max-width 600px, no JS, narration as links) |
+| `lead_magnet` | pdf | `false` | Adds branded cover + back CTA wrapper pages around the slide deck |
+| `utm_source` | pptx, pdf, html, video | profile default or `"tripstory"` | UTM source override for booking/deep links in exports |
+| `utm_medium` | pptx, pdf, html, video | profile default or per-format fallback | UTM medium override (`pptx`, `pdf`, `html`, `video`, `newsletter`) |
+| `utm_campaign` | pptx, pdf, html, video | profile default or `"tripstory_export"` | UTM campaign override |
+| `utm_content` | pptx, pdf, html, video | route-generated | Optional per-link/per-slide content tag |
+| `aspect_ratio` | pptx, pdf, html, video | `"landscape"` | Export canvas ratio: `landscape` (1280x720), `vertical` (720x1280), `square` (1080x1080) |
 
 ### Narration Behavior in Exports
 
@@ -115,11 +122,21 @@ The optional `export_options` object controls format-specific rendering:
 - When narration exists, the ZIP also includes `audio/slide_{n}.mp3` and `narration_manifest.json`.
 - PDF export does **not** embed narration audio; clients should use HTML export when audio delivery is required.
 
+### Agent Brand Stamping + UTM
+
+- Agent profile fields from `/api/v1/ppt/profile` (stored in `userConfig.json`) are applied at export-time for all four rich formats: **video, html, pdf, pptx**.
+- Branding adds a lightweight contact-card watermark layer (agency, agent, contact details, booking URL, optional logo).
+- Booking links are normalized with UTM tags using profile defaults:
+  - `default_utm_source`
+  - `default_utm_medium`
+  - `default_utm_campaign`
+- You can override UTM values per export call via `export_options` (`utm_source`, `utm_medium`, `utm_campaign`, `utm_content`).
+
 ---
 
 ## 3. Video Export -- Transition Styles
 
-The video export renders an MP4 at 1280x720 using Hyperframes with GSAP animations. Each slide gets a 4-layer animation stack:
+The video export renders an MP4 at the requested export aspect ratio (default `landscape` / `1280x720`) using Hyperframes with GSAP animations. Each slide gets a 4-layer animation stack:
 
 1. **Entrance** -- how the slide appears
 2. **Title fly-in** -- headings slide up from below with stagger
@@ -259,6 +276,24 @@ curl -X POST https://your-host/api/export-as-embed \
 
 Example: `/embed/d3000f96-...?autoPlay=true&interval=4000&start=2`
 
+### Showcase Mode
+
+Showcase mode is a preset for self-led client viewing:
+
+```text
+/embed/{id}?mode=showcase
+```
+
+Behavior differences in showcase mode:
+
+- Autoplay defaults on with a longer read-time interval.
+- Viewer-facing interactive widgets are enabled (for example, pricing configurators and AI Q&A pills).
+- Public-first API fetches are used (`/api/v1/public/*`) with authenticated fallback for logged-in owner preview.
+
+For unauthenticated sharing, the presentation must be marked public (`is_public=true`) from the Share dialog's **Showcase** tab (`Make public`). If `is_public` is false, logged-out viewers will see a "This presentation is not public" state.
+
+For copy-paste creative syndication workflows (Reel hooks, micro-shares, audience tracks, local authority embeds, and public showcase ask flows), see [`docs/CREATIVE-RECIPES.md`](docs/CREATIVE-RECIPES.md).
+
 ### Embed Player Features
 
 - Arrow key navigation (left/right/up/down)
@@ -296,7 +331,84 @@ curl https://your-host/api/v1/ppt/presentation/status/{task-id}
 
 ---
 
-## 7. MCP Integration
+## 7. Campaign Generator (Async Multi-Variant)
+
+Create one campaign brief and generate multiple creative variants in a single async job.
+
+**Endpoints:**
+
+- `POST /api/v1/ppt/campaign/generate`
+- `GET /api/v1/ppt/campaign/status/{campaign_id}`
+
+```bash
+curl -X POST https://your-host/api/v1/ppt/campaign/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Promote shoulder-season Greece packages for couples from NYC",
+    "variants": [
+      {
+        "name": "reel",
+        "template": "travel-reveal",
+        "export_as": "video",
+        "tone": "adventurous",
+        "narration_tone": "hype_reel",
+        "slide_duration": 3,
+        "transition_style": "scale-zoom",
+        "aspect_ratio": "vertical"
+      },
+      {
+        "name": "lead-magnet-pdf",
+        "template": "travel-itinerary",
+        "export_as": "pdf",
+        "tone": "professional",
+        "lead_magnet": true,
+        "aspect_ratio": "landscape"
+      }
+    ]
+  }'
+```
+
+Start response:
+
+```json
+{
+  "campaign_id": "f0f6e5aa-5b7b-46fb-b7fb-bfcdc2275f03",
+  "statusUrl": "/api/v1/ppt/campaign/status/f0f6e5aa-5b7b-46fb-b7fb-bfcdc2275f03"
+}
+```
+
+Poll response includes top-level status + per-variant status/artifact metadata.
+
+---
+
+## 8. Recap Mode
+
+Generate post-trip and lifecycle follow-up decks from an existing trip presentation.
+
+**Endpoint:** `POST /api/v1/ppt/presentation/recap`
+
+Supported modes:
+
+- `welcome_home`
+- `anniversary`
+- `next_planning_window`
+
+```bash
+curl -X POST https://your-host/api/v1/ppt/presentation/recap \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mode": "anniversary",
+    "source_presentation_id": "d3000f96-096c-4768-b67b-e99aed029b57"
+  }'
+```
+
+Returns a standard generated presentation payload (`presentation_id`, `path`, `edit_path`) plus recap metadata (`mode`, `source_presentation_id`).
+
+For scheduler examples (cron + GitHub Actions), see [`docs/RECAP-CRON-RECIPES.md`](docs/RECAP-CRON-RECIPES.md).
+
+---
+
+## 9. MCP Integration
 
 TripStory exposes an MCP server at `/mcp/` for AI agent integration. The following tools are available:
 
@@ -316,6 +428,11 @@ TripStory exposes an MCP server at `/mcp/` for AI agent integration. The followi
 | `get_embed_url` | `POST /api/export-as-embed` | Get embed URL for a presentation |
 | `export_json` | `GET /export/json/{id}` | Download structured JSON |
 | `generate_async` | `POST /generate/async` | Start async generation |
+| `generate_campaign` | `POST /campaign/generate` | Start async multi-variant campaign generation |
+| `get_campaign_status` | `GET /campaign/status/{campaign_id}` | Poll campaign progress and variant artifacts |
+| `generate_recap` | `POST /presentation/recap` | Generate a recap deck from a prior trip presentation |
+| `get_agent_profile` | `GET /profile` | Read agent profile branding defaults |
+| `update_agent_profile` | `PATCH /profile` | Update agent profile branding defaults |
 
 ### MCP Example (Claude Desktop / Cursor)
 
@@ -330,7 +447,7 @@ An AI agent can generate a travel presentation and get the embed URL:
 
 ---
 
-## 8. Enricher Status
+## 10. Enricher Status
 
 Check which travel data enrichers have API keys configured.
 
@@ -392,4 +509,4 @@ FastAPI (Python)                    Next.js (Node.js)
                          /app_data/audio + narration_usage_logs
 ```
 
-All exports start from the same slide data (structured JSON rendered by React at 1280x720). The format determines which rendering pipeline processes the HTML output.
+All exports start from the same slide data (structured JSON rendered by React at the selected export aspect ratio; `landscape` remains the default). The format determines which rendering pipeline processes the HTML output.

@@ -21,6 +21,9 @@ from api.v1.ppt.endpoints.theme_generate import THEME_ROUTER
 from api.v1.ppt.endpoints.narration import NARRATION_ROUTER
 from templates.router import TEMPLATE_ROUTER
 from api.v1.ppt.endpoints.enrichers import ENRICHERS_ROUTER
+from api.v1.ppt.endpoints.showcase import SHOWCASE_ROUTER
+from api.v1.ppt.endpoints.profile import PROFILE_ROUTER
+from api.v1.ppt.endpoints.campaign import CAMPAIGN_ROUTER
 
 
 API_V1_PPT_ROUTER = APIRouter(prefix="/api/v1/ppt")
@@ -49,3 +52,6 @@ API_V1_PPT_ROUTER.include_router(THEME_ROUTER)
 API_V1_PPT_ROUTER.include_router(TEMPLATE_ROUTER)
 API_V1_PPT_ROUTER.include_router(ENRICHERS_ROUTER)
 API_V1_PPT_ROUTER.include_router(NARRATION_ROUTER)
+API_V1_PPT_ROUTER.include_router(SHOWCASE_ROUTER)
+API_V1_PPT_ROUTER.include_router(PROFILE_ROUTER)
+API_V1_PPT_ROUTER.include_router(CAMPAIGN_ROUTER)

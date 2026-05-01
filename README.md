@@ -178,6 +178,18 @@ curl -u admin:yourpassword \
   "http://localhost:5000/api/v1/ppt/narration/usage/summary?period=day"
 ```
 
+## Sharing as Showcase
+
+TripStory can render the same deck as a self-led kiosk experience via the embed route. Use the showcase preset URL when you want autoplay + larger controls + interactive widgets (such as pricing configurators and AI Q&A pills) for client-facing review.
+
+```text
+/embed/{presentation_id}?mode=showcase
+```
+
+To share this with unauthenticated viewers, open the Share dialog, switch to the **Showcase** tab, and enable **Make public**. This flips the deck's `is_public` flag and allows anyone with the link to view it.
+
+For practical one-shot campaign commands (Reel hooks, micro-shares, audience tracks, public showcase flows), see [`docs/CREATIVE-RECIPES.md`](docs/CREATIVE-RECIPES.md).
+
 ---
 
 ## Configuration
@@ -266,6 +278,8 @@ All enricher keys are optional. Missing keys mean that enricher returns empty da
 | [`main-workflow.md`](main-workflow.md) | Generation pipeline (4-step API, 3 LLM calls, enrichment, assets) |
 | [`CODEBASE_DESIGNS.md`](CODEBASE_DESIGNS.md) | Frontend styling, CSS, UI components, theme architecture |
 | [`EXPORTS.md`](EXPORTS.md) | All 6 export formats, API reference, MCP tools, enricher table |
+| [`docs/CREATIVE-RECIPES.md`](docs/CREATIVE-RECIPES.md) | Copy-paste recipe library for top-of-funnel, nurture, and conversion creatives |
+| [`docs/RECAP-CRON-RECIPES.md`](docs/RECAP-CRON-RECIPES.md) | Scheduling recipes for lifecycle recap generation via cron or GitHub Actions |
 | [`README.md#narration-via-api`](README.md#narration-via-api) | Narration endpoint quickstart (readiness, voices, bulk, usage) |
 | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Azure App Service deployment, resource topology, redeploy script |
 | [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) | Production failure modes (manifest mismatch, ACR auth, Hyperframes timeout, etc.) |

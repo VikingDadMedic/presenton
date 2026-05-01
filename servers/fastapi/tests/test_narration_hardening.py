@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import pytest
 from fastapi import HTTPException
 
+from constants.narration import TonePreset, get_default_tone_for_template
 from api.v1.ppt.endpoints.narration import (
     _build_narration_estimate_rows,
     _compute_narration_hash,
@@ -88,3 +89,13 @@ def test_narration_estimate_rows_include_only_synthesizeable_chars():
     assert rows[0].title == "Slide One"
     assert rows[2].has_speaker_note is False
     assert rows[2].character_count == 0
+
+
+def test_template_default_tones_cover_new_travel_arcs():
+    assert get_default_tone_for_template("travel-recap") == TonePreset.DOCUMENTARY
+    assert get_default_tone_for_template("travel-deal-flash") == TonePreset.HYPE_REEL
+    assert get_default_tone_for_template("travel-series") == TonePreset.TRAVEL_COMPANION
+    assert (
+        get_default_tone_for_template("travel-partner-spotlight")
+        == TonePreset.TRAVEL_COMPANION
+    )

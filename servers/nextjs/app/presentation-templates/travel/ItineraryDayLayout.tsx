@@ -3,6 +3,7 @@ import * as z from "zod";
 import { ImageSchema, IconSchema } from '../defaultSchemes';
 import { RemoteSvgIcon } from '@/app/hooks/useRemoteSvgIcon';
 import TravelFonts from './TravelFonts';
+import AskHotspotPill from '@/app/embed/[id]/AskHotspotPill';
 
 export const layoutId = 'travel-itinerary-day'
 export const layoutName = 'Itinerary Day'
@@ -83,9 +84,15 @@ export type ItineraryDayData = z.infer<typeof itineraryDaySchema>
 
 interface ItineraryDayLayoutProps {
     data?: Partial<ItineraryDayData>
+    viewMode?: "deck" | "showcase"
+    slideId?: string
 }
 
-const ItineraryDayLayout: React.FC<ItineraryDayLayoutProps> = ({ data: slideData }) => {
+const ItineraryDayLayout: React.FC<ItineraryDayLayoutProps> = ({
+    data: slideData,
+    viewMode = "deck",
+    slideId,
+}) => {
     const activities = slideData?.activities || []
     const firstActivityImage = activities[0]?.image?.__image_url__
 
@@ -115,6 +122,11 @@ const ItineraryDayLayout: React.FC<ItineraryDayLayoutProps> = ({ data: slideData
 
                 {/* Main Content */}
                 <div className="relative z-10 flex h-full px-8 sm:px-12 lg:px-20 pt-14 pb-8 gap-8">
+                    <AskHotspotPill
+                        topic={slideData?.title || "this day"}
+                        viewMode={viewMode}
+                        slideId={slideId}
+                    />
                     {/* Left Side - Day Info & Activities */}
                     <div className="flex-1 flex flex-col">
                         {/* Day Badge */}

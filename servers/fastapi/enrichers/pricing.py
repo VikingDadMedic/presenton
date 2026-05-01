@@ -112,5 +112,70 @@ class PricingEnricher(BaseEnricher):
             )
         return "\n\n".join(lines)
 
+    def to_slide_data(self, data: dict, layout_id: str) -> dict | None:
+        """Map pricing enricher output directly onto the interactive
+        Pricing Configurator schema. Returns None for any other layout.
+        Layout id matches the templateName:layoutId convention used by the
+        frontend template registry (see presentation-templates/utils.ts)."""
+        if not data:
+            return None
+        if not layout_id or "pricing-configurator" not in layout_id:
+            return None
+
+        packages = data.get("packages", [])
+        if not packages:
+            return None
+
+        currency = packages[0].get("currency", "USD")
+        # Derive nights from package duration string (e.g. "5 nights"); fall back to 5.
+        nights = 5
+        for pkg in packages:
+            duration = str(pkg.get("duration", ""))
+            try:
+                nights = max(int(duration.split()[0]), 1)
+                break
+            except (ValueError, IndexError):
+                continue
+
+        # Per-tier activity defaults (per person per activity slot).
+        # The enricher uses a single context.budget value for all packages, so we
+        # restore tier-specific activity costs here for the configurator.
+        activity_per_day_by_tier = {
+            "budget": 25 * 3,      # ~3 activities a day at the budget tier
+            "mid-range": 60 * 3,
+            "comfort": 60 * 3,     # alias used by the configurator schema
+            "luxury": 120 * 3,
+        }
+
+        def _pkg_to_tier(pkg: dict) -> dict:
+            name_raw = str(pkg.get("name", "")).strip()
+            lookup = name_raw.lower().replace(" package", "").strip()
+            display_name = {
+                "budget": "Budget",
+                "mid-range": "Comfort",
+                "comfort": "Comfort",
+                "luxury": "Luxury",
+            }.get(lookup, name_raw or "Tier")
+            badge = "Recommended" if lookup in {"mid-range", "comfort"} else ""
+            hotel_total = float(pkg.get("hotel_cost") or 0)
+            flight_total = float(pkg.get("flight_cost") or 0)
+            return {
+                "name": display_name,
+                "hotel_per_night": int(round(hotel_total / nights)) if nights else int(round(hotel_total)),
+                "flight_cost": int(round(flight_total)),
+                "activity_per_day": activity_per_day_by_tier.get(lookup, 90),
+                "badge": badge,
+            }
+
+        tiers = [_pkg_to_tier(p) for p in packages[:3]]
+        if len(tiers) < 2:
+            return None
+
+        return {
+            "tiers": tiers,
+            "base_duration_days": nights,
+            "currency": currency,
+        }
+
 
 registry.register(PricingEnricher())

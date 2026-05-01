@@ -470,3 +470,55 @@ class TestPricingEnricher:
         context = TravelContext(destination="Santorini")
         result = await enricher.enrich_derived(context, {})
         assert result == {}
+
+    def test_pricing_to_slide_data_populates_configurator_schema(self):
+        from enrichers.pricing import PricingEnricher
+
+        data = {"packages": [
+            {
+                "name": "Budget Package",
+                "hotel_cost": 600,
+                "flight_cost": 500,
+                "activity_cost": 200,
+                "currency": "USD",
+                "duration": "5 nights",
+            },
+            {
+                "name": "Mid-Range Package",
+                "hotel_cost": 1400,
+                "flight_cost": 800,
+                "activity_cost": 450,
+                "currency": "USD",
+                "duration": "5 nights",
+            },
+        ]}
+
+        result = PricingEnricher().to_slide_data(data, "travel-pricing-configurator")
+        assert result is not None
+        assert len(result["tiers"]) == 2
+        assert result["tiers"][1]["badge"] == "Recommended"
+        assert result["base_duration_days"] == 5
+
+    def test_pricing_to_slide_data_returns_none_for_other_layouts(self):
+        from enrichers.pricing import PricingEnricher
+
+        result = PricingEnricher().to_slide_data(
+            {"packages": [{}]},
+            "travel-destination-hero",
+        )
+        assert result is None
+
+    def test_pricing_to_slide_data_returns_none_for_empty(self):
+        from enrichers.pricing import PricingEnricher
+
+        assert (
+            PricingEnricher().to_slide_data({}, "travel-pricing-configurator")
+            is None
+        )
+        assert (
+            PricingEnricher().to_slide_data(
+                {"packages": []},
+                "travel-pricing-configurator",
+            )
+            is None
+        )

@@ -2,6 +2,7 @@ import React from 'react'
 import * as z from "zod";
 import { ImageSchema } from '../defaultSchemes';
 import TravelFonts from './TravelFonts';
+import AskHotspotPill from '@/app/embed/[id]/AskHotspotPill';
 
 export const layoutId = 'travel-destination-hero'
 export const layoutName = 'Destination Hero'
@@ -31,9 +32,15 @@ export type DestinationHeroData = z.infer<typeof destinationHeroSchema>
 
 interface DestinationHeroLayoutProps {
     data?: Partial<DestinationHeroData>
+    viewMode?: "deck" | "showcase"
+    slideId?: string
 }
 
-const DestinationHeroLayout: React.FC<DestinationHeroLayoutProps> = ({ data: slideData }) => {
+const DestinationHeroLayout: React.FC<DestinationHeroLayoutProps> = ({
+    data: slideData,
+    viewMode = "deck",
+    slideId,
+}) => {
     return (
         <>
             <TravelFonts />
@@ -70,6 +77,11 @@ const DestinationHeroLayout: React.FC<DestinationHeroLayoutProps> = ({ data: sli
 
                 {/* Content */}
                 <div className="relative z-10 flex flex-col justify-end h-full px-12 sm:px-16 lg:px-24 pb-16">
+                    <AskHotspotPill
+                        topic={slideData?.country || slideData?.title || "this destination"}
+                        viewMode={viewMode}
+                        slideId={slideId}
+                    />
                     <h1
                         className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight mb-4"
                         style={{ color: 'var(--primary-text, #ffffff)' }}

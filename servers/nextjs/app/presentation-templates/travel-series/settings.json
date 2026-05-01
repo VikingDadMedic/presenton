@@ -1,0 +1,5 @@
+{
+    "description": "Multi-destination comparison arc for a coherent trip series: series opener, destination snapshots, comparison, pricing, and booking",
+    "ordered": true,
+    "default": false
+}

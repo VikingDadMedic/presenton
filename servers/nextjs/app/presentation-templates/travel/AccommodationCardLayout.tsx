@@ -2,6 +2,7 @@ import React from 'react'
 import * as z from "zod";
 import { ImageSchema } from '../defaultSchemes';
 import TravelFonts from './TravelFonts';
+import AskHotspotPill from '@/app/embed/[id]/AskHotspotPill';
 
 export const layoutId = 'travel-accommodation-card'
 export const layoutName = 'AccommodationCard'
@@ -53,9 +54,15 @@ type AccommodationData = z.infer<typeof accommodationSchema>
 
 interface AccommodationLayoutProps {
     data?: Partial<AccommodationData>
+    viewMode?: "deck" | "showcase"
+    slideId?: string
 }
 
-const AccommodationCardLayout: React.FC<AccommodationLayoutProps> = ({ data: slideData }) => {
+const AccommodationCardLayout: React.FC<AccommodationLayoutProps> = ({
+    data: slideData,
+    viewMode = "deck",
+    slideId,
+}) => {
     const amenities = slideData?.amenities || []
     const stars = slideData?.star_rating || 5
 
@@ -84,6 +91,11 @@ const AccommodationCardLayout: React.FC<AccommodationLayoutProps> = ({ data: sli
                 )}
 
                 <div className="relative z-10 px-8 sm:px-12 lg:px-16 pt-14 pb-10 h-full flex flex-col">
+                    <AskHotspotPill
+                        topic={slideData?.hotel_name || "this hotel"}
+                        viewMode={viewMode}
+                        slideId={slideId}
+                    />
                     <h1
                         className="text-3xl sm:text-4xl font-bold mb-6"
                         style={{ color: 'var(--background-text, #111827)' }}

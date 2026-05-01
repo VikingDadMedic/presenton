@@ -2,6 +2,7 @@ import React from 'react'
 import * as z from "zod";
 import { IconSchema } from '../defaultSchemes';
 import TravelFonts from './TravelFonts';
+import AskHotspotPill from '@/app/embed/[id]/AskHotspotPill';
 
 export const layoutId = 'travel-flight-info'
 export const layoutName = 'FlightInfo'
@@ -69,9 +70,15 @@ type FlightData = z.infer<typeof flightSchema>
 
 interface FlightInfoLayoutProps {
     data?: Partial<FlightData>
+    viewMode?: "deck" | "showcase"
+    slideId?: string
 }
 
-const FlightInfoLayout: React.FC<FlightInfoLayoutProps> = ({ data: slideData }) => {
+const FlightInfoLayout: React.FC<FlightInfoLayoutProps> = ({
+    data: slideData,
+    viewMode = "deck",
+    slideId,
+}) => {
     const flights = slideData?.flights || []
 
     return (
@@ -101,6 +108,11 @@ const FlightInfoLayout: React.FC<FlightInfoLayoutProps> = ({ data: slideData }) 
                 <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-10" style={{ background: 'var(--primary-color, #2563eb)', filter: 'blur(80px)' }} />
 
                 <div className="relative z-10 px-8 sm:px-12 lg:px-16 pt-14 pb-10 h-full flex flex-col">
+                    <AskHotspotPill
+                        topic="this flight route"
+                        viewMode={viewMode}
+                        slideId={slideId}
+                    />
                     <h1
                         className="text-3xl sm:text-4xl font-bold mb-8"
                         style={{ color: 'var(--background-text, #111827)' }}

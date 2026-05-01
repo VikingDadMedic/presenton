@@ -40,6 +40,10 @@ TONE_DEFAULT_VOICE_IDS: Dict[TonePreset, str] = {
 TONE_TEMPLATE_DEFAULTS: Dict[str, TonePreset] = {
     "travel": TonePreset.TRAVEL_COMPANION,
     "travel-itinerary": TonePreset.TRAVEL_COMPANION,
+    "travel-series": TonePreset.TRAVEL_COMPANION,
+    "travel-partner-spotlight": TonePreset.TRAVEL_COMPANION,
+    "travel-recap": TonePreset.DOCUMENTARY,
+    "travel-deal-flash": TonePreset.HYPE_REEL,
     "modern": TonePreset.DOCUMENTARY,
     "education": TonePreset.FRIENDLY_TUTORIAL,
 }

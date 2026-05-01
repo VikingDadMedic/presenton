@@ -2,6 +2,7 @@ import React from 'react'
 import * as z from "zod";
 import { ImageSchema } from '../defaultSchemes';
 import TravelFonts from './TravelFonts';
+import AskHotspotPill from '@/app/embed/[id]/AskHotspotPill';
 
 export const layoutId = 'travel-experience-cards'
 export const layoutName = 'Experience Cards'
@@ -71,6 +72,8 @@ export type ExperienceCardsData = z.infer<typeof experienceCardsSchema>
 
 interface ExperienceCardsLayoutProps {
     data?: Partial<ExperienceCardsData>
+    viewMode?: "deck" | "showcase"
+    slideId?: string
 }
 
 const StarRating: React.FC<{ rating: number; count: number }> = ({ rating, count }) => (
@@ -87,7 +90,11 @@ const StarRating: React.FC<{ rating: number; count: number }> = ({ rating, count
     </div>
 )
 
-const ExperienceCardsLayout: React.FC<ExperienceCardsLayoutProps> = ({ data: slideData }) => {
+const ExperienceCardsLayout: React.FC<ExperienceCardsLayoutProps> = ({
+    data: slideData,
+    viewMode = "deck",
+    slideId,
+}) => {
     const experiences = slideData?.experiences || []
 
     return (
@@ -115,6 +122,11 @@ const ExperienceCardsLayout: React.FC<ExperienceCardsLayoutProps> = ({ data: sli
                 )}
 
                 <div className="relative z-10 flex flex-col h-full px-8 sm:px-12 lg:px-16 pt-14 pb-6">
+                    <AskHotspotPill
+                        topic="these experiences"
+                        viewMode={viewMode}
+                        slideId={slideId}
+                    />
                     <div className="mb-4">
                         <h1 className="text-[36px] font-bold leading-tight mb-1" style={{ color: 'var(--background-text, #111827)' }}>
                             {slideData?.title || 'Top Experiences'}

@@ -255,6 +255,9 @@ import DealCountdownLayout, { Schema as DealCountdownSchema, layoutId as DealCou
 import CompareDestinationsLayout, { Schema as CompareDestinationsSchema, layoutId as CompareDestinationsId, layoutName as CompareDestinationsName, layoutDescription as CompareDestinationsDesc } from "./travel/CompareDestinationsLayout";
 import PackageInclusionsLayout, { Schema as PackageInclusionsSchema, layoutId as PackageInclusionsId, layoutName as PackageInclusionsName, layoutDescription as PackageInclusionsDesc } from "./travel/PackageInclusionsLayout";
 import BookingCTALayout, { Schema as BookingCTASchema, layoutId as BookingCTAId, layoutName as BookingCTAName, layoutDescription as BookingCTADesc } from "./travel/BookingCTALayout";
+import MemoryQuoteLayout, { Schema as MemoryQuoteSchema, layoutId as MemoryQuoteId, layoutName as MemoryQuoteName, layoutDescription as MemoryQuoteDesc } from "./travel/MemoryQuoteLayout";
+import SeriesCoverLayout, { Schema as SeriesCoverSchema, layoutId as SeriesCoverId, layoutName as SeriesCoverName, layoutDescription as SeriesCoverDesc } from "./travel/SeriesCoverLayout";
+import PartnerSpotlightHeroLayout, { Schema as PartnerSpotlightHeroSchema, layoutId as PartnerSpotlightHeroId, layoutName as PartnerSpotlightHeroName, layoutDescription as PartnerSpotlightHeroDesc } from "./travel/PartnerSpotlightHeroLayout";
 
 // New travel layouts — emotional / sensory hooks
 import GoldenHourMoodBoardLayout, { Schema as GoldenHourSchema, layoutId as GoldenHourId, layoutName as GoldenHourName, layoutDescription as GoldenHourDesc } from "./travel/GoldenHourMoodBoardLayout";
@@ -271,12 +274,19 @@ import LanguageSurvivalLayout, { Schema as LanguageSurvivalSchema, layoutId as L
 import ConnectivityCardLayout, { Schema as ConnectivitySchema, layoutId as ConnectivityId, layoutName as ConnectivityName, layoutDescription as ConnectivityDesc } from "./travel/ConnectivityCardLayout";
 import ExperienceCardsLayout, { Schema as ExperienceCardsSchema, layoutId as ExperienceCardsId, layoutName as ExperienceCardsName, layoutDescription as ExperienceCardsDesc } from "./travel/ExperienceCardsLayout";
 
+// New travel layouts — interactive widgets (showcase mode)
+import PricingConfiguratorLayout, { Schema as PricingConfiguratorSchema, layoutId as PricingConfiguratorId, layoutName as PricingConfiguratorName, layoutDescription as PricingConfiguratorDesc } from "./travel/PricingConfiguratorLayout";
+
 // Template sequence settings
 import travelRevealSettings from "./travel-reveal/settings.json";
 import travelContrastSettings from "./travel-contrast/settings.json";
 import travelAudienceSettings from "./travel-audience/settings.json";
 import travelMicroSettings from "./travel-micro/settings.json";
 import travelLocalSettings from "./travel-local/settings.json";
+import travelSeriesSettings from "./travel-series/settings.json";
+import travelRecapSettings from "./travel-recap/settings.json";
+import travelDealFlashSettings from "./travel-deal-flash/settings.json";
+import travelPartnerSpotlightSettings from "./travel-partner-spotlight/settings.json";
 
 
 // Helper to create template entry
@@ -506,6 +516,8 @@ export const swiftTemplates: TemplateWithData[] = [
 
 // Travel templates
 export const travelTemplates: TemplateWithData[] = [
+    createTemplateEntry(SeriesCoverLayout, SeriesCoverSchema, SeriesCoverId, SeriesCoverName, SeriesCoverDesc, "travel", "SeriesCoverLayout"),
+    createTemplateEntry(PartnerSpotlightHeroLayout, PartnerSpotlightHeroSchema, PartnerSpotlightHeroId, PartnerSpotlightHeroName, PartnerSpotlightHeroDesc, "travel", "PartnerSpotlightHeroLayout"),
     createTemplateEntry(DestinationHeroLayout, DestinationHeroSchema, DestinationHeroId, DestinationHeroName, DestinationHeroDesc, "travel", "DestinationHeroLayout"),
     createTemplateEntry(DestinationHighlightsLayout, DestinationHighlightsSchema, DestinationHighlightsId, DestinationHighlightsName, DestinationHighlightsDesc, "travel", "DestinationHighlightsLayout"),
     createTemplateEntry(ItineraryDayLayout, ItineraryDaySchema, ItineraryDayId, ItineraryDayName, ItineraryDayDesc, "travel", "ItineraryDayLayout"),
@@ -515,6 +527,7 @@ export const travelTemplates: TemplateWithData[] = [
     createTemplateEntry(FlightInfoLayout, FlightInfoSchema, FlightInfoId, FlightInfoName, FlightInfoDesc, "travel", "FlightInfoLayout"),
     createTemplateEntry(TravelMapLayout, TravelMapSchema, TravelMapId, TravelMapName, TravelMapDesc, "travel", "TravelMapLayout"),
     createTemplateEntry(TestimonialLayout, TestimonialSchema, TestimonialId, TestimonialName, TestimonialDesc, "travel", "TestimonialLayout"),
+    createTemplateEntry(MemoryQuoteLayout, MemoryQuoteSchema, MemoryQuoteId, MemoryQuoteName, MemoryQuoteDesc, "travel", "MemoryQuoteLayout"),
     createTemplateEntry(WeatherClimateLayout, WeatherClimateSchema, WeatherClimateId, WeatherClimateName, WeatherClimateDesc, "travel", "WeatherClimateLayout"),
     createTemplateEntry(CulturalTipsLayout, CulturalTipsSchema, CulturalTipsId, CulturalTipsName, CulturalTipsDesc, "travel", "CulturalTipsLayout"),
     createTemplateEntry(DealCountdownLayout, DealCountdownSchema, DealCountdownId, DealCountdownName, DealCountdownDesc, "travel", "DealCountdownLayout"),
@@ -534,6 +547,8 @@ export const travelTemplates: TemplateWithData[] = [
     createTemplateEntry(LanguageSurvivalLayout, LanguageSurvivalSchema, LanguageSurvivalId, LanguageSurvivalName, LanguageSurvivalDesc, "travel", "LanguageSurvivalLayout"),
     createTemplateEntry(ConnectivityCardLayout, ConnectivitySchema, ConnectivityId, ConnectivityName, ConnectivityDesc, "travel", "ConnectivityCardLayout"),
     createTemplateEntry(ExperienceCardsLayout, ExperienceCardsSchema, ExperienceCardsId, ExperienceCardsName, ExperienceCardsDesc, "travel", "ExperienceCardsLayout"),
+    // Interactive widgets (showcase mode renders interactive; deck/export renders static)
+    createTemplateEntry(PricingConfiguratorLayout, PricingConfiguratorSchema, PricingConfiguratorId, PricingConfiguratorName, PricingConfiguratorDesc, "travel", "PricingConfiguratorLayout"),
 ];
 
 // Travel itinerary templates (ordered subset of travel layouts)
@@ -601,6 +616,43 @@ export const travelLocalTemplates: TemplateWithData[] = [
     createTemplateEntry(BookingCTALayout, BookingCTASchema, BookingCTAId, BookingCTAName, BookingCTADesc, "travel-local", "BookingCTALayout"),
 ];
 
+// "Series" arc: opener -> destination cards -> compare -> pricing -> CTA
+export const travelSeriesTemplates: TemplateWithData[] = [
+    createTemplateEntry(SeriesCoverLayout, SeriesCoverSchema, SeriesCoverId, SeriesCoverName, SeriesCoverDesc, "travel-series", "SeriesCoverLayout"),
+    createTemplateEntry(DestinationHeroLayout, DestinationHeroSchema, DestinationHeroId, DestinationHeroName, DestinationHeroDesc, "travel-series", "DestinationHeroLayout"),
+    createTemplateEntry(DestinationHeroLayout, DestinationHeroSchema, DestinationHeroId, DestinationHeroName, DestinationHeroDesc, "travel-series", "DestinationHeroLayout"),
+    createTemplateEntry(DestinationHeroLayout, DestinationHeroSchema, DestinationHeroId, DestinationHeroName, DestinationHeroDesc, "travel-series", "DestinationHeroLayout"),
+    createTemplateEntry(CompareDestinationsLayout, CompareDestinationsSchema, CompareDestinationsId, CompareDestinationsName, CompareDestinationsDesc, "travel-series", "CompareDestinationsLayout"),
+    createTemplateEntry(PricingComparisonLayout, PricingComparisonSchema, PricingComparisonId, PricingComparisonName, PricingComparisonDesc, "travel-series", "PricingComparisonLayout"),
+    createTemplateEntry(BookingCTALayout, BookingCTASchema, BookingCTAId, BookingCTAName, BookingCTADesc, "travel-series", "BookingCTALayout"),
+];
+
+// "Recap" arc: memory framing -> day highlight -> cuisine -> client quote -> next-trip CTA
+export const travelRecapTemplates: TemplateWithData[] = [
+    createTemplateEntry(DestinationHeroLayout, DestinationHeroSchema, DestinationHeroId, DestinationHeroName, DestinationHeroDesc, "travel-recap", "DestinationHeroLayout"),
+    createTemplateEntry(ItineraryDayLayout, ItineraryDaySchema, ItineraryDayId, ItineraryDayName, ItineraryDayDesc, "travel-recap", "ItineraryDayLayout"),
+    createTemplateEntry(CuisineDiscoveryLayout, CuisineSchema, CuisineId, CuisineName, CuisineDesc, "travel-recap", "CuisineDiscoveryLayout"),
+    createTemplateEntry(MemoryQuoteLayout, MemoryQuoteSchema, MemoryQuoteId, MemoryQuoteName, MemoryQuoteDesc, "travel-recap", "MemoryQuoteLayout"),
+    createTemplateEntry(BookingCTALayout, BookingCTASchema, BookingCTAId, BookingCTAName, BookingCTADesc, "travel-recap", "BookingCTALayout"),
+];
+
+// "Deal Flash" arc: destination hook -> countdown offer -> what's included -> CTA
+export const travelDealFlashTemplates: TemplateWithData[] = [
+    createTemplateEntry(DestinationHeroLayout, DestinationHeroSchema, DestinationHeroId, DestinationHeroName, DestinationHeroDesc, "travel-deal-flash", "DestinationHeroLayout"),
+    createTemplateEntry(DealCountdownLayout, DealCountdownSchema, DealCountdownId, DealCountdownName, DealCountdownDesc, "travel-deal-flash", "DealCountdownLayout"),
+    createTemplateEntry(PackageInclusionsLayout, PackageInclusionsSchema, PackageInclusionsId, PackageInclusionsName, PackageInclusionsDesc, "travel-deal-flash", "PackageInclusionsLayout"),
+    createTemplateEntry(BookingCTALayout, BookingCTASchema, BookingCTAId, BookingCTAName, BookingCTADesc, "travel-deal-flash", "BookingCTALayout"),
+];
+
+// "Partner Spotlight" arc: branded hero -> partner inventory -> experiences -> CTA
+export const travelPartnerSpotlightTemplates: TemplateWithData[] = [
+    createTemplateEntry(PartnerSpotlightHeroLayout, PartnerSpotlightHeroSchema, PartnerSpotlightHeroId, PartnerSpotlightHeroName, PartnerSpotlightHeroDesc, "travel-partner-spotlight", "PartnerSpotlightHeroLayout"),
+    createTemplateEntry(AccommodationCardLayout, AccommodationCardSchema, AccommodationCardId, AccommodationCardName, AccommodationCardDesc, "travel-partner-spotlight", "AccommodationCardLayout"),
+    createTemplateEntry(FlightInfoLayout, FlightInfoSchema, FlightInfoId, FlightInfoName, FlightInfoDesc, "travel-partner-spotlight", "FlightInfoLayout"),
+    createTemplateEntry(ExperienceCardsLayout, ExperienceCardsSchema, ExperienceCardsId, ExperienceCardsName, ExperienceCardsDesc, "travel-partner-spotlight", "ExperienceCardsLayout"),
+    createTemplateEntry(BookingCTALayout, BookingCTASchema, BookingCTAId, BookingCTAName, BookingCTADesc, "travel-partner-spotlight", "BookingCTALayout"),
+];
+
 // TODO: Step 4: Combine all templates into a single array For UseCases (like the ones below)
 // All templates combined
 export const allLayouts: TemplateWithData[] = [
@@ -623,6 +675,10 @@ export const allLayouts: TemplateWithData[] = [
     ...travelAudienceTemplates,
     ...travelMicroTemplates,
     ...travelLocalTemplates,
+    ...travelSeriesTemplates,
+    ...travelRecapTemplates,
+    ...travelDealFlashTemplates,
+    ...travelPartnerSpotlightTemplates,
 ];
 
 
@@ -761,6 +817,34 @@ export const templates: TemplateLayoutsWithSettings[] = [
         description: travelLocalSettings.description,
         settings: travelLocalSettings as TemplateGroupSettings,
         layouts: travelLocalTemplates,
+    },
+    {
+        id: "travel-series",
+        name: "Series",
+        description: travelSeriesSettings.description,
+        settings: travelSeriesSettings as TemplateGroupSettings,
+        layouts: travelSeriesTemplates,
+    },
+    {
+        id: "travel-recap",
+        name: "Recap",
+        description: travelRecapSettings.description,
+        settings: travelRecapSettings as TemplateGroupSettings,
+        layouts: travelRecapTemplates,
+    },
+    {
+        id: "travel-deal-flash",
+        name: "Deal Flash",
+        description: travelDealFlashSettings.description,
+        settings: travelDealFlashSettings as TemplateGroupSettings,
+        layouts: travelDealFlashTemplates,
+    },
+    {
+        id: "travel-partner-spotlight",
+        name: "Partner Spotlight",
+        description: travelPartnerSpotlightSettings.description,
+        settings: travelPartnerSpotlightSettings as TemplateGroupSettings,
+        layouts: travelPartnerSpotlightTemplates,
     },
 ];
 

@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Check, RefreshCw, Plus, X } from "lucide-react";
+import { Check, Copy, Download, ExternalLink, Mail, RefreshCw, Plus, RotateCcw, X } from "lucide-react";
 import { MotionIcon } from "motion-icons-react";
 import { AnimatedLoader } from "@/components/ui/animated-loader";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { RecentActivityCard } from "@/components/ui/recent-activity-card";
 import { cn } from "@/lib/utils";
 import {
+  AgentProfilePayload,
   CampaignGenerateRequest,
   CampaignVariantPresetPayload,
   NarrationBudgetRemainingResponse,
@@ -42,6 +43,7 @@ import {
   CampaignVariantStatus,
   PresentationGenerationApi,
 } from "@/app/(presentation-generator)/services/api/presentation-generation";
+import { getUseCaseLabel } from "@/app/presentation-templates/use-case-taxonomy";
 import { estimateVariantCharacters } from "@/lib/campaign-narration-estimate";
 import {
   buildBundlesFromPresets,
@@ -551,6 +553,9 @@ const CampaignPage: React.FC = () => {
   const [presetsError, setPresetsError] = useState<string | null>(null);
   const [presetModalOpen, setPresetModalOpen] = useState(false);
   const [presetSaving, setPresetSaving] = useState(false);
+  const [agentProfile, setAgentProfile] = useState<AgentProfilePayload | null>(
+    null,
+  );
 
   const defaultsByVariantId = useMemo(
     () =>
@@ -792,6 +797,25 @@ const CampaignPage: React.FC = () => {
     let mounted = true;
     const abortController = new AbortController();
 
+    PresentationGenerationApi.getAgentProfile(abortController.signal)
+      .then((profile) => {
+        if (!mounted) return;
+        setAgentProfile(profile);
+      })
+      .catch(() => {
+        // Hero card just disables the "Send to client" CTA when email missing.
+      });
+
+    return () => {
+      mounted = false;
+      abortController.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    const abortController = new AbortController();
+
     PresentationGenerationApi.getNarrationBudgetRemaining(abortController.signal)
       .then((response) => {
         if (!mounted) return;
@@ -932,6 +956,190 @@ const CampaignPage: React.FC = () => {
   };
 
   const showVariantEmptyState = !campaignId && variants.length === 0;
+
+  /**
+   * Hero summary card detection — fires only when the campaign has finished
+   * end-to-end and every variant produced an artifact. We deliberately use
+   * `isCampaignTerminal()` for the overall gate (matches the existing
+   * polling stop signal) and require >0 variants so a partially-failed run
+   * doesn't mistakenly trigger celebration UI.
+   */
+  const isHeroEligible = useMemo(() => {
+    if (!isCampaignTerminal(campaignStatus)) return false;
+    if (variants.length === 0) return false;
+    return variants.every((variant) => {
+      const status = toStatusKey(variant.status);
+      return status === "completed" || status === "done";
+    });
+  }, [campaignStatus, variants]);
+
+  const aggregateMetrics = useMemo(() => {
+    let totalChars = 0;
+    let totalExports = 0;
+    for (const preset of selectedPresets) {
+      const estimate = presetEstimatesById[preset.id];
+      if (estimate) {
+        totalChars += estimate.chars;
+      }
+      totalExports += 1;
+    }
+    let wallClockMinutes: number | null = null;
+    if (
+      campaignStatus &&
+      typeof campaignStatus.created_at === "string" &&
+      typeof campaignStatus.completed_at === "string"
+    ) {
+      const createdAt = new Date(campaignStatus.created_at).getTime();
+      const completedAt = new Date(campaignStatus.completed_at).getTime();
+      if (
+        Number.isFinite(createdAt) &&
+        Number.isFinite(completedAt) &&
+        completedAt >= createdAt
+      ) {
+        wallClockMinutes = Math.max(
+          1,
+          Math.round((completedAt - createdAt) / 60_000),
+        );
+      }
+    }
+    return { totalChars, totalExports, wallClockMinutes };
+  }, [campaignStatus, presetEstimatesById, selectedPresets]);
+
+  const heroVariants = useMemo(() => {
+    return variants.map((variant, index) => {
+      const presentationId =
+        (typeof variant.presentation_id === "string" && variant.presentation_id) ||
+        (isRecord(variant.artifact) &&
+        typeof variant.artifact.presentation_id === "string"
+          ? variant.artifact.presentation_id
+          : "");
+      const exportPath =
+        (typeof variant.path === "string" && variant.path) ||
+        (isRecord(variant.artifact) && typeof variant.artifact.path === "string"
+          ? variant.artifact.path
+          : "");
+      const isPublic = isRecord(variant.artifact)
+        ? Boolean(variant.artifact.is_public)
+        : false;
+      const aspectRatio = isRecord(variant.artifact)
+        ? typeof variant.artifact.aspect_ratio === "string"
+          ? variant.artifact.aspect_ratio
+          : null
+        : null;
+      const templateId =
+        (typeof variant.template === "string" && variant.template) ||
+        (isRecord(variant.artifact) && typeof variant.artifact.template === "string"
+          ? variant.artifact.template
+          : "");
+      const exportAs =
+        (typeof variant.export_as === "string" && variant.export_as) ||
+        (isRecord(variant.artifact) &&
+        typeof variant.artifact.export_as === "string"
+          ? variant.artifact.export_as
+          : "pptx");
+
+      const variantName =
+        (typeof variant.name === "string" && variant.name) ||
+        `variant-${index + 1}`;
+
+      const editorHref = presentationId
+        ? `/presentation?id=${encodeURIComponent(presentationId)}`
+        : null;
+      const showcaseAspect = aspectRatio || "landscape";
+      const showcaseHref =
+        isPublic && presentationId
+          ? `/embed/${encodeURIComponent(presentationId)}?aspectRatio=${encodeURIComponent(
+              showcaseAspect,
+            )}`
+          : null;
+      const downloadHref = exportPath ? normalizeHref(exportPath) : null;
+
+      return {
+        key: `${variantName}-${index}`,
+        name: variantName,
+        templateId,
+        exportAs: String(exportAs).toUpperCase(),
+        useCaseLabel: getUseCaseLabel(templateId),
+        editorHref,
+        showcaseHref,
+        downloadHref,
+        presentationId,
+        aspectRatio: showcaseAspect,
+        isPublic,
+      };
+    });
+  }, [variants]);
+
+  const copyToClipboard = useCallback(async (value: string, label: string) => {
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(value);
+        toast.success(`Copied ${label}`);
+      } else {
+        toast.error("Clipboard not available");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not copy");
+    }
+  }, []);
+
+  const buildShowcaseAbsoluteUrl = useCallback((href: string): string => {
+    if (typeof window === "undefined") return href;
+    if (href.startsWith("http://") || href.startsWith("https://")) return href;
+    return new URL(href, window.location.origin).toString();
+  }, []);
+
+  const handleResetCampaign = useCallback(() => {
+    setCampaignId(null);
+    setStatusUrl(null);
+    setCampaignStatus(null);
+    setLastUpdatedAt(null);
+    setIsPolling(false);
+    setPollError(null);
+    setPrompt("");
+    setSelectedVariantIds(CAMPAIGN_VARIANT_PRESETS.map((preset) => preset.id));
+  }, []);
+
+  const campaignDisplayName = useMemo(() => {
+    const fromPrompt = prompt.trim().split(/\s+/).slice(0, 5).join(" ");
+    if (fromPrompt) return fromPrompt;
+    if (typeof campaignStatus?.campaign_id === "string") {
+      return `Campaign ${campaignStatus.campaign_id.slice(0, 8)}`;
+    }
+    return "Your campaign";
+  }, [prompt, campaignStatus?.campaign_id]);
+
+  const sendToClientMailto = useMemo(() => {
+    const email =
+      (agentProfile && typeof agentProfile.email === "string" && agentProfile.email) ||
+      "";
+    if (!email) return null;
+    const subject = `${campaignDisplayName} — your travel package`;
+    const lines = heroVariants
+      .map((variant) => {
+        const links: string[] = [];
+        if (variant.editorHref) {
+          const editor = buildShowcaseAbsoluteUrl(variant.editorHref);
+          links.push(`Editor: ${editor}`);
+        }
+        if (variant.showcaseHref) {
+          const showcase = buildShowcaseAbsoluteUrl(variant.showcaseHref);
+          links.push(`Public showcase: ${showcase}`);
+        }
+        if (variant.downloadHref) {
+          const dl = buildShowcaseAbsoluteUrl(variant.downloadHref);
+          links.push(`Download (${variant.exportAs}): ${dl}`);
+        }
+        return [`• ${variant.name} (${variant.useCaseLabel})`, ...links].join(
+          "\n  ",
+        );
+      })
+      .join("\n\n");
+    const body = `Here are the assets for ${campaignDisplayName}:\n\n${lines}`;
+    return `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(
+      subject,
+    )}&body=${encodeURIComponent(body)}`;
+  }, [agentProfile, buildShowcaseAbsoluteUrl, campaignDisplayName, heroVariants]);
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -1182,7 +1390,186 @@ const CampaignPage: React.FC = () => {
           />
         </div>
 
-        <Card className="mt-6">
+        {isHeroEligible ? (
+          <Card className="mt-6 border-primary/40 bg-primary/[0.03]">
+            <CardHeader className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle className="flex items-center gap-2 text-2xl font-bold text-foreground">
+                  <MotionIcon
+                    name="PartyPopper"
+                    trigger="hover"
+                    animation="bounce"
+                    size={28}
+                    className="text-primary"
+                  />
+                  Campaign ready
+                </CardTitle>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetCampaign}
+                  className="gap-1"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Generate another campaign
+                </Button>
+              </div>
+              <CardDescription>
+                Every variant published successfully. Open them, share the
+                public showcase URL, or send the full package to your client.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {heroVariants.map((variant) => (
+                  <div
+                    key={variant.key}
+                    className="rounded-lg border border-border bg-card p-4"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-foreground">
+                          {variant.name}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {variant.templateId || "auto template"}
+                        </p>
+                      </div>
+                      <span className="rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                        {variant.exportAs}
+                      </span>
+                    </div>
+                    <span className="mt-2 inline-flex rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground">
+                      {variant.useCaseLabel}
+                    </span>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {variant.editorHref ? (
+                        <a
+                          href={variant.editorHref}
+                          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-medium text-primary hover:bg-muted"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          Open editor
+                        </a>
+                      ) : null}
+                      {variant.showcaseHref ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              variant.showcaseHref &&
+                              copyToClipboard(
+                                buildShowcaseAbsoluteUrl(variant.showcaseHref),
+                                "embed URL",
+                              )
+                            }
+                            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-medium text-primary hover:bg-muted"
+                          >
+                            <Copy className="h-3 w-3" />
+                            Copy embed URL
+                          </button>
+                          <a
+                            href={variant.showcaseHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-medium text-primary hover:bg-muted"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            Open public showcase
+                          </a>
+                        </>
+                      ) : null}
+                      {variant.downloadHref ? (
+                        <a
+                          href={variant.downloadHref}
+                          target={
+                            variant.downloadHref.startsWith("http")
+                              ? "_blank"
+                              : undefined
+                          }
+                          rel={
+                            variant.downloadHref.startsWith("http")
+                              ? "noreferrer"
+                              : undefined
+                          }
+                          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-medium text-primary hover:bg-muted"
+                        >
+                          <Download className="h-3 w-3" />
+                          Download
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid gap-3 rounded-lg border border-border bg-card/50 p-3 sm:grid-cols-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Wall-clock time
+                  </p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {aggregateMetrics.wallClockMinutes !== null
+                      ? `${aggregateMetrics.wallClockMinutes} min`
+                      : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Characters synthesized (est.)
+                  </p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {aggregateMetrics.totalChars > 0
+                      ? aggregateMetrics.totalChars.toLocaleString()
+                      : "0"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Total exports
+                  </p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {aggregateMetrics.totalExports}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {sendToClientMailto ? (
+                  <Button asChild size="lg" className="gap-2">
+                    <a href={sendToClientMailto}>
+                      <Mail className="h-4 w-4" />
+                      Send to client
+                    </a>
+                  </Button>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex">
+                        <Button
+                          type="button"
+                          size="lg"
+                          disabled
+                          className="gap-2"
+                        >
+                          <Mail className="h-4 w-4" />
+                          Send to client
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Add your email under Settings → Agent profile to enable
+                      this CTA.
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        <Card className={cn("mt-6", isHeroEligible && "hidden")}>
           <CardHeader>
             <CardTitle>Variant status</CardTitle>
             <CardDescription>

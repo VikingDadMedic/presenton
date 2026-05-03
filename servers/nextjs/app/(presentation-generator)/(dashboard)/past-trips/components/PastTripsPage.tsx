@@ -179,6 +179,12 @@ const PastTripsPage: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [result, setResult] = useState<RecapGenerateResponse | null>(null);
+  const [bulkSelectedIds, setBulkSelectedIds] = useState<string[]>([]);
+  const [bulkProgress, setBulkProgress] = useState<
+    Record<string, "pending" | "running" | "done" | "failed">
+  >({});
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const [bulkErrors, setBulkErrors] = useState<Record<string, string>>({});
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [persistedSchedules, setPersistedSchedules] = useState<
     ScheduleRecapPersistedRow[]
@@ -295,6 +301,57 @@ const PastTripsPage: React.FC = () => {
     }
   };
 
+  const toggleBulkSelected = useCallback((presentationId: string) => {
+    setBulkSelectedIds((prev) =>
+      prev.includes(presentationId)
+        ? prev.filter((id) => id !== presentationId)
+        : [...prev, presentationId],
+    );
+  }, []);
+
+  const handleBulkGenerate = useCallback(async () => {
+    if (bulkSelectedIds.length < 2 || bulkRunning) return;
+
+    /**
+     * v1 implementation: split the bulk into N independent /recap calls
+     * (option (b) in the plan). The backend supports source_presentation_ids
+     * and would run them serially, but per-call updates give better UX since
+     * each call can mark its own row as ✓/⏸ as soon as it finishes. Backend
+     * Azure App Service B2 RAM constraint already prevents true parallelism;
+     * here we still iterate sequentially client-side to mirror that.
+     */
+    setBulkRunning(true);
+    setBulkErrors({});
+    setBulkProgress(
+      Object.fromEntries(
+        bulkSelectedIds.map((id) => [id, "pending" as const]),
+      ),
+    );
+
+    for (const presentationId of bulkSelectedIds) {
+      setBulkProgress((prev) => ({ ...prev, [presentationId]: "running" }));
+      try {
+        await PresentationGenerationApi.generateRecap({
+          mode: selectedMode,
+          source_presentation_id: presentationId,
+        });
+        setBulkProgress((prev) => ({ ...prev, [presentationId]: "done" }));
+      } catch (error) {
+        setBulkProgress((prev) => ({ ...prev, [presentationId]: "failed" }));
+        setBulkErrors((prev) => ({
+          ...prev,
+          [presentationId]:
+            error instanceof Error
+              ? error.message
+              : "Recap generation failed.",
+        }));
+      }
+    }
+
+    setBulkRunning(false);
+    void loadPresentations();
+  }, [bulkSelectedIds, bulkRunning, selectedMode, loadPresentations]);
+
   const requestStatus: "idle" | "running" | "completed" | "failed" = isGenerating
     ? "running"
     : submitError
@@ -382,25 +439,38 @@ const PastTripsPage: React.FC = () => {
                     {presentations.slice(0, 8).map((presentation) => {
                       const isSelected = presentation.id === selectedPresentationId;
                       const matches = recapMatchIndex.get(presentation.id);
+                      const isBulkChecked = bulkSelectedIds.includes(presentation.id);
                       return (
-                        <button
+                        <div
                           key={presentation.id}
-                          type="button"
-                          onClick={() => setSelectedPresentationId(presentation.id)}
                           className={cn(
-                            "relative w-full rounded-lg border p-3 pr-20 text-left transition-colors",
+                            "relative flex items-start gap-2 rounded-lg border p-3 pr-20 text-left transition-colors",
                             isSelected
                               ? "border-primary/50 bg-primary/5"
-                              : "border-border bg-card hover:bg-muted/50"
+                              : "border-border bg-card hover:bg-muted/50",
                           )}
                         >
-                          <p className="text-sm font-medium text-foreground">
-                            {getTitle(presentation)}
-                          </p>
-                          <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                            <CalendarDays className="h-3.5 w-3.5" />
-                            Updated {formatDate(presentation.updated_at)}
-                          </p>
+                          <input
+                            type="checkbox"
+                            checked={isBulkChecked}
+                            onChange={() => toggleBulkSelected(presentation.id)}
+                            disabled={bulkRunning}
+                            aria-label={`Add ${getTitle(presentation)} to bulk recap`}
+                            className="mt-0.5 h-4 w-4 cursor-pointer accent-primary"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPresentationId(presentation.id)}
+                            className="flex-1 text-left"
+                          >
+                            <p className="text-sm font-medium text-foreground">
+                              {getTitle(presentation)}
+                            </p>
+                            <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                              <CalendarDays className="h-3.5 w-3.5" />
+                              Updated {formatDate(presentation.updated_at)}
+                            </p>
+                          </button>
                           <div className="absolute right-3 top-3 flex items-center gap-1">
                             {RECAP_MODE_OPTIONS.map((option) => {
                               const match = matches?.get(option.value);
@@ -410,7 +480,7 @@ const PastTripsPage: React.FC = () => {
                                 : STATUS_DOT_BASE_CLASS;
                               const tooltipLabel = filled
                                 ? `${option.label}: generated ${formatDate(
-                                    match!.updatedAt
+                                    match!.updatedAt,
                                   )}`
                                 : `${option.label}: not yet generated`;
                               return (
@@ -426,7 +496,7 @@ const PastTripsPage: React.FC = () => {
                               );
                             })}
                           </div>
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
@@ -517,6 +587,24 @@ const PastTripsPage: React.FC = () => {
                     <CalendarClock className="h-4 w-4" />
                     Schedule this recap
                   </Button>
+                  {bulkSelectedIds.length >= 2 ? (
+                    <Button
+                      type="button"
+                      variant="signal"
+                      onClick={() => void handleBulkGenerate()}
+                      disabled={bulkRunning}
+                      className="gap-1"
+                    >
+                      {bulkRunning ? (
+                        <>
+                          <AnimatedLoader size={14} />
+                          Generating bulk recap…
+                        </>
+                      ) : (
+                        <>Generate bulk recap ({bulkSelectedIds.length})</>
+                      )}
+                    </Button>
+                  ) : null}
                 </div>
               </form>
             </CardContent>
@@ -594,6 +682,66 @@ const PastTripsPage: React.FC = () => {
                   Generate a recap to get the editor link.
                 </p>
               )}
+
+              {bulkSelectedIds.length > 0 ? (
+                <div className="mt-2 space-y-1 border-t border-border pt-2">
+                  <p className="text-xs font-medium text-foreground">
+                    Bulk recap
+                  </p>
+                  <ul className="space-y-1 text-xs">
+                    {bulkSelectedIds.map((presentationId) => {
+                      const presentation = presentations.find(
+                        (entry) => entry.id === presentationId,
+                      );
+                      const status = bulkProgress[presentationId] ?? "pending";
+                      const error = bulkErrors[presentationId];
+                      const indicator =
+                        status === "done"
+                          ? "✓"
+                          : status === "running"
+                            ? "⏳"
+                            : status === "failed"
+                              ? "⚠"
+                              : "⏸";
+                      return (
+                        <li
+                          key={presentationId}
+                          className="flex items-start justify-between gap-2"
+                        >
+                          <span className="flex-1 truncate text-foreground">
+                            {presentation
+                              ? getTitle(presentation)
+                              : presentationId}
+                          </span>
+                          <span
+                            className={cn(
+                              "shrink-0 rounded-full border px-1.5 text-[11px]",
+                              status === "done" &&
+                                "border-success/30 bg-success-bg text-success",
+                              status === "running" &&
+                                "border-info/30 bg-info-bg text-info motion-safe:animate-pulse",
+                              status === "failed" &&
+                                "border-error/30 bg-error-bg text-error",
+                              status === "pending" &&
+                                "border-border bg-muted/40 text-muted-foreground",
+                            )}
+                          >
+                            {indicator} {status}
+                          </span>
+                          {error ? (
+                            <span
+                              className="basis-full text-[11px] text-error"
+                              role="alert"
+                            >
+                              {error}
+                            </span>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         </div>

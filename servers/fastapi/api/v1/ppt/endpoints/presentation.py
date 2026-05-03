@@ -6,7 +6,7 @@ import os
 import random
 import shutil
 import traceback
-from typing import Annotated, Dict, List, Literal, Optional, Tuple
+from typing import Annotated, Dict, List, Literal, Optional, Tuple, Union
 import dirtyjson
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Path
 from fastapi.responses import StreamingResponse
@@ -117,6 +117,14 @@ class RecapPresentationRequest(BaseModel):
         default=None,
         description="Existing presentation id to derive recap context from",
     )
+    source_presentation_ids: Optional[List[uuid.UUID]] = Field(
+        default=None,
+        description=(
+            "Multiple existing presentation ids to derive recap context from. "
+            "When set, the handler runs one recap per source serially and returns "
+            "BulkRecapPresentationResponse instead of RecapPresentationResponse."
+        ),
+    )
     source_json: Optional[dict] = Field(
         default=None,
         description="Raw source context JSON exported from a prior presentation",
@@ -187,9 +195,18 @@ class RecapPresentationRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_source_input(self):
-        if self.source_presentation_id is None and not self.source_json:
+        sources_provided = sum(
+            1
+            for value in (
+                self.source_presentation_id,
+                self.source_json,
+                self.source_presentation_ids,
+            )
+            if value
+        )
+        if sources_provided == 0:
             raise ValueError(
-                "Either source_presentation_id or source_json is required"
+                "One of source_presentation_id, source_json, or source_presentation_ids is required"
             )
         return self
 
@@ -197,6 +214,16 @@ class RecapPresentationRequest(BaseModel):
 class RecapPresentationResponse(PresentationPathAndEditPath):
     mode: RecapMode
     source_presentation_id: Optional[uuid.UUID] = None
+
+
+class BulkRecapPresentationResponse(BaseModel):
+    """
+    Response shape returned when `source_presentation_ids` is provided on the
+    recap request. The recaps run serially (Azure App Service B2 RAM
+    constraint — no parallelism).
+    """
+
+    recaps: List[RecapPresentationResponse] = Field(default_factory=list)
 
 
 _RECAP_MODE_DEFAULTS: Dict[RecapMode, Dict[str, object]] = {
@@ -1169,11 +1196,15 @@ async def check_if_api_request_is_valid(
     return (presentation_id,)
 
 
-@PRESENTATION_ROUTER.post("/recap", response_model=RecapPresentationResponse)
-async def generate_recap_presentation(
+async def _generate_single_recap(
     request: RecapPresentationRequest,
-    sql_session: AsyncSession = Depends(get_async_session),
-):
+    sql_session: AsyncSession,
+) -> RecapPresentationResponse:
+    """
+    Generate a single recap. Used both by the single-source endpoint path AND
+    by the bulk loop (one per source id, serial — Azure App Service B2 RAM
+    constraint precludes parallel runs).
+    """
     source_context, source_language, source_origin, source_currency = (
         await _resolve_recap_source_context(request, sql_session)
     )
@@ -1191,7 +1222,9 @@ async def generate_recap_presentation(
         recap_generation_request, presentation_id, None, sql_session
     )
 
-    generated_presentation = await sql_session.get(PresentationModel, response.presentation_id)
+    generated_presentation = await sql_session.get(
+        PresentationModel, response.presentation_id
+    )
     if generated_presentation:
         generated_presentation.narration_tone = recap_generation_request.narration_tone
         resolved_voice_id = _resolve_recap_voice_id(
@@ -1207,6 +1240,28 @@ async def generate_recap_presentation(
         mode=request.mode,
         source_presentation_id=request.source_presentation_id,
     )
+
+
+@PRESENTATION_ROUTER.post(
+    "/recap",
+    response_model=Union[RecapPresentationResponse, BulkRecapPresentationResponse],
+)
+async def generate_recap_presentation(
+    request: RecapPresentationRequest,
+    sql_session: AsyncSession = Depends(get_async_session),
+):
+    if request.source_presentation_ids:
+        recaps: List[RecapPresentationResponse] = []
+        for source_id in request.source_presentation_ids:
+            per_source_payload = request.model_dump(exclude_unset=False)
+            per_source_payload["source_presentation_id"] = source_id
+            per_source_payload["source_presentation_ids"] = None
+            per_source_request = RecapPresentationRequest(**per_source_payload)
+            recap = await _generate_single_recap(per_source_request, sql_session)
+            recaps.append(recap)
+        return BulkRecapPresentationResponse(recaps=recaps)
+
+    return await _generate_single_recap(request, sql_session)
 
 
 def _build_export_options_from_request(

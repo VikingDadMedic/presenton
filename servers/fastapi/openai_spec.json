@@ -701,6 +701,11 @@
                     "type": "string",
                     "format": "uuid"
                   },
+                  "source_presentation_ids": {
+                    "type": "array",
+                    "items": { "type": "string", "format": "uuid" },
+                    "description": "When provided, the handler runs one recap per id serially and returns BulkRecapPresentationResponse."
+                  },
                   "source_json": {
                     "type": "object",
                     "additionalProperties": true
@@ -739,23 +744,14 @@
         },
         "responses": {
           "200": {
-            "description": "Recap presentation generated",
+            "description": "Recap presentation generated. Single shape when source_presentation_id or source_json is used; bulk shape when source_presentation_ids is provided.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "presentation_id": { "type": "string", "format": "uuid" },
-                    "path": { "type": "string" },
-                    "edit_path": { "type": "string" },
-                    "mode": { "type": "string" },
-                    "source_presentation_id": {
-                      "type": "string",
-                      "format": "uuid",
-                      "nullable": true
-                    }
-                  },
-                  "required": ["presentation_id", "path", "edit_path", "mode"]
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/RecapPresentationResponse" },
+                    { "$ref": "#/components/schemas/BulkRecapPresentationResponse" }
+                  ]
                 }
               }
             }
@@ -900,6 +896,31 @@
           "default_utm_campaign": { "type": "string", "nullable": true }
         },
         "additionalProperties": false
+      },
+      "RecapPresentationResponse": {
+        "type": "object",
+        "required": ["presentation_id", "path", "edit_path", "mode"],
+        "properties": {
+          "presentation_id": { "type": "string", "format": "uuid" },
+          "path": { "type": "string" },
+          "edit_path": { "type": "string" },
+          "mode": { "type": "string" },
+          "source_presentation_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        }
+      },
+      "BulkRecapPresentationResponse": {
+        "type": "object",
+        "required": ["recaps"],
+        "properties": {
+          "recaps": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/RecapPresentationResponse" }
+          }
+        }
       },
       "CampaignVariantPreset": {
         "type": "object",

@@ -1,7 +1,7 @@
 # TripStory — Stakeholder Briefing
 
 > A single-source briefing on what TripStory is, what's shipped, why it's defensible, who buys it, and what's next.
-> Last updated: April 2026. Companion docs: [README.md](README.md), [VISION.md](VISION.md), [REFACTOR-PIVOT.MD](REFACTOR-PIVOT.MD), [FEAT-EXPANSION.md](FEAT-EXPANSION.md), [EXPORTS.md](EXPORTS.md), [main-workflow.md](main-workflow.md), [DEPLOYMENT.md](DEPLOYMENT.md).
+> Last updated: May 2026. Companion docs: [README.md](README.md), [VISION.md](VISION.md), [REFACTOR-PIVOT.MD](REFACTOR-PIVOT.MD), [FEAT-EXPANSION.md](FEAT-EXPANSION.md), [FEATURE-BUILDING.md](FEATURE-BUILDING.md), [EXPORTS.md](EXPORTS.md), [main-workflow.md](main-workflow.md), [DEPLOYMENT.md](DEPLOYMENT.md), [docs/CREATIVE-RECIPES.md](docs/CREATIVE-RECIPES.md), [docs/RECAP-CRON-RECIPES.md](docs/RECAP-CRON-RECIPES.md).
 
 ---
 
@@ -76,8 +76,8 @@ The shipped product surface, organized for stakeholder skim. Every item below is
 |---|---|
 | 3-call LLM pipeline | Outlines → Layout assignment → Content fill |
 | Per-call model routing | Call 1: GPT-5.5 (reasoning); Calls 2-3: Mercury 2 (Inception Labs diffusion LLM, 2.9-14.6x faster than GPT-4.1 for structured output) |
-| Travel layouts | 26 layouts in 3 categories (emotional/sensory hooks, logistics/practical, conversion) |
-| Narrative arcs | 6 ordered template sequences: `travel-itinerary`, `travel-reveal`, `travel-contrast`, `travel-audience`, `travel-micro`, `travel-local` |
+| Travel layouts | 30 layouts in 3 categories (emotional/sensory hooks, logistics/practical, conversion) plus the interactive Pricing Configurator widget |
+| Narrative arcs | 10 ordered template sequences: `travel-itinerary`, `travel-reveal`, `travel-contrast`, `travel-audience`, `travel-micro`, `travel-local`, `travel-series`, `travel-recap`, `travel-deal-flash`, `travel-partner-spotlight` |
 | Ordered mode | `ordered: true` templates skip Call 2 entirely (positional layout mapping) |
 | Web grounding | `WebSearchTool()` invoked autonomously by LLM during outline generation |
 | Auto slide-count | Computed from trip duration |
@@ -123,7 +123,8 @@ Itinerary scheduler distributes activities across trip days with category divers
 | Embed | `POST /api/export-as-embed` | Iframe code generator |
 | Showcase view | `/embed/{id}?mode=showcase` | Looped self-led kiosk preset, interactive widgets enabled, `is_public` flag for public sharing |
 | Agent profile defaults | `GET/PATCH /api/v1/ppt/profile` | Singleton brand identity (agent, agency, logo, booking URL, UTM defaults) |
-| Branded export overlays + UTM | `export_options` | Contact-card watermark + cross-format UTM tagging on booking links (PPTX/PDF/HTML/MP4) |
+| Branded export overlays + UTM | `export_options` | Contact-card watermark + cross-format UTM tagging on booking links (PPTX/PDF/HTML/MP4); canonical implementation in [`servers/nextjs/lib/apply-utm-tags.ts`](servers/nextjs/lib/apply-utm-tags.ts) |
+| Lead-magnet PDF + email-safe HTML | `export_options` | `lead_magnet: true` adds branded cover/back wrapper around the PDF; `email_safe: true` emits single-column max-600px HTML with narration as `<a href>` links (no JS) |
 | Campaign generator | `POST /api/v1/ppt/campaign/generate` | Async multi-variant creative generation from one brief + status polling |
 | Recap mode | `POST /api/v1/ppt/presentation/recap` | Post-trip lifecycle content (`welcome_home`, `anniversary`, `next_planning_window`) |
 | Multi-aspect export | `export_options.aspect_ratio` | Landscape/vertical/square output for PPTX/PDF/HTML/video routes |
@@ -132,7 +133,7 @@ Async video export at `/api/export-as-video` returns `{ jobId, statusUrl }` imme
 
 ### E. AI Agent Integration (MCP) [LIVE]
 
-MCP server at `/mcp/` exposes **14+ tools** auto-registered from the FastAPI OpenAPI spec, including `generate_presentation`, `get_presentation`, `export_presentation`, `edit_slide_field`, `get_enricher_status`, `list_presentations`, `templates_list`, `bulk_generate_narration`, `narration_estimate`, `get_narration_voices`, `get_narration_status`, `get_embed_url`, `export_json`, `generate_async`. Works in Cursor, Claude Desktop, n8n, and any MCP-compliant agent. See [EXPORTS.md MCP section](EXPORTS.md#7-mcp-integration).
+MCP server at `/mcp/` exposes **19 tools** auto-registered from the FastAPI OpenAPI spec, including `generate_presentation`, `get_presentation`, `export_presentation`, `edit_slide_field`, `get_enricher_status`, `list_presentations`, `templates_list`, `bulk_generate_narration`, `narration_estimate`, `get_narration_voices`, `get_narration_status`, `get_embed_url`, `export_json`, `generate_async`, `generate_campaign`, `get_campaign_status`, `generate_recap`, `get_agent_profile`, and `update_agent_profile`. Works in Cursor, Claude Desktop, n8n, and any MCP-compliant agent. See [EXPORTS.md Section 9](EXPORTS.md#9-mcp-integration) for the canonical tool table.
 
 ### F. Editing & Customization [LIVE]
 
@@ -145,7 +146,7 @@ MCP server at `/mcp/` exposes **14+ tools** auto-registered from the FastAPI Ope
 | Chart data editor | Dialog-based table for Recharts data arrays |
 | Drag-reorder | @dnd-kit for slides + outlines |
 | Undo/redo | 30-state history |
-| Template groups | 14+ groups: general, modern, swift, neo-* variants, code, education, product-overview, report, travel + 6 travel narrative arcs |
+| Template groups | 14+ groups: general, modern, swift, neo-* variants, code, education, product-overview, report, travel + 10 travel narrative arcs |
 | Custom templates | Upload `.pptx`/`.ppt`/`.pptm`/`.odp` → AI conversion to React + Zod entry; UUID-prefixed groups compiled at runtime via `@babel/standalone` |
 
 ### G. Document Import & Context [LIVE]
@@ -186,7 +187,7 @@ flowchart LR
     LLM2["Call 2 Layout<br/>Mercury 2"]
     LLM3["Call 3 Content + IPA<br/>Mercury 2"]
     Overlay["Overlay real data<br/>onto LLM output"]
-    Render["React render<br/>26 layouts, 6 arcs"]
+    Render["React render<br/>30 layouts, 10 arcs"]
     Outputs["6 formats<br/>PPTX, PDF, HTML+audio<br/>MP4, JSON, Embed"]
     Prompt --> Enrich
     Enrich --> LLM1
@@ -225,7 +226,7 @@ Six items, each defensible in its own right. Together, they compound.
 
 | Category | Examples | TripStory wins on | Where competitors win |
 |---|---|---|---|
-| Generic AI deck tools | Beautiful.ai, Canva Magic Studio, Gamma, Tome | Real travel data, 26 travel layouts, narration, MCP-native, six-format output | Brand recognition, breadth across non-travel use cases |
+| Generic AI deck tools | Beautiful.ai, Canva Magic Studio, Gamma, Tome | Real travel data, 30 travel layouts, narration, MCP-native, six-format output | Brand recognition, breadth across non-travel use cases |
 | Travel CRMs and proposal tools | Travefy, Tourwriter, ClientBase, AXUS | AI generation, modern UX, six-format export, narration, open source | Booking integration depth, established commission flows |
 | PowerPoint / Canva (status quo) | — | Speed (60-130s vs 4-8h), data accuracy, video and embed sharing | Familiarity, zero learning curve |
 | In-house AI at large agencies | Bespoke builds | Packaged solution, open-source ownership, MCP integration, privacy-friendly | Bespoke fit to internal workflow |
@@ -270,12 +271,12 @@ This is the same model as Sentry, PostHog, and Mattermost. It works because the 
 
 Phases 0-12 of the travel pivot are complete and deployed at `https://presenton-app.azurewebsites.net`. Specifically:
 
-- All 26 travel layouts and 6 narrative arcs registered in both frontend (`presentation-templates/index.tsx`) and backend (`constants/presentation.py`)
+- All 30 travel layouts and 10 narrative arcs registered in both frontend (`presentation-templates/index.tsx`) and backend (`constants/presentation.py`)
 - 17 enrichers + 1 derived (pricing), with auto-discovery and graceful degradation
 - All 6 export formats wired to the UI export dropdown
 - Showcase mode + Pricing Configurator widget + AI Q&A hotspot (with `is_public`-gated public sharing)
 - ElevenLabs narration with usage tracking, monthly budgets, IPA augmentation
-- MCP server at `/mcp/` with 14+ tools
+- MCP server at `/mcp/` with 19 tools (see [EXPORTS.md Section 9](EXPORTS.md#9-mcp-integration))
 - Eggshell Bright Tech theme system (4-theme registry)
 - Async video export job pipeline with file-backed status store and progress polling
 - Azure App Service deployment with `/health` monitoring, single-command redeploy script (`scripts/redeploy-azure.sh`), end-to-end smoke harness (`scripts/smoke-narration.sh`)
@@ -301,7 +302,6 @@ Phases 0-12 of the travel pivot are complete and deployed at `https://presenton-
 
 - Marketing site launch (`servers/marketing/`) with public landing, features, pricing, embedded product demos via the existing `/embed/{id}` route
 - Multi-tenant architecture (PostgreSQL via `DATABASE_URL` already supported; row-level scoping needed)
-- Booking deep links with UTM tracking on PPTX/PDF outputs
 - QR codes on exported decks pointing to interactive embed view
 
 #### Q4 2026
@@ -318,7 +318,7 @@ Phases 0-12 of the travel pivot are complete and deployed at `https://presenton-
 | LLM cost variability on high-traffic deployments | Medium | Per-call model routing already shipped — GPT-5.5 only for Call 1; Mercury 2 for high-volume Calls 2-3. Anthropic prompt caching planned. |
 | Supply API rate limits (Viator, SerpAPI, Tavily) | Medium | Graceful degradation rule prevents pipeline breakage; 7-day Viator destination resolver cache; future: Redis-backed enricher cache layer. |
 | ElevenLabs character costs scaling unpredictably | Medium | Per-slide cap (`ELEVENLABS_MAX_CHARS_PER_SLIDE`) and monthly budget (`ELEVENLABS_MONTHLY_CHARACTER_BUDGET`) enforced from the [`narration_usage_logs`](servers/fastapi/alembic/versions/9d2f4f8429de_add_narration_usage_log.py) table. Usage dashboard surfaces overruns. |
-| Open-source clone risk | Low-medium | Moats compound: enricher integration depth + IPA expertise + 26 layouts + MCP-native design. Network effects from agency CRM adoption add switching cost. |
+| Open-source clone risk | Low-medium | Moats compound: enricher integration depth + IPA expertise + 30 layouts + MCP-native design. Network effects from agency CRM adoption add switching cost. |
 | Single-admin auth model limits multi-user agencies | Medium | Multi-tenant architecture in Q3 roadmap; row-level scoping ready (DB schema already supports). |
 | Azure App Service video export ceiling (Hyperframes screenshot mode) | Known | Async job pipeline + HTML zip with audio manifest + ffmpeg-outside-Azure workaround documented in [TROUBLESHOOTING.md](TROUBLESHOOTING.md). Local Docker renders full decks in seconds. |
 
@@ -334,4 +334,4 @@ Phases 0-12 of the travel pivot are complete and deployed at `https://presenton-
 - **Moat**: Domain-specific enricher depth + pronunciation expertise + agent-ready MCP architecture + open-source enterprise-friendly licensing.
 - **Next**: Marketing site, booking-grade APIs, interactive maps, multi-tenant architecture.
 
-For deeper drill-downs, see [README.md](README.md) (quickstart), [main-workflow.md](main-workflow.md) (pipeline internals), [EXPORTS.md](EXPORTS.md) (export reference), [REFACTOR-PIVOT.MD](REFACTOR-PIVOT.MD) (build history), [DEPLOYMENT.md](DEPLOYMENT.md) (Azure ops), [TROUBLESHOOTING.md](TROUBLESHOOTING.md) (production runbook).
+For deeper drill-downs, see [README.md](README.md) (quickstart), [main-workflow.md](main-workflow.md) (pipeline internals), [EXPORTS.md](EXPORTS.md) (export reference), [FEATURE-BUILDING.md](FEATURE-BUILDING.md) (content syndication master plan, Phases 0-6), [REFACTOR-PIVOT.MD](REFACTOR-PIVOT.MD) (build history), [DEPLOYMENT.md](DEPLOYMENT.md) (Azure ops), [TROUBLESHOOTING.md](TROUBLESHOOTING.md) (production runbook), [docs/CREATIVE-RECIPES.md](docs/CREATIVE-RECIPES.md) (curl recipes per creative shape), [docs/RECAP-CRON-RECIPES.md](docs/RECAP-CRON-RECIPES.md) (lifecycle recap scheduling).

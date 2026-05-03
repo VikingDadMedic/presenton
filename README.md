@@ -16,18 +16,34 @@
 
 TripStory generates polished destination showcases, itineraries, deal packages, and travel proposals using AI -- grounded in real data from travel supply APIs, not hallucinated content.
 
-- **26 travel slide layouts** in 3 categories: emotional/sensory hooks, logistics/practical, and conversion
-- **6 narrative arcs** as ordered template sequences (itinerary, reveal, contrast, audience, micro, local)
+- **30 travel slide layouts** in 3 categories: emotional/sensory hooks, logistics/practical, and conversion (plus the interactive Pricing Configurator widget)
+- **10 narrative arcs** as ordered template sequences: `travel-itinerary`, `travel-reveal`, `travel-contrast`, `travel-audience`, `travel-micro`, `travel-local`, `travel-series`, `travel-recap`, `travel-deal-flash`, `travel-partner-spotlight`
 - **17 enrichers + 1 derived** pull real hotels, flights, activities, weather, reviews, maps, dining, events, deals, visa info, transportation, cuisine, language, and connectivity data from external APIs
-- **6 export formats**: PPTX, PDF, HTML slideshow ZIP (with narration audio bundle when available), Video/MP4 (GSAP transitions), JSON, interactive embed
-- **ElevenLabs narration pipeline** with per-slide overrides, curated tone presets, pronunciation dictionaries, auto-IPA hints, and usage tracking
+- **6 export formats**: PPTX, PDF, HTML slideshow ZIP (with narration audio bundle when available), Video/MP4 (GSAP transitions), JSON, interactive embed -- all four rich formats brand-stamped, UTM-tagged, and renderable at three aspect ratios (`landscape | vertical | square`)
+- **ElevenLabs narration pipeline** with per-slide overrides, curated tone presets, pronunciation dictionaries, auto-IPA hints, monthly character budget, and usage tracking
 - **Per-call model routing**: different LLM models for outline generation, layout assignment, and content filling
-- **Built-in MCP server** at `/mcp/` for AI agent integration (10 tools)
+- **Built-in MCP server** at `/mcp/` for AI agent integration (19 tools, including campaign + recap + agent-profile)
 - **Single-admin auth** with HTTP Basic on all `/api/v1/*` routes
 
 ### How Real Data Flows In
 
 The enrichment pipeline runs before LLM generation. External APIs (Viator, Tavily, Visual Crossing, Unsplash, Pexels, Google Maps, SerpAPI) fetch real hotel prices, flight schedules, Viator bookable experiences, weather forecasts, destination photography, and more. The LLM writes narrative around verified facts. Missing API keys degrade gracefully -- enrichers return empty data, the pipeline continues, and the LLM falls back to its existing behavior.
+
+### What's New (Content Syndication Engine, Phases 0-6)
+
+TripStory has graduated from "AI itinerary builder" to a full travel content engine for marketing-grade syndication. Highlights:
+
+- **Agent Profile singleton** -- agency, agent name, contact, booking URL, default UTM tags, and logo live in `userConfig.json`. Edit in Settings -> Agent Profile or via `GET/PATCH /api/v1/ppt/profile`. MCP exposes `get_agent_profile` and `update_agent_profile`.
+- **Brand stamping at export** -- contact-card watermark + auto-injected agent details on PPTX, PDF, HTML, and video exports. PDF export gets an opt-in `lead_magnet: true` cover/back-page wrapper; HTML export gets an `email_safe: true` newsletter variant (single-column, no JS, narration as `<a href>` links).
+- **UTM tagging across all four exports** -- booking links and `data-booking-url` attributes are normalized at export-time with `utm_source`/`utm_medium`/`utm_campaign`/`utm_content`. Idempotent; canonical implementation in `servers/nextjs/lib/apply-utm-tags.ts`.
+- **Multi-aspect-ratio rendering** -- pass `export_options.aspect_ratio` as `landscape` (1280x720), `vertical` (720x1280), or `square` (1080x1080) on PPTX, PDF, HTML, and video routes. Embed iframe code generator emits the matching `width x height` pair.
+- **Campaign Generator** at `/campaign` -- one prompt -> N coordinated creative variants. `POST /api/v1/ppt/campaign/generate` returns `{campaign_id, statusUrl}`; `GET /api/v1/ppt/campaign/status/{id}` reports per-variant artifacts. UI shows synthetic per-variant narration cost cross-checked against the monthly budget.
+- **Recap Mode** at `/past-trips` -- `POST /api/v1/ppt/presentation/recap` produces `welcome_home`, `anniversary`, or `next_planning_window` decks from any prior presentation `id` (or external `source_json`). Cron recipe pattern documented in [`docs/RECAP-CRON-RECIPES.md`](docs/RECAP-CRON-RECIPES.md).
+- **Showcase visibility + public namespace** -- `PATCH /api/v1/ppt/presentation/{id}/visibility` toggles `is_public`; the new `/api/v1/public/*` namespace serves unauthenticated showcase fetches and the public `/showcase/ask` endpoint.
+- **Narration usage budget** -- `GET /api/v1/ppt/narration/usage/budget-remaining` returns the remaining monthly characters; consumed by the campaign UI for the "over budget" warning. Returns `null` budget when `ELEVENLABS_MONTHLY_CHARACTER_BUDGET` is unset.
+- **Four new ordered arcs + five new layouts** -- `travel-series`, `travel-recap`, `travel-deal-flash`, `travel-partner-spotlight` arcs use new `MemoryQuoteLayout`, `SeriesCoverLayout`, `PartnerSpotlightHeroLayout`, `ExperienceCardsLayout`, and `PricingConfiguratorLayout` (interactive in showcase mode).
+
+For the phased deliverable manifest, see [`FEATURE-BUILDING.md`](FEATURE-BUILDING.md). For copy-paste curl recipes per creative shape, see [`docs/CREATIVE-RECIPES.md`](docs/CREATIVE-RECIPES.md). For the GTM and stakeholder framing, see [`stakeholder.md`](stakeholder.md).
 
 ---
 
@@ -212,6 +228,8 @@ For practical one-shot campaign commands (Reel hooks, micro-shares, audience tra
 | `ELEVENLABS_PRONUNCIATION_DICTIONARY_ID` | Optional ElevenLabs pronunciation dictionary ID used during synthesis |
 | `ELEVENLABS_BULK_MAX_CHARACTERS` | Optional hard cap for bulk narration generation (sum of synthesizeable speaker-note chars) |
 | `ELEVENLABS_BULK_CONCURRENCY` | Optional bounded worker count for bulk narration generation (default `3`, max `12`) |
+| `ELEVENLABS_MAX_CHARS_PER_SLIDE` | Optional per-slide character cap enforced inside the synthesize path (defends against runaway speaker-note length) |
+| `ELEVENLABS_MONTHLY_CHARACTER_BUDGET` | Optional monthly character ceiling enforced via SQL on `narration_usage_logs`; surfaced by `/usage/budget-remaining` and consumed by the campaign cost preview |
 
 ### Image Generation
 
@@ -285,6 +303,8 @@ All enricher keys are optional. Missing keys mean that enricher returns empty da
 | [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) | Production failure modes (manifest mismatch, ACR auth, Hyperframes timeout, etc.) |
 | [`REFACTOR-PIVOT.MD`](REFACTOR-PIVOT.MD) | Travel pivot implementation history (Phases 0-12) |
 | [`FEAT-EXPANSION.md`](FEAT-EXPANSION.md) | Enrichment pipeline reference (18 enricher modules, API keys, schemas) |
+| [`FEATURE-BUILDING.md`](FEATURE-BUILDING.md) | Content syndication engine master plan (Phases 0-6) |
+| [`stakeholder.md`](stakeholder.md) | Stakeholder briefing (TLDR, GTM, ICP, roadmap, moats) |
 | [`VISION.md`](VISION.md) | Project vision and guiding principles |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to contribute, development setup |
 | [`AGENTS.md`](AGENTS.md) | Workspace facts and preferences for AI agents |

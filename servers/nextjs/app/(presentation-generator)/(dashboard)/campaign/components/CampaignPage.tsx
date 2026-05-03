@@ -1027,10 +1027,7 @@ const CampaignPage: React.FC = () => {
           : null
         : null;
       const templateId =
-        (typeof variant.template === "string" && variant.template) ||
-        (isRecord(variant.artifact) && typeof variant.artifact.template === "string"
-          ? variant.artifact.template
-          : "");
+        (typeof variant.template === "string" && variant.template) || "";
       const exportAs =
         (typeof variant.export_as === "string" && variant.export_as) ||
         (isRecord(variant.artifact) &&

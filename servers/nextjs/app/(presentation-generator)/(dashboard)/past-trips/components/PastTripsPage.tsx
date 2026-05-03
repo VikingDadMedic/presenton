@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarClock, CalendarDays, RefreshCw, Trash2 } from "lucide-react";
+import { CalendarClock, CalendarDays, RefreshCw, Search, Trash2, Users } from "lucide-react";
 import { MotionIcon } from "motion-icons-react";
 import { AnimatedLoader } from "@/components/ui/animated-loader";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -36,6 +37,7 @@ import {
   removePersistedSchedule,
   type ScheduleRecapPersistedRow,
 } from "@/lib/scheduled-recap-generator";
+import { useClientProfiles } from "@/app/(presentation-generator)/upload/hooks/useClientProfiles";
 import { ScheduleRecapModal } from "./ScheduleRecapModal";
 
 interface RecapModeOption {
@@ -192,6 +194,19 @@ const PastTripsPage: React.FC = () => {
   >([]);
   const [prefilledScheduleRow, setPrefilledScheduleRow] =
     useState<ScheduleRecapPersistedRow | null>(null);
+  const [filterQuery, setFilterQuery] = useState("");
+  const [filterClientId, setFilterClientId] = useState<string>("all");
+
+  /**
+   * v1 CRM filter wires up against the existing localStorage `useClientProfiles`
+   * hook. v1 fuzzy-matches against `presentation.title` (case-insensitive)
+   * because PresentationModel doesn't yet carry a `client_id` foreign key.
+   *
+   * Long-term fix: add `client_id` on PresentationModel and a separate
+   * `clients` table; this filter would then become an exact-match join.
+   * Deferred to a future migration.
+   */
+  const { clients } = useClientProfiles();
 
   useEffect(() => {
     setPersistedSchedules(readPersistedSchedules());
@@ -270,6 +285,25 @@ const PastTripsPage: React.FC = () => {
     () => buildRecapMatchIndex(presentations),
     [presentations]
   );
+
+  const filteredPresentations = useMemo(() => {
+    const queryLower = filterQuery.trim().toLowerCase();
+    const clientNameLower =
+      filterClientId === "all"
+        ? null
+        : (clients.find((client) => client.id === filterClientId)?.name ?? "")
+            .toLowerCase()
+            .trim();
+
+    return presentations.filter((presentation) => {
+      const titleLower = getTitle(presentation).toLowerCase();
+      if (queryLower && !titleLower.includes(queryLower)) return false;
+      if (clientNameLower && !titleLower.includes(clientNameLower)) return false;
+      return true;
+    });
+  }, [presentations, filterQuery, filterClientId, clients]);
+
+  const isFilterActive = filterQuery.trim().length > 0 || filterClientId !== "all";
 
   const recapLink = useMemo(() => {
     if (!result) return null;
@@ -436,8 +470,43 @@ const PastTripsPage: React.FC = () => {
                       cta={{ label: "Generate a trip", href: "/upload" }}
                     />
                   ) : null}
+                  <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_220px]">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        type="search"
+                        placeholder="Search past trips by title…"
+                        value={filterQuery}
+                        onChange={(event) => setFilterQuery(event.target.value)}
+                        className="pl-8"
+                        aria-label="Filter past trips"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Users className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <select
+                        aria-label="Filter by client"
+                        value={filterClientId}
+                        onChange={(event) => setFilterClientId(event.target.value)}
+                        className="h-9 w-full rounded-md border border-input bg-transparent pl-8 pr-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      >
+                        <option value="all">All clients</option>
+                        {clients.map((client) => (
+                          <option key={client.id} value={client.id}>
+                            {client.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  {isFilterActive && filteredPresentations.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      No past trips match these filters. Try clearing the search
+                      or switching to “All clients.”
+                    </p>
+                  ) : null}
                   <div className="space-y-2">
-                    {presentations.slice(0, 8).map((presentation) => {
+                    {filteredPresentations.slice(0, 8).map((presentation) => {
                       const isSelected = presentation.id === selectedPresentationId;
                       const matches = recapMatchIndex.get(presentation.id);
                       const isBulkChecked = bulkSelectedIds.includes(presentation.id);

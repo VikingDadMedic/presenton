@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarDays, RefreshCw } from "lucide-react";
+import { CalendarClock, CalendarDays, RefreshCw, Trash2 } from "lucide-react";
 import { MotionIcon } from "motion-icons-react";
 import { AnimatedLoader } from "@/components/ui/animated-loader";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,12 @@ import {
   RecapGenerateResponse,
   RecapMode,
 } from "@/app/(presentation-generator)/services/api/presentation-generation";
+import {
+  readPersistedSchedules,
+  removePersistedSchedule,
+  type ScheduleRecapPersistedRow,
+} from "@/lib/scheduled-recap-generator";
+import { ScheduleRecapModal } from "./ScheduleRecapModal";
 
 interface RecapModeOption {
   value: RecapMode;
@@ -173,6 +179,39 @@ const PastTripsPage: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [result, setResult] = useState<RecapGenerateResponse | null>(null);
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [persistedSchedules, setPersistedSchedules] = useState<
+    ScheduleRecapPersistedRow[]
+  >([]);
+  const [prefilledScheduleRow, setPrefilledScheduleRow] =
+    useState<ScheduleRecapPersistedRow | null>(null);
+
+  useEffect(() => {
+    setPersistedSchedules(readPersistedSchedules());
+  }, []);
+
+  const refreshPersistedSchedules = useCallback(() => {
+    setPersistedSchedules(readPersistedSchedules());
+  }, []);
+
+  const handleRemovePersisted = useCallback(
+    (id: string) => {
+      removePersistedSchedule(id);
+      refreshPersistedSchedules();
+    },
+    [refreshPersistedSchedules],
+  );
+
+  const handleReopenPersisted = useCallback(
+    (row: ScheduleRecapPersistedRow) => {
+      setPrefilledScheduleRow(row);
+      if (row.sourcePresentationId) {
+        setSelectedPresentationId(row.sourcePresentationId);
+      }
+      setScheduleModalOpen(true);
+    },
+    [],
+  );
 
   const loadPresentations = useCallback(async () => {
     setIsLoadingPresentations(true);
@@ -442,24 +481,43 @@ const PastTripsPage: React.FC = () => {
                   <p className="text-sm text-error">{submitError}</p>
                 ) : null}
 
-                <Button
-                  type="submit"
-                  disabled={
-                    isGenerating ||
-                    isLoadingPresentations ||
-                    !selectedPresentationId ||
-                    presentations.length === 0
-                  }
-                >
-                  {isGenerating ? (
-                    <>
-                      <AnimatedLoader size={16} />
-                      Generating recap...
-                    </>
-                  ) : (
-                    "Generate recap"
-                  )}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="submit"
+                    disabled={
+                      isGenerating ||
+                      isLoadingPresentations ||
+                      !selectedPresentationId ||
+                      presentations.length === 0
+                    }
+                  >
+                    {isGenerating ? (
+                      <>
+                        <AnimatedLoader size={16} />
+                        Generating recap...
+                      </>
+                    ) : (
+                      "Generate recap"
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setPrefilledScheduleRow(null);
+                      setScheduleModalOpen(true);
+                    }}
+                    disabled={
+                      isLoadingPresentations ||
+                      !selectedPresentationId ||
+                      presentations.length === 0
+                    }
+                    className="gap-1"
+                  >
+                    <CalendarClock className="h-4 w-4" />
+                    Schedule this recap
+                  </Button>
+                </div>
               </form>
             </CardContent>
           </Card>
@@ -539,7 +597,87 @@ const PastTripsPage: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarClock className="h-4 w-4" />
+              Scheduled recaps
+            </CardTitle>
+            <CardDescription>
+              Locally saved schedule recipes (stored in this browser only).
+              Re-open any row to copy the cron / GitHub Actions snippet again.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {persistedSchedules.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No scheduled recaps yet. Use “Schedule this recap” above to
+                generate a snippet you can drop into your existing automation.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {persistedSchedules.map((row) => {
+                  const modeOption = RECAP_MODE_BY_VALUE[row.mode];
+                  return (
+                    <li
+                      key={row.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm"
+                    >
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {row.sourceTitle || row.sourcePresentationId}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {modeOption?.label ?? row.mode} · {row.cadence === "annual" ? "annual" : "one-shot"} · +{row.offsetAmount} {row.offsetUnit}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReopenPersisted(row)}
+                        >
+                          Copy snippets
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          aria-label="Remove schedule"
+                          onClick={() => handleRemovePersisted(row.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {selectedPresentationId ? (
+        <ScheduleRecapModal
+          open={scheduleModalOpen}
+          onOpenChange={(next) => {
+            setScheduleModalOpen(next);
+            if (!next) {
+              setPrefilledScheduleRow(null);
+            }
+          }}
+          sourcePresentationId={selectedPresentationId}
+          sourceTitle={
+            selectedPresentation ? getTitle(selectedPresentation) : ""
+          }
+          initialMode={selectedMode}
+          prefilledFromRow={prefilledScheduleRow}
+          onPersisted={refreshPersistedSchedules}
+        />
+      ) : null}
     </TooltipProvider>
   );
 };

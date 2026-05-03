@@ -545,6 +545,34 @@ thead {
   }
 }
 
+/* ---------- Status badge animations (Phase 2) ---------- */
+/*
+ * Shake (used for `failed` status badge) is not shipped by tailwindcss-animate
+ * so it lives here. Pulse and zoom-in animations are provided by Tailwind /
+ * tailwindcss-animate already (`animate-pulse`, `animate-in zoom-in-95`).
+ *
+ * `motion-reduce` on the parent disables motion for users who prefer reduced
+ * motion. motion-icons-react already respects this internally.
+ */
+
+@keyframes status-badge-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-2px); }
+  40% { transform: translateX(2px); }
+  60% { transform: translateX(-1.5px); }
+  80% { transform: translateX(1.5px); }
+}
+
+.animate-status-shake {
+  animation: status-badge-shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-status-shake {
+    animation: none;
+  }
+}
+
 /* ---------- Markdown ---------- */
 
 .markdown-content {

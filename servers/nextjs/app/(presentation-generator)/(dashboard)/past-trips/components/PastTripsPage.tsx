@@ -12,6 +12,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { DashboardPageHeader } from "@/components/ui/dashboard-page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import {
   DashboardApi,
@@ -27,6 +35,8 @@ interface RecapModeOption {
   value: RecapMode;
   label: string;
   description: string;
+  bestWindow: string;
+  marker: string;
 }
 
 const RECAP_MODE_OPTIONS: RecapModeOption[] = [
@@ -34,18 +44,32 @@ const RECAP_MODE_OPTIONS: RecapModeOption[] = [
     value: "welcome_home",
     label: "Welcome home",
     description: "Immediate post-trip memory reel while excitement is still fresh.",
+    bestWindow: "Best within 3-7 days post-trip",
+    marker: "welcome home recap",
   },
   {
     value: "anniversary",
     label: "Anniversary",
     description: "Year-later nostalgia touchpoint to reconnect and re-engage.",
+    bestWindow: "12 months after trip end date",
+    marker: "anniversary recap",
   },
   {
     value: "next_planning_window",
     label: "Next planning window",
     description: "6-9 month follow-up that nudges clients toward trip number two.",
+    bestWindow: "6-9 months after trip end date",
+    marker: "next planning window recap",
   },
 ];
+
+const RECAP_MODE_BY_VALUE: Record<RecapMode, RecapModeOption> = RECAP_MODE_OPTIONS.reduce(
+  (acc, option) => {
+    acc[option.value] = option;
+    return acc;
+  },
+  {} as Record<RecapMode, RecapModeOption>
+);
 
 const formatDate = (value?: string): string => {
   if (!value) return "Unknown date";
@@ -83,6 +107,62 @@ const sortByUpdatedAtDesc = (
     (a, b) =>
       new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
   );
+
+interface RecapMatch {
+  presentationId: string;
+  title: string;
+  updatedAt: string;
+}
+
+/**
+ * Build a `Map<sourceTripId, Map<RecapMode, RecapMatch>>` by fuzzy-matching
+ * presentation titles against each existing source trip. v1 heuristic:
+ * a presentation is treated as a recap of source S in mode M when its title
+ * (lowercased) contains both the mode-specific marker (e.g., "anniversary
+ * recap") AND the source trip's title (lowercased). Both substring checks
+ * are case-insensitive. False positives are tolerable for v1.
+ */
+function buildRecapMatchIndex(
+  presentations: PresentationResponse[]
+): Map<string, Map<RecapMode, RecapMatch>> {
+  const sources = presentations.map((presentation) => ({
+    id: presentation.id,
+    title: getTitle(presentation),
+    titleLower: getTitle(presentation).toLowerCase(),
+  }));
+
+  const index = new Map<string, Map<RecapMode, RecapMatch>>();
+  for (const source of sources) {
+    index.set(source.id, new Map());
+  }
+
+  for (const candidate of presentations) {
+    const candidateTitleLower = getTitle(candidate).toLowerCase();
+    for (const option of RECAP_MODE_OPTIONS) {
+      if (!candidateTitleLower.includes(option.marker)) continue;
+      for (const source of sources) {
+        if (source.id === candidate.id) continue;
+        if (!source.titleLower.trim()) continue;
+        if (candidateTitleLower.includes(source.titleLower)) {
+          const bucket = index.get(source.id)!;
+          if (!bucket.has(option.value)) {
+            bucket.set(option.value, {
+              presentationId: candidate.id,
+              title: getTitle(candidate),
+              updatedAt: candidate.updated_at,
+            });
+          }
+        }
+      }
+    }
+  }
+  return index;
+}
+
+const STATUS_DOT_BASE_CLASS =
+  "inline-flex h-1.5 w-1.5 rounded-full border border-border bg-card";
+const STATUS_DOT_FILLED_CLASS =
+  "inline-flex h-1.5 w-1.5 rounded-full border border-primary bg-primary";
 
 const PastTripsPage: React.FC = () => {
   const [presentations, setPresentations] = useState<PresentationResponse[]>([]);
@@ -140,6 +220,11 @@ const PastTripsPage: React.FC = () => {
     [presentations, selectedPresentationId]
   );
 
+  const recapMatchIndex = useMemo(
+    () => buildRecapMatchIndex(presentations),
+    [presentations]
+  );
+
   const recapLink = useMemo(() => {
     if (!result) return null;
     return normalizeLink(result.edit_path);
@@ -171,188 +256,291 @@ const PastTripsPage: React.FC = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen w-full px-6 pb-10">
-      <div className="sticky top-0 right-0 z-50 py-[28px] backdrop-blur mb-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h3 className="text-[28px] tracking-[-0.84px] font-display font-normal text-foreground flex items-center gap-2">
-            <MotionIcon name="Sparkles" animation="pulse" trigger="hover" size={24} className="text-primary" />
-            Past trips
-          </h3>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={loadPresentations}
-            disabled={isLoadingPresentations}
-          >
-            {isLoadingPresentations ? (
-              <>
-                <AnimatedLoader size={16} />
-                Refreshing
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4" />
-                Refresh trips
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
+  const requestStatus: "idle" | "running" | "completed" | "failed" = isGenerating
+    ? "running"
+    : submitError
+      ? "failed"
+      : result
+        ? "completed"
+        : "idle";
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Create recap</CardTitle>
-            <CardDescription>
-              Pick a past trip and generate a recap deck in one click.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-foreground">Source trip</p>
-                {loadError ? (
-                  <p className="text-sm text-error">{loadError}</p>
-                ) : null}
-                {!loadError && !isLoadingPresentations && presentations.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No presentations found yet. Generate a trip presentation first.
-                  </p>
-                ) : null}
+  const requestStatusLabel = {
+    idle: "Idle",
+    running: "Running",
+    completed: "Completed",
+    failed: "Failed",
+  }[requestStatus];
+
+  return (
+    <TooltipProvider delayDuration={120}>
+      <div className="min-h-screen w-full px-6 pb-10">
+        <DashboardPageHeader
+          icon={
+            <MotionIcon
+              name="Sparkles"
+              animation="pulse"
+              trigger="hover"
+              size={24}
+              className="text-primary"
+            />
+          }
+          title="Past trips"
+          action={
+            <Button
+              type="button"
+              variant="outline"
+              onClick={loadPresentations}
+              disabled={isLoadingPresentations}
+            >
+              {isLoadingPresentations ? (
+                <>
+                  <AnimatedLoader size={16} />
+                  Refreshing
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh trips
+                </>
+              )}
+            </Button>
+          }
+        />
+
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <Card>
+            <CardHeader>
+              <CardTitle>Create recap</CardTitle>
+              <CardDescription>
+                Pick a past trip and generate a recap deck in one click.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  {presentations.slice(0, 8).map((presentation) => {
-                    const isSelected = presentation.id === selectedPresentationId;
-                    return (
-                      <button
-                        key={presentation.id}
-                        type="button"
-                        onClick={() => setSelectedPresentationId(presentation.id)}
-                        className={cn(
-                          "w-full rounded-lg border p-3 text-left transition-colors",
-                          isSelected
-                            ? "border-primary/50 bg-primary/5"
-                            : "border-border bg-card hover:bg-muted/50"
-                        )}
-                      >
-                        <p className="text-sm font-medium text-foreground">
-                          {getTitle(presentation)}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
-                          <CalendarDays className="h-3.5 w-3.5" />
-                          Updated {formatDate(presentation.updated_at)}
-                        </p>
-                      </button>
-                    );
-                  })}
+                  <p className="text-sm font-medium text-foreground">Source trip</p>
+                  {loadError ? (
+                    <p className="text-sm text-error">{loadError}</p>
+                  ) : null}
+                  {!loadError &&
+                  !isLoadingPresentations &&
+                  presentations.length === 0 ? (
+                    <EmptyState
+                      icon={
+                        <MotionIcon
+                          name="Sparkles"
+                          trigger="hover"
+                          animation="pulse"
+                          size={48}
+                        />
+                      }
+                      title="No past trips yet"
+                      description="Generate your first trip presentation, then come back here to spin it into a recap deck timed to the customer relationship calendar."
+                      cta={{ label: "Generate a trip", href: "/upload" }}
+                    />
+                  ) : null}
+                  <div className="space-y-2">
+                    {presentations.slice(0, 8).map((presentation) => {
+                      const isSelected = presentation.id === selectedPresentationId;
+                      const matches = recapMatchIndex.get(presentation.id);
+                      return (
+                        <button
+                          key={presentation.id}
+                          type="button"
+                          onClick={() => setSelectedPresentationId(presentation.id)}
+                          className={cn(
+                            "relative w-full rounded-lg border p-3 pr-20 text-left transition-colors",
+                            isSelected
+                              ? "border-primary/50 bg-primary/5"
+                              : "border-border bg-card hover:bg-muted/50"
+                          )}
+                        >
+                          <p className="text-sm font-medium text-foreground">
+                            {getTitle(presentation)}
+                          </p>
+                          <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                            <CalendarDays className="h-3.5 w-3.5" />
+                            Updated {formatDate(presentation.updated_at)}
+                          </p>
+                          <div className="absolute right-3 top-3 flex items-center gap-1">
+                            {RECAP_MODE_OPTIONS.map((option) => {
+                              const match = matches?.get(option.value);
+                              const filled = Boolean(match);
+                              const dotClass = filled
+                                ? STATUS_DOT_FILLED_CLASS
+                                : STATUS_DOT_BASE_CLASS;
+                              const tooltipLabel = filled
+                                ? `${option.label}: generated ${formatDate(
+                                    match!.updatedAt
+                                  )}`
+                                : `${option.label}: not yet generated`;
+                              return (
+                                <Tooltip key={option.value}>
+                                  <TooltipTrigger asChild>
+                                    <span
+                                      aria-label={tooltipLabel}
+                                      className={dotClass}
+                                    />
+                                  </TooltipTrigger>
+                                  <TooltipContent>{tooltipLabel}</TooltipContent>
+                                </Tooltip>
+                              );
+                            })}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {presentations.length > 0 ? (
+                    <p className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <span className={STATUS_DOT_FILLED_CLASS} aria-hidden />
+                        already generated
+                      </span>
+                      <span className="opacity-60">·</span>
+                      <span className="inline-flex items-center gap-1">
+                        <span className={STATUS_DOT_BASE_CLASS} aria-hidden />
+                        available
+                      </span>
+                    </p>
+                  ) : null}
                 </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-foreground">Recap mode</p>
+                  <div className="grid gap-2 md:grid-cols-3">
+                    {RECAP_MODE_OPTIONS.map((modeOption) => {
+                      const isSelected = selectedMode === modeOption.value;
+                      return (
+                        <button
+                          key={modeOption.value}
+                          type="button"
+                          onClick={() => setSelectedMode(modeOption.value)}
+                          className={cn(
+                            "rounded-lg border p-3 text-left transition-colors",
+                            isSelected
+                              ? "border-primary/50 bg-primary/5"
+                              : "border-border bg-card hover:bg-muted/50"
+                          )}
+                        >
+                          <p className="text-sm font-medium text-foreground">
+                            {modeOption.label}
+                          </p>
+                          <p className="mt-1 text-[11px] italic text-muted-foreground">
+                            {modeOption.bestWindow}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedModeOption?.description}
+                  </p>
+                </div>
+
+                {submitError ? (
+                  <p className="text-sm text-error">{submitError}</p>
+                ) : null}
+
+                <Button
+                  type="submit"
+                  disabled={
+                    isGenerating ||
+                    isLoadingPresentations ||
+                    !selectedPresentationId ||
+                    presentations.length === 0
+                  }
+                >
+                  {isGenerating ? (
+                    <>
+                      <AnimatedLoader size={16} />
+                      Generating recap...
+                    </>
+                  ) : (
+                    "Generate recap"
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Status</CardTitle>
+              <CardDescription>
+                Review request progress and jump into the generated presentation.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Request</span>
+                <span
+                  className={cn(
+                    "rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize border",
+                    requestStatus === "running" &&
+                      "border-info/30 bg-info-bg text-info motion-safe:animate-pulse",
+                    requestStatus === "completed" &&
+                      "border-success/30 bg-success-bg text-success motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-300",
+                    requestStatus === "failed" &&
+                      "border-error/30 bg-error-bg text-error motion-safe:animate-status-shake",
+                    requestStatus === "idle" &&
+                      "border-border bg-muted/40 text-muted-foreground"
+                  )}
+                >
+                  {requestStatusLabel}
+                </span>
               </div>
 
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-foreground">Recap mode</p>
-                <div className="grid gap-2 md:grid-cols-3">
-                  {RECAP_MODE_OPTIONS.map((modeOption) => {
-                    const isSelected = selectedMode === modeOption.value;
-                    return (
-                      <button
-                        key={modeOption.value}
-                        type="button"
-                        onClick={() => setSelectedMode(modeOption.value)}
-                        className={cn(
-                          "rounded-lg border p-3 text-left transition-colors",
-                          isSelected
-                            ? "border-primary/50 bg-primary/5"
-                            : "border-border bg-card hover:bg-muted/50"
-                        )}
-                      >
-                        <p className="text-sm font-medium text-foreground">
-                          {modeOption.label}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {selectedModeOption?.description}
-                </p>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Source</span>
+                <span className="text-foreground text-right">
+                  {selectedPresentation ? getTitle(selectedPresentation) : "—"}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Mode</span>
+                <span className="text-foreground">
+                  {selectedModeOption
+                    ? `${selectedModeOption.label} · ${selectedModeOption.bestWindow}`
+                    : "—"}
+                </span>
               </div>
 
               {submitError ? (
-                <p className="text-sm text-error">{submitError}</p>
+                <p className="text-xs text-error">{submitError}</p>
               ) : null}
 
-              <Button
-                type="submit"
-                disabled={
-                  isGenerating ||
-                  isLoadingPresentations ||
-                  !selectedPresentationId ||
-                  presentations.length === 0
-                }
-              >
-                {isGenerating ? (
-                  <>
-                    <AnimatedLoader size={16} />
-                    Generating recap...
-                  </>
-                ) : (
-                  "Generate recap"
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Status</CardTitle>
-            <CardDescription>
-              Review request progress and jump into the generated presentation.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Request</span>
-              <span className="text-foreground">
-                {isGenerating ? "Running" : result ? "Completed" : "Idle"}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Source</span>
-              <span className="text-foreground text-right">
-                {selectedPresentation ? getTitle(selectedPresentation) : "—"}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Mode</span>
-              <span className="text-foreground">{selectedModeOption?.label ?? "—"}</span>
-            </div>
-
-            {submitError ? (
-              <p className="text-xs text-error">{submitError}</p>
-            ) : null}
-
-            {recapLink ? (
-              <Button asChild size="sm" className="w-full">
-                <a
-                  href={recapLink.href}
-                  target={recapLink.isExternal ? "_blank" : undefined}
-                  rel={recapLink.isExternal ? "noreferrer" : undefined}
+              {recapLink ? (
+                <div
+                  key={result?.presentation_id ?? "recap-link"}
+                  className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300"
                 >
-                  Open generated recap
-                </a>
-              </Button>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Generate a recap to get the editor link.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+                  <Button asChild size="sm" className="w-full">
+                    <a
+                      href={recapLink.href}
+                      target={recapLink.isExternal ? "_blank" : undefined}
+                      rel={recapLink.isExternal ? "noreferrer" : undefined}
+                    >
+                      Open generated recap
+                    </a>
+                  </Button>
+                  {result && RECAP_MODE_BY_VALUE[selectedMode] ? (
+                    <p className="mt-2 text-[11px] italic text-muted-foreground">
+                      Suggested send window: {RECAP_MODE_BY_VALUE[selectedMode].bestWindow}.
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Generate a recap to get the editor link.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
 

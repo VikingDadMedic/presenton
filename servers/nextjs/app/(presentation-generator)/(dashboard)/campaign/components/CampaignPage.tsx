@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { RefreshCw } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Check, RefreshCw } from "lucide-react";
 import { MotionIcon } from "motion-icons-react";
 import { AnimatedLoader } from "@/components/ui/animated-loader";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { DashboardPageHeader } from "@/components/ui/dashboard-page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import {
   CampaignGenerateRequest,
@@ -23,9 +31,18 @@ import {
   PresentationGenerationApi,
 } from "@/app/(presentation-generator)/services/api/presentation-generation";
 import { estimateVariantCharacters } from "@/lib/campaign-narration-estimate";
+import { CampaignCostPreview } from "./CampaignCostPreview";
 
 const POLL_INTERVAL_MS = 2500;
 const TERMINAL_STATUSES = new Set(["done", "failed", "completed", "cancelled"]);
+const RUNNING_STATUSES = new Set([
+  "running",
+  "in_progress",
+  "generating",
+  "exporting",
+  "queued",
+  "pending",
+]);
 
 interface CampaignVariantPreset extends CampaignVariantConfig {
   id: string;
@@ -246,6 +263,99 @@ const statusBadgeClassName = (status: string) => {
       return "border border-warning/30 bg-warning-bg text-warning";
   }
 };
+
+const statusMotionClassName = (status: string) => {
+  if (RUNNING_STATUSES.has(status)) return "motion-safe:animate-pulse";
+  if (status === "done" || status === "completed") {
+    return "motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-300";
+  }
+  if (status === "failed") return "motion-safe:animate-status-shake";
+  return "";
+};
+
+interface VariantPresetCardProps {
+  preset: CampaignVariantPreset;
+  isChecked: boolean;
+  onToggle: () => void;
+  estimateLine: string;
+}
+
+function VariantPresetCard({
+  preset,
+  isChecked,
+  onToggle,
+  estimateLine,
+}: VariantPresetCardProps) {
+  const [showCheckPing, setShowCheckPing] = useState(false);
+  const previousChecked = useRef(isChecked);
+
+  useEffect(() => {
+    if (!previousChecked.current && isChecked) {
+      setShowCheckPing(true);
+      const handle = window.setTimeout(() => setShowCheckPing(false), 280);
+      return () => window.clearTimeout(handle);
+    }
+    previousChecked.current = isChecked;
+  }, [isChecked]);
+
+  const tooltipBits: string[] = [];
+  tooltipBits.push(`Template: ${preset.template ?? "auto"}`);
+  if (preset.narration_tone) tooltipBits.push(`Narration: ${preset.narration_tone}`);
+  if (preset.aspect_ratio) tooltipBits.push(preset.aspect_ratio);
+  if (preset.slide_duration) tooltipBits.push(`${preset.slide_duration}s/slide`);
+  const tooltipLabel = tooltipBits.join(" · ");
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <label
+          className={cn(
+            "group flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-all",
+            isChecked
+              ? "border-primary/60 bg-primary/5 ring-2 ring-primary/20 shadow-[0_0_0_1px_var(--primary)/20]"
+              : "border-border bg-card hover:bg-muted/50 hover:border-primary/30"
+          )}
+        >
+          <span className="relative mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center">
+            <input
+              type="checkbox"
+              className="peer h-4 w-4 cursor-pointer appearance-none rounded border border-input bg-card transition-colors checked:border-primary checked:bg-primary"
+              checked={isChecked}
+              onChange={onToggle}
+              aria-label={preset.label}
+            />
+            <Check
+              className={cn(
+                "pointer-events-none absolute h-3 w-3 text-primary-foreground transition-transform duration-200 ease-out",
+                isChecked ? "scale-100" : "scale-0"
+              )}
+              aria-hidden
+              strokeWidth={3}
+            />
+            {showCheckPing ? (
+              <span className="pointer-events-none absolute inset-0 motion-safe:animate-ping rounded-full bg-primary/30" aria-hidden />
+            ) : null}
+          </span>
+          <span className="space-y-1">
+            <span className="block text-sm font-medium text-foreground">
+              {preset.label}
+            </span>
+            <span className="block text-xs text-muted-foreground">
+              {preset.description}
+            </span>
+            <span className="block text-[11px] uppercase tracking-wide text-muted-foreground">
+              {preset.export_as}
+            </span>
+            <span className="block text-[11px] text-muted-foreground">
+              {estimateLine}
+            </span>
+          </span>
+        </label>
+      </TooltipTrigger>
+      <TooltipContent>{tooltipLabel}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 const CampaignPage: React.FC = () => {
   const [prompt, setPrompt] = useState("");
@@ -522,295 +632,270 @@ const CampaignPage: React.FC = () => {
     }
   };
 
+  const showVariantEmptyState = !campaignId && variants.length === 0;
+
   return (
-    <div className="min-h-screen w-full px-6 pb-10">
-      <div className="sticky top-0 right-0 z-50 py-[28px] backdrop-blur mb-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h3 className="text-[28px] tracking-[-0.84px] font-display font-normal text-foreground flex items-center gap-2">
-            <MotionIcon name="Megaphone" animation="wiggle" trigger="hover" size={24} className="text-primary" />
-            Campaigns
-          </h3>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleManualRefresh}
-            disabled={(!campaignId && !statusUrl) || isRefreshing}
-          >
-            {isRefreshing ? (
-              <>
-                <AnimatedLoader size={16} />
-                Refreshing
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4" />
-                Refresh status
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
+    <TooltipProvider delayDuration={150}>
+      <div className="min-h-screen w-full px-6 pb-10">
+        <DashboardPageHeader
+          icon={
+            <MotionIcon
+              name="Megaphone"
+              animation="wiggle"
+              trigger="hover"
+              size={24}
+              className="text-primary"
+            />
+          }
+          title="Campaigns"
+          action={
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleManualRefresh}
+              disabled={(!campaignId && !statusUrl) || isRefreshing}
+            >
+              {isRefreshing ? (
+                <>
+                  <AnimatedLoader size={16} />
+                  Refreshing
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh status
+                </>
+              )}
+            </Button>
+          }
+        />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Generate campaign</CardTitle>
-            <CardDescription>
-              Start one async campaign from a single prompt and monitor variant progress below.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <label htmlFor="campaign-prompt" className="text-sm font-medium text-foreground">
-                  Campaign prompt
-                </label>
-                <Textarea
-                  id="campaign-prompt"
-                  rows={5}
-                  value={prompt}
-                  onChange={(event) => setPrompt(event.target.value)}
-                  placeholder="Example: 5-day Iceland Northern Lights trip, mid-budget, couples, departing from JFK..."
-                />
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-foreground">Variant presets</p>
-                <div className="grid gap-3 md:grid-cols-2">
-                  {CAMPAIGN_VARIANT_PRESETS.map((preset) => {
-                    const isChecked = selectedVariantIds.includes(preset.id);
-                    const estimate = presetEstimatesById[preset.id];
-
-                    return (
-                      <label
-                        key={preset.id}
-                        className={cn(
-                          "flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors",
-                          isChecked
-                            ? "border-primary/40 bg-primary/5"
-                            : "border-border bg-card hover:bg-muted/50"
-                        )}
-                      >
-                        <input
-                          type="checkbox"
-                          className="mt-0.5 h-4 w-4 accent-[var(--primary)]"
-                          checked={isChecked}
-                          onChange={() => toggleVariant(preset.id)}
-                        />
-                        <span className="space-y-1">
-                          <span className="block text-sm font-medium text-foreground">
-                            {preset.label}
-                          </span>
-                          <span className="block text-xs text-muted-foreground">
-                            {preset.description}
-                          </span>
-                          <span className="block text-[11px] uppercase tracking-wide text-muted-foreground">
-                            {preset.export_as}
-                          </span>
-                          {estimate ? (
-                            <span className="block text-[11px] text-muted-foreground">
-                              {estimate.chars > 0
-                                ? `~${estimate.chars.toLocaleString()} chars • ~${estimate.seconds.toLocaleString()}s narration`
-                                : "Narration off"}
-                            </span>
-                          ) : null}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-xs text-muted-foreground space-y-1">
-                <p>
-                  Estimated total: ~{selectedEstimateTotals.chars.toLocaleString()} chars
-                  across{" "}
-                  {selectedEstimateTotals.narrationVariants} narration variant
-                  {selectedEstimateTotals.narrationVariants === 1 ? "" : "s"}.
-                </p>
-                {selectedEstimateTotals.seconds > 0 ? (
-                  <p>
-                    Approx narration runtime: ~{selectedEstimateTotals.seconds.toLocaleString()}s.
-                  </p>
-                ) : null}
-                {narrationBudget ? (
-                  narrationBudget.remaining === null || narrationBudget.budget === null ? (
-                    <p>Monthly narration budget is not configured.</p>
-                  ) : (
-                    <p>
-                      Remaining monthly budget:{" "}
-                      {narrationBudget.remaining.toLocaleString()} chars (used{" "}
-                      {narrationBudget.used.toLocaleString()} /{" "}
-                      {narrationBudget.budget.toLocaleString()}).
-                    </p>
-                  )
-                ) : budgetError ? null : (
-                  <p>Loading monthly narration budget...</p>
-                )}
-                {budgetError ? (
-                  <p className="text-warning">{budgetError}</p>
-                ) : null}
-              </div>
-
-              {isOverBudget ? (
-                <p className="text-sm text-warning">
-                  Estimated narration exceeds remaining monthly budget by ~
-                  {overBudgetChars.toLocaleString()} chars.
-                </p>
-              ) : null}
-
-              {formError ? (
-                <p className="text-sm text-error">{formError}</p>
-              ) : null}
-
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <AnimatedLoader size={16} />
-                    Starting campaign...
-                  </>
-                ) : (
-                  "Generate campaign"
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Status</CardTitle>
-            <CardDescription>
-              Auto-refreshes every {POLL_INTERVAL_MS / 1000}s while the campaign is running.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Overall</span>
-              <span
-                className={cn(
-                  "rounded-full px-2.5 py-1 text-xs font-semibold capitalize",
-                  statusBadgeClassName(overallStatus)
-                )}
-              >
-                {overallStatus}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Campaign ID</span>
-              <span className="font-mono text-xs text-foreground">
-                {campaignId || "—"}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Polling</span>
-              <span className="text-foreground">{isPolling ? "Active" : "Stopped"}</span>
-            </div>
-
-            {bundleUrl ? (
-              <a
-                href={bundleUrl}
-                target={bundleUrl.startsWith("http") ? "_blank" : undefined}
-                rel={bundleUrl.startsWith("http") ? "noreferrer" : undefined}
-                className="inline-flex text-sm text-primary underline underline-offset-4"
-              >
-                Download campaign bundle
-              </a>
-            ) : null}
-
-            {lastUpdatedAt ? (
-              <p className="text-xs text-muted-foreground">
-                Last updated: {new Date(lastUpdatedAt).toLocaleTimeString()}
-              </p>
-            ) : null}
-
-            {pollError ? (
-              <p className="text-xs text-error">{pollError}</p>
-            ) : null}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Variant status</CardTitle>
-          <CardDescription>
-            Track each selected variant and access presentation/export links when available.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {!campaignId ? (
-            <p className="text-sm text-muted-foreground">
-              Start a campaign to see per-variant status updates.
-            </p>
-          ) : null}
-
-          {campaignId && variants.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Waiting for the first variant status update...
-            </p>
-          ) : null}
-
-          {variants.map((variant, index) => {
-            const variantName =
-              (typeof variant.name === "string" && variant.name) ||
-              `variant-${index + 1}`;
-            const normalizedStatus = toStatusKey(variant.status);
-            const links = getVariantLinks(variant);
-
-            return (
-              <div
-                key={`${variantName}-${index}`}
-                className="rounded-lg border border-border bg-card p-4"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{variantName}</p>
-                    {typeof variant.message === "string" && variant.message ? (
-                      <p className="text-xs text-muted-foreground mt-1">{variant.message}</p>
-                    ) : null}
-                  </div>
-                  <span
-                    className={cn(
-                      "rounded-full px-2.5 py-1 text-xs font-semibold capitalize",
-                      statusBadgeClassName(normalizedStatus)
-                    )}
-                  >
-                    {normalizedStatus}
-                  </span>
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <Card>
+            <CardHeader>
+              <CardTitle>Generate campaign</CardTitle>
+              <CardDescription>
+                Start one async campaign from a single prompt and monitor variant progress below.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="space-y-2">
+                  <label htmlFor="campaign-prompt" className="text-sm font-medium text-foreground">
+                    Campaign prompt
+                  </label>
+                  <Textarea
+                    id="campaign-prompt"
+                    rows={5}
+                    value={prompt}
+                    onChange={(event) => setPrompt(event.target.value)}
+                    placeholder="Example: 5-day Iceland Northern Lights trip, mid-budget, couples, departing from JFK..."
+                  />
                 </div>
 
-                {typeof variant.error === "string" && variant.error ? (
-                  <p className="mt-2 text-xs text-error">{variant.error}</p>
-                ) : null}
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-foreground">Variant presets</p>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {CAMPAIGN_VARIANT_PRESETS.map((preset) => {
+                      const isChecked = selectedVariantIds.includes(preset.id);
+                      const estimate = presetEstimatesById[preset.id];
+                      const estimateLine = estimate
+                        ? estimate.chars > 0
+                          ? `~${estimate.chars.toLocaleString()} chars • ~${estimate.seconds.toLocaleString()}s narration`
+                          : "Narration off"
+                        : "";
 
-                {links.length > 0 ? (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {links.map((link) => {
-                      const isExternal =
-                        link.href.startsWith("http://") || link.href.startsWith("https://");
                       return (
-                        <a
-                          key={`${variantName}-${link.label}-${link.href}`}
-                          href={link.href}
-                          target={isExternal ? "_blank" : undefined}
-                          rel={isExternal ? "noreferrer" : undefined}
-                          className="inline-flex rounded-md border border-border px-2.5 py-1 text-xs font-medium text-primary hover:bg-muted"
-                        >
-                          {link.label}
-                        </a>
+                        <VariantPresetCard
+                          key={preset.id}
+                          preset={preset}
+                          isChecked={isChecked}
+                          onToggle={() => toggleVariant(preset.id)}
+                          estimateLine={estimateLine}
+                        />
                       );
                     })}
                   </div>
+                </div>
+
+                {formError ? (
+                  <p className="text-sm text-error">{formError}</p>
                 ) : null}
+
+                {isOverBudget ? (
+                  <p className="text-sm text-warning">
+                    Estimated narration exceeds remaining monthly budget by ~
+                    {overBudgetChars.toLocaleString()} chars.
+                  </p>
+                ) : null}
+
+                <CampaignCostPreview
+                  totals={selectedEstimateTotals}
+                  selectedVariantCount={selectedPresets.length}
+                  budget={narrationBudget}
+                  budgetError={budgetError}
+                />
+
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <AnimatedLoader size={16} />
+                      Starting campaign...
+                    </>
+                  ) : (
+                    "Generate campaign"
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Status</CardTitle>
+              <CardDescription>
+                Auto-refreshes every {POLL_INTERVAL_MS / 1000}s while the campaign is running.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Overall</span>
+                <span
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-xs font-semibold capitalize",
+                    statusBadgeClassName(overallStatus),
+                    statusMotionClassName(overallStatus)
+                  )}
+                >
+                  {overallStatus}
+                </span>
               </div>
-            );
-          })}
-        </CardContent>
-      </Card>
-    </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Campaign ID</span>
+                <span className="font-mono text-xs text-foreground">
+                  {campaignId || "—"}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Polling</span>
+                <span className="text-foreground">{isPolling ? "Active" : "Stopped"}</span>
+              </div>
+
+              {bundleUrl ? (
+                <a
+                  href={bundleUrl}
+                  target={bundleUrl.startsWith("http") ? "_blank" : undefined}
+                  rel={bundleUrl.startsWith("http") ? "noreferrer" : undefined}
+                  className="inline-flex text-sm text-primary underline underline-offset-4"
+                >
+                  Download campaign bundle
+                </a>
+              ) : null}
+
+              {lastUpdatedAt ? (
+                <p className="text-xs text-muted-foreground">
+                  Last updated: {new Date(lastUpdatedAt).toLocaleTimeString()}
+                </p>
+              ) : null}
+
+              {pollError ? (
+                <p className="text-xs text-error">{pollError}</p>
+              ) : null}
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Variant status</CardTitle>
+            <CardDescription>
+              Track each selected variant and access presentation/export links when available.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {showVariantEmptyState ? (
+              <EmptyState
+                icon={
+                  <MotionIcon
+                    name="Megaphone"
+                    trigger="hover"
+                    animation="wiggle"
+                    size={48}
+                  />
+                }
+                title="Spin one prompt into many creatives"
+                description="Pick variants above and generate a campaign. Each variant becomes a publish-ready asset for a different channel — Reel for Instagram, Carousel for LinkedIn, Lead Magnet PDF for email, Configurator for your website."
+              />
+            ) : null}
+
+            {campaignId && variants.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Waiting for the first variant status update...
+              </p>
+            ) : null}
+
+            {variants.map((variant, index) => {
+              const variantName =
+                (typeof variant.name === "string" && variant.name) ||
+                `variant-${index + 1}`;
+              const normalizedStatus = toStatusKey(variant.status);
+              const links = getVariantLinks(variant);
+
+              return (
+                <div
+                  key={`${variantName}-${index}`}
+                  className="rounded-lg border border-border bg-card p-4"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{variantName}</p>
+                      {typeof variant.message === "string" && variant.message ? (
+                        <p className="text-xs text-muted-foreground mt-1">{variant.message}</p>
+                      ) : null}
+                    </div>
+                    <span
+                      className={cn(
+                        "rounded-full px-2.5 py-1 text-xs font-semibold capitalize",
+                        statusBadgeClassName(normalizedStatus),
+                        statusMotionClassName(normalizedStatus)
+                      )}
+                    >
+                      {normalizedStatus}
+                    </span>
+                  </div>
+
+                  {typeof variant.error === "string" && variant.error ? (
+                    <p className="mt-2 text-xs text-error">{variant.error}</p>
+                  ) : null}
+
+                  {links.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {links.map((link) => {
+                        const isExternal =
+                          link.href.startsWith("http://") || link.href.startsWith("https://");
+                        return (
+                          <a
+                            key={`${variantName}-${link.label}-${link.href}`}
+                            href={link.href}
+                            target={isExternal ? "_blank" : undefined}
+                            rel={isExternal ? "noreferrer" : undefined}
+                            className="inline-flex rounded-md border border-border px-2.5 py-1 text-xs font-medium text-primary hover:bg-muted"
+                          >
+                            {link.label}
+                          </a>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      </div>
+    </TooltipProvider>
   );
 };
 

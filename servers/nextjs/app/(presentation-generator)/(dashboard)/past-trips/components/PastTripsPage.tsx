@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/tooltip";
 import { DashboardPageHeader } from "@/components/ui/dashboard-page-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import { RecentActivityCard } from "@/components/ui/recent-activity-card";
 import { cn } from "@/lib/utils";
 import {
   DashboardApi,
@@ -744,6 +745,14 @@ const PastTripsPage: React.FC = () => {
               ) : null}
             </CardContent>
           </Card>
+
+          <RecentActivityCard
+            type="recap"
+            title="Recent recaps"
+            description="Auto-refreshes every 30s."
+            emptyTitle="No recent activity yet"
+            className="xl:col-start-2"
+          />
         </div>
 
         <Card className="mt-6">

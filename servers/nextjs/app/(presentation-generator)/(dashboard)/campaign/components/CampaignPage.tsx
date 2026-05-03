@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/tooltip";
 import { DashboardPageHeader } from "@/components/ui/dashboard-page-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import { RecentActivityCard } from "@/components/ui/recent-activity-card";
 import { cn } from "@/lib/utils";
 import {
   CampaignGenerateRequest,
@@ -1171,6 +1172,14 @@ const CampaignPage: React.FC = () => {
               ) : null}
             </CardContent>
           </Card>
+
+          <RecentActivityCard
+            type="campaign"
+            title="Recent campaigns"
+            description="Auto-refreshes every 30s."
+            emptyTitle="No recent activity yet"
+            className="xl:col-start-2"
+          />
         </div>
 
         <Card className="mt-6">

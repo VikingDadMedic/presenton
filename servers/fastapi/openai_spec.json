@@ -534,6 +534,54 @@
         }
       }
     },
+    "/api/v1/ppt/activity": {
+      "get": {
+        "tags": ["Activity"],
+        "summary": "List recent campaign or recap activity for the dashboard side panels.",
+        "operationId": "get_activity_feed",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "enum": ["campaign", "recap"] }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 5, "minimum": 1, "maximum": 50 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent activity items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "activities": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/ActivityItem" }
+                    }
+                  },
+                  "required": ["activities"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unsupported activity type",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "detail": { "type": "string" } } }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ppt/campaign-presets": {
       "get": {
         "tags": ["CampaignPresets"],
@@ -894,6 +942,25 @@
           "default_utm_source": { "type": "string", "nullable": true },
           "default_utm_medium": { "type": "string", "nullable": true },
           "default_utm_campaign": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "ActivityItem": {
+        "type": "object",
+        "required": ["kind", "id", "title"],
+        "properties": {
+          "kind": { "type": "string", "enum": ["campaign", "recap"] },
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "status": { "type": "string", "nullable": true },
+          "presentation_id": { "type": "string", "nullable": true },
+          "edit_path": { "type": "string", "nullable": true },
+          "updated_at": { "type": "string", "nullable": true },
+          "extra": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          }
         },
         "additionalProperties": false
       },

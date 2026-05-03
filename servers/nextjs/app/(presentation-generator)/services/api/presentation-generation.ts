@@ -134,6 +134,23 @@ export interface NarrationBudgetRemainingResponse {
   remaining: number | null;
 }
 
+export type ActivityKind = "campaign" | "recap";
+
+export interface ActivityItem {
+  kind: ActivityKind;
+  id: string;
+  title: string;
+  status?: string | null;
+  presentation_id?: string | null;
+  edit_path?: string | null;
+  updated_at?: string | null;
+  extra?: Record<string, unknown> | null;
+}
+
+export interface ActivityFeedResponse {
+  activities: ActivityItem[];
+}
+
 export class PresentationGenerationApi {
   static async uploadDoc(documents: File[]) {
     const formData = new FormData();
@@ -865,6 +882,30 @@ export class PresentationGenerationApi {
       response,
       "Failed to update campaign presets"
     ) as Promise<CampaignPresetsResponse>;
+  }
+
+  static async getActivityFeed(
+    type: ActivityKind,
+    limit = 5,
+    signal?: AbortSignal,
+  ) {
+    const params = new URLSearchParams({
+      type,
+      limit: String(limit),
+    });
+    const response = await fetch(
+      getApiUrl(`/api/v1/ppt/activity?${params.toString()}`),
+      {
+        method: "GET",
+        headers: getHeader(),
+        cache: "no-cache",
+        signal,
+      },
+    );
+    return ApiResponseHandler.handleResponse(
+      response,
+      "Failed to load recent activity"
+    ) as Promise<ActivityFeedResponse>;
   }
 
 }

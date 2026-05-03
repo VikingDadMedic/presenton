@@ -1,5 +1,6 @@
 {
     "description": "Post-trip recap arc for anniversaries and re-marketing: destination memory, highlights, traveler quote, and next-trip CTA",
     "ordered": true,
-    "default": false
+    "default": false,
+    "category": "Travel"
 }

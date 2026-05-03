@@ -267,6 +267,21 @@ const LayoutPreview = () => {
         return { nonNeoInbuilt: nonNeo, neoInbuilt: neo };
     }, []);
 
+    /**
+     * Built-in templates grouped by their `settings.category` field
+     * (added by the 3.5 data migration). The display order is fixed —
+     * Travel first because that's TripStory's primary use case, then
+     * Business, then Report. Templates without a category fall into "Other"
+     * (defensive — the migration filled all 24, but new contributors may
+     * forget the field on a fresh template).
+     */
+    const visibleInbuilt = useMemo(
+        () => [...nonNeoInbuilt, ...neoInbuilt],
+        [nonNeoInbuilt, neoInbuilt],
+    );
+
+    const CATEGORY_DISPLAY_ORDER = ["Travel", "Business", "Report"] as const;
+
     const availableUseCases = useMemo(() => {
         const seen = new Set<string>();
         const order: string[] = [];
@@ -390,17 +405,116 @@ const LayoutPreview = () => {
                             )
                         ) : (
                             <>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                    {nonNeoInbuilt.map((template) => (
-                                        <InbuiltTemplateCard
-                                            key={template.id}
-                                            template={template}
-                                            onOpen={handleOpenPreview}
-                                            enableHoverPreview={!reducedMotion}
-                                        />
-                                    ))}
-                                </div>
-                                {neoInbuilt.length > 0 && (
+                                {(() => {
+                                    /**
+                                     * Bucket every visible inbuilt template by `settings.category`.
+                                     * Templates without a category fall into "Other" (kept rendered
+                                     * for forward-compatibility).
+                                     */
+                                    const buckets: Record<string, TemplateLayoutsWithSettings[]> = {};
+                                    for (const template of visibleInbuilt) {
+                                        const category =
+                                            template.settings?.category?.trim() || "Other";
+                                        (buckets[category] ||= []).push(template);
+                                    }
+
+                                    const orderedCategories: string[] = [
+                                        ...CATEGORY_DISPLAY_ORDER.filter(
+                                            (category) => buckets[category]?.length,
+                                        ),
+                                        // Append any unrecognized categories at the end (alphabetical).
+                                        ...Object.keys(buckets)
+                                            .filter(
+                                                (category) =>
+                                                    !CATEGORY_DISPLAY_ORDER.includes(
+                                                        category as (typeof CATEGORY_DISPLAY_ORDER)[number],
+                                                    ),
+                                            )
+                                            .sort(),
+                                    ];
+
+                                    return orderedCategories.map((category) => {
+                                        const items = buckets[category] ?? [];
+                                        if (!items.length) return null;
+
+                                        if (category === "Travel") {
+                                            // v1: Travel is split by `settings.ordered` into the open
+                                            // arc (one entry: `travel`) and the ordered narrative arcs.
+                                            const orderedArcs = items.filter(
+                                                (template) => template.settings.ordered === true,
+                                            );
+                                            const openArcs = items.filter(
+                                                (template) => template.settings.ordered !== true,
+                                            );
+                                            return (
+                                                <div key={category} className="space-y-8">
+                                                    <h4 className="text-base font-semibold text-[#101828] mb-2 font-display tracking-tight">
+                                                        Travel
+                                                    </h4>
+                                                    {openArcs.length > 0 ? (
+                                                        <div>
+                                                            <h5 className="text-sm font-semibold text-muted-foreground mb-4 font-display tracking-tight">
+                                                                Open arcs
+                                                            </h5>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                                                {openArcs.map((template) => (
+                                                                    <InbuiltTemplateCard
+                                                                        key={template.id}
+                                                                        template={template}
+                                                                        onOpen={handleOpenPreview}
+                                                                        enableHoverPreview={!reducedMotion}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ) : null}
+                                                    {orderedArcs.length > 0 ? (
+                                                        <div>
+                                                            <h5 className="text-sm font-semibold text-muted-foreground mb-4 font-display tracking-tight">
+                                                                Ordered narratives
+                                                            </h5>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                                                {orderedArcs.map((template) => (
+                                                                    <InbuiltTemplateCard
+                                                                        key={template.id}
+                                                                        template={template}
+                                                                        onOpen={handleOpenPreview}
+                                                                        enableHoverPreview={!reducedMotion}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <div key={category}>
+                                                <h4 className="text-base font-semibold text-[#101828] mb-6 font-display tracking-tight">
+                                                    {category}
+                                                </h4>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                                    {items.map((template) => (
+                                                        <InbuiltTemplateCard
+                                                            key={template.id}
+                                                            template={template}
+                                                            onOpen={handleOpenPreview}
+                                                            enableHoverPreview={!reducedMotion}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    });
+                                })()}
+                                {/* Legacy fallback: render the original "Report" group if (somehow)
+                                    no template carries a `category` (e.g. a pre-migration build).
+                                    Hidden in normal operation because the 3.5 migration filled all
+                                    24 settings.json files. */}
+                                {visibleInbuilt.every(
+                                    (template) => !template.settings?.category,
+                                ) && neoInbuilt.length > 0 ? (
                                     <div>
                                         <h4 className="text-base font-semibold text-[#101828] mb-6 font-display tracking-tight">
                                             Report
@@ -416,7 +530,7 @@ const LayoutPreview = () => {
                                             ))}
                                         </div>
                                     </div>
-                                )}
+                                ) : null}
                             </>
                         )}
                     </section>

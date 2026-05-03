@@ -79,6 +79,13 @@ export interface TemplateGroupSettings {
     description: string;
     ordered: boolean;
     default: boolean;
+    /**
+     * Optional category label used to sub-group built-in templates on the
+     * Head Starts panel. Currently one of: "Business", "Travel", "Report",
+     * "Code", "Education". Falls back to "Other" when undefined so that
+     * templates added before the category migration still render.
+     */
+    category?: string;
 }
 
 // Template with settings

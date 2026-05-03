@@ -1,5 +1,6 @@
 {
     "description": "Open with everyday reality, then hard-cut to the destination experience: day vs night, sounds, transport, pricing, booking",
     "ordered": true,
-    "default": false
+    "default": false,
+    "category": "Travel"
 }

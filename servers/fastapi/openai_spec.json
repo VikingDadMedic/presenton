@@ -534,6 +534,81 @@
         }
       }
     },
+    "/api/v1/ppt/campaign-presets": {
+      "get": {
+        "tags": ["CampaignPresets"],
+        "summary": "List saved campaign variant presets.",
+        "operationId": "get_campaign_presets",
+        "responses": {
+          "200": {
+            "description": "Saved campaign variant presets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "presets": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/CampaignVariantPreset" }
+                    }
+                  },
+                  "required": ["presets"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["CampaignPresets"],
+        "summary": "Replace the saved campaign variant presets list.",
+        "operationId": "update_campaign_presets",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "presets": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/CampaignVariantPreset" }
+                  }
+                },
+                "required": ["presets"]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated campaign variant presets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "presets": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/CampaignVariantPreset" }
+                    }
+                  },
+                  "required": ["presets"]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ppt/profile": {
       "get": {
         "tags": ["Profile"],
@@ -823,6 +898,42 @@
           "default_utm_source": { "type": "string", "nullable": true },
           "default_utm_medium": { "type": "string", "nullable": true },
           "default_utm_campaign": { "type": "string", "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "CampaignVariantPreset": {
+        "type": "object",
+        "required": ["id", "label", "name"],
+        "properties": {
+          "id": { "type": "string", "description": "Stable preset id (uuid)" },
+          "label": { "type": "string", "description": "Display label" },
+          "description": { "type": "string", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" },
+          "name": { "type": "string", "description": "Variant name passed to /campaign/generate" },
+          "template": { "type": "string", "default": "travel-itinerary" },
+          "export_as": {
+            "type": "string",
+            "enum": ["pptx", "pdf", "html", "video"],
+            "default": "pptx"
+          },
+          "tone": { "type": "string", "nullable": true },
+          "narration_tone": { "type": "string", "nullable": true },
+          "verbosity": { "type": "string", "nullable": true },
+          "instructions": { "type": "string", "nullable": true },
+          "n_slides": { "type": "integer", "nullable": true },
+          "language": { "type": "string", "nullable": true },
+          "slide_duration": { "type": "integer", "nullable": true },
+          "transition_style": { "type": "string", "nullable": true },
+          "transition_duration": { "type": "number", "nullable": true },
+          "use_narration_as_soundtrack": { "type": "boolean", "nullable": true },
+          "lead_magnet": { "type": "boolean", "nullable": true },
+          "email_safe": { "type": "boolean", "nullable": true },
+          "utm_source": { "type": "string", "nullable": true },
+          "utm_medium": { "type": "string", "nullable": true },
+          "utm_campaign": { "type": "string", "nullable": true },
+          "utm_content": { "type": "string", "nullable": true },
+          "aspect_ratio": { "type": "string", "nullable": true },
+          "is_public": { "type": "boolean", "nullable": true }
         },
         "additionalProperties": false
       },

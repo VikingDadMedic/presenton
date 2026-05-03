@@ -1,4 +1,5 @@
-from typing import Optional
+from datetime import datetime
+from typing import List, Literal, Optional
 from pydantic import BaseModel, Field
 
 
@@ -13,6 +14,42 @@ class AgentProfile(BaseModel):
     default_utm_source: Optional[str] = None
     default_utm_medium: Optional[str] = None
     default_utm_campaign: Optional[str] = None
+
+
+class CampaignVariantPreset(BaseModel):
+    """
+    Persisted reusable campaign variant blueprint. Mirrors `CampaignVariantRequest`
+    (in `api.v1.ppt.endpoints.campaign`) plus identity/label fields. Stored as a
+    flat list under `UserConfig.campaign_presets`; the PATCH endpoint replaces the
+    full list (no per-id mutation).
+    """
+
+    id: str = Field(..., min_length=1, description="Stable preset id (uuid)")
+    label: str = Field(..., min_length=1, description="Display label for the preset")
+    description: Optional[str] = Field(default=None, description="Short helper text")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    name: str = Field(..., min_length=1, description="Variant name")
+    template: str = Field(default="travel-itinerary")
+    export_as: Literal["pptx", "pdf", "html", "video"] = Field(default="pptx")
+    tone: Optional[str] = None
+    narration_tone: Optional[str] = None
+    verbosity: Optional[str] = None
+    instructions: Optional[str] = None
+    n_slides: Optional[int] = None
+    language: Optional[str] = None
+    slide_duration: Optional[int] = None
+    transition_style: Optional[str] = None
+    transition_duration: Optional[float] = None
+    use_narration_as_soundtrack: Optional[bool] = None
+    lead_magnet: Optional[bool] = None
+    email_safe: Optional[bool] = None
+    utm_source: Optional[str] = None
+    utm_medium: Optional[str] = None
+    utm_campaign: Optional[str] = None
+    utm_content: Optional[str] = None
+    aspect_ratio: Optional[str] = None
+    is_public: Optional[bool] = None
 
 
 class UserConfig(BaseModel):
@@ -98,3 +135,6 @@ class UserConfig(BaseModel):
 
     # Agent / agency profile context
     agent_profile: AgentProfile = Field(default_factory=AgentProfile)
+
+    # Saved campaign variant presets (multi-channel blueprints)
+    campaign_presets: List[CampaignVariantPreset] = Field(default_factory=list)

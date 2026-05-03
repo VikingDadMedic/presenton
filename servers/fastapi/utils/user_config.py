@@ -1,7 +1,9 @@
 import os
 import json
 
-from models.user_config import AgentProfile, UserConfig
+from typing import List
+
+from models.user_config import AgentProfile, CampaignVariantPreset, UserConfig
 from utils.get_env import (
     get_anthropic_api_key_env,
     get_anthropic_model_env,
@@ -161,6 +163,26 @@ def _extract_agent_profile_from_raw_config(raw_config: dict) -> AgentProfile:
     return AgentProfile()
 
 
+def _extract_campaign_presets_from_raw_config(
+    raw_config: dict,
+) -> List[CampaignVariantPreset]:
+    if not isinstance(raw_config, dict):
+        return []
+    raw_presets = raw_config.get("campaign_presets")
+    if not isinstance(raw_presets, list):
+        return []
+    presets: List[CampaignVariantPreset] = []
+    for entry in raw_presets:
+        if not isinstance(entry, dict):
+            continue
+        try:
+            presets.append(CampaignVariantPreset(**entry))
+        except Exception:
+            # Drop malformed entries silently — userConfig.json is hand-editable.
+            continue
+    return presets
+
+
 def get_user_config():
     user_config_path = get_user_config_path_env()
 
@@ -175,6 +197,7 @@ def get_user_config():
         pass
 
     agent_profile = _extract_agent_profile_from_raw_config(raw_config)
+    campaign_presets = _extract_campaign_presets_from_raw_config(raw_config)
 
     return UserConfig(
         LLM=existing_config.LLM or get_llm_provider_env(),
@@ -265,6 +288,7 @@ def get_user_config():
         STRUCTURE_MODEL_BASE_URL=existing_config.STRUCTURE_MODEL_BASE_URL or get_structure_model_base_url_env(),
         STRUCTURE_MODEL_REASONING_EFFORT=existing_config.STRUCTURE_MODEL_REASONING_EFFORT or get_structure_model_reasoning_effort_env(),
         agent_profile=agent_profile,
+        campaign_presets=campaign_presets,
     )
 
 
@@ -375,6 +399,43 @@ def update_env_with_user_config():
 
 def get_agent_profile() -> AgentProfile:
     return get_user_config().agent_profile
+
+
+def get_campaign_presets() -> List[CampaignVariantPreset]:
+    return list(get_user_config().campaign_presets)
+
+
+def replace_campaign_presets(
+    presets: List[CampaignVariantPreset],
+) -> List[CampaignVariantPreset]:
+    """
+    Atomically replace the persisted `campaign_presets` list. Mirrors
+    `patch_agent_profile` — single source of truth lives in `userConfig.json`.
+    Validates each entry by round-tripping through `CampaignVariantPreset`.
+    """
+    user_config_path = get_user_config_path_env()
+    if not user_config_path:
+        raise RuntimeError("USER_CONFIG_PATH is not set")
+
+    validated: List[CampaignVariantPreset] = []
+    for entry in presets or []:
+        if isinstance(entry, CampaignVariantPreset):
+            validated.append(entry)
+        elif isinstance(entry, dict):
+            validated.append(CampaignVariantPreset(**entry))
+        else:
+            raise ValueError(
+                "campaign_presets entries must be CampaignVariantPreset or dict"
+            )
+
+    existing_config = _load_user_config_json(user_config_path)
+    existing_config["campaign_presets"] = [
+        preset.model_dump(mode="json") for preset in validated
+    ]
+    with open(user_config_path, "w") as f:
+        json.dump(existing_config, f)
+
+    return validated
 
 
 def patch_agent_profile(profile_patch: dict) -> AgentProfile:

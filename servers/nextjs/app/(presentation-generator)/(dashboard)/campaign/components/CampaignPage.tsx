@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import { Check, RefreshCw, Plus, X } from "lucide-react";
 import { MotionIcon } from "motion-icons-react";
 import { AnimatedLoader } from "@/components/ui/animated-loader";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
@@ -24,6 +34,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import {
   CampaignGenerateRequest,
+  CampaignVariantPresetPayload,
   NarrationBudgetRemainingResponse,
   CampaignStatusResponse,
   CampaignVariantConfig,
@@ -31,6 +42,11 @@ import {
   PresentationGenerationApi,
 } from "@/app/(presentation-generator)/services/api/presentation-generation";
 import { estimateVariantCharacters } from "@/lib/campaign-narration-estimate";
+import {
+  buildBundlesFromPresets,
+  buildPresetsFromBundles,
+  type SavedPresetBundle,
+} from "@/lib/campaign-presets";
 import { CampaignCostPreview } from "./CampaignCostPreview";
 
 const POLL_INTERVAL_MS = 2500;
@@ -357,10 +373,190 @@ function VariantPresetCard({
   );
 }
 
+interface NewPresetModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  defaults: CampaignVariantPreset[];
+  onSave: (
+    label: string,
+    description: string,
+    selectedVariantIds: string[],
+  ) => Promise<void>;
+  saving: boolean;
+}
+
+function NewPresetModal({
+  open,
+  onOpenChange,
+  defaults,
+  onSave,
+  saving,
+}: NewPresetModalProps) {
+  const [label, setLabel] = useState("");
+  const [description, setDescription] = useState("");
+  const [picked, setPicked] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setLabel("");
+      setDescription("");
+      setPicked([]);
+      setError(null);
+    }
+  }, [open]);
+
+  const togglePick = (id: string) => {
+    setPicked((prev) =>
+      prev.includes(id) ? prev.filter((existing) => existing !== id) : [...prev, id],
+    );
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!label.trim()) {
+      setError("Give the preset a name.");
+      return;
+    }
+    if (picked.length === 0) {
+      setError("Select at least one variant to include.");
+      return;
+    }
+    setError(null);
+    await onSave(label.trim(), description.trim(), picked);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Save a preset</DialogTitle>
+          <DialogDescription>
+            Pick one or more variants to bundle as a quick-pick combo. The
+            preset bundle will be saved with the chosen name; clicking it later
+            will pre-select that exact set of variants.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1">
+            <label
+              htmlFor="campaign-preset-label"
+              className="text-sm font-medium text-foreground"
+            >
+              Preset name
+            </label>
+            <Input
+              id="campaign-preset-label"
+              value={label}
+              onChange={(event) => setLabel(event.target.value)}
+              placeholder="e.g. Cold-outreach combo"
+              autoFocus
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label
+              htmlFor="campaign-preset-description"
+              className="text-sm font-medium text-foreground"
+            >
+              Description (optional)
+            </label>
+            <Input
+              id="campaign-preset-description"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Internal note shown on the pill tooltip"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">
+              Variants in this preset
+            </p>
+            <div className="grid gap-2 max-h-72 overflow-y-auto pr-1 sm:grid-cols-2">
+              {defaults.map((variant) => {
+                const isPicked = picked.includes(variant.id);
+                return (
+                  <label
+                    key={variant.id}
+                    className={cn(
+                      "flex cursor-pointer items-start gap-2 rounded-md border p-2 text-sm transition-colors",
+                      isPicked
+                        ? "border-primary/60 bg-primary/5"
+                        : "border-border bg-card hover:bg-muted/50",
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isPicked}
+                      onChange={() => togglePick(variant.id)}
+                      className="mt-0.5 h-4 w-4 cursor-pointer accent-primary"
+                      aria-label={variant.label}
+                    />
+                    <span className="space-y-0.5">
+                      <span className="block text-sm font-medium text-foreground">
+                        {variant.label}
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        {variant.description}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {error ? (
+            <p className="text-sm text-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? (
+                <>
+                  <AnimatedLoader size={14} />
+                  Saving…
+                </>
+              ) : (
+                "Save preset"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 const CampaignPage: React.FC = () => {
   const [prompt, setPrompt] = useState("");
   const [selectedVariantIds, setSelectedVariantIds] = useState<string[]>(
     CAMPAIGN_VARIANT_PRESETS.map((preset) => preset.id)
+  );
+  const [savedBundles, setSavedBundles] = useState<SavedPresetBundle[]>([]);
+  const [presetsLoading, setPresetsLoading] = useState(true);
+  const [presetsError, setPresetsError] = useState<string | null>(null);
+  const [presetModalOpen, setPresetModalOpen] = useState(false);
+  const [presetSaving, setPresetSaving] = useState(false);
+
+  const defaultsByVariantId = useMemo(
+    () =>
+      Object.fromEntries(
+        CAMPAIGN_VARIANT_PRESETS.map((preset) => [preset.id, preset]),
+      ),
+    [],
   );
   const [campaignId, setCampaignId] = useState<string | null>(null);
   const [statusUrl, setStatusUrl] = useState<string | null>(null);
@@ -488,6 +684,108 @@ const CampaignPage: React.FC = () => {
 
     return nextStatus;
   }, [campaignId, statusUrl]);
+
+  useEffect(() => {
+    let mounted = true;
+    const abortController = new AbortController();
+
+    setPresetsLoading(true);
+    PresentationGenerationApi.getCampaignPresets(abortController.signal)
+      .then((response) => {
+        if (!mounted) return;
+        setSavedBundles(buildBundlesFromPresets(response.presets ?? []));
+        setPresetsError(null);
+      })
+      .catch((error) => {
+        if (!mounted) return;
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setPresetsError(
+          error instanceof Error ? error.message : "Unable to load saved presets.",
+        );
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setPresetsLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+      abortController.abort();
+    };
+  }, []);
+
+  const persistBundles = useCallback(
+    async (nextBundles: SavedPresetBundle[]) => {
+      const payload = buildPresetsFromBundles(nextBundles, defaultsByVariantId);
+      const response = await PresentationGenerationApi.updateCampaignPresets(payload);
+      setSavedBundles(buildBundlesFromPresets(response.presets ?? []));
+    },
+    [defaultsByVariantId],
+  );
+
+  const handleSavePresetBundle = useCallback(
+    async (label: string, description: string, variantIds: string[]) => {
+      setPresetSaving(true);
+      try {
+        const bundleId =
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `bundle-${Date.now()}`;
+        const nextBundles: SavedPresetBundle[] = [
+          ...savedBundles,
+          {
+            bundleId,
+            label,
+            description: description || undefined,
+            variantIds: [...variantIds],
+          },
+        ];
+        await persistBundles(nextBundles);
+        toast.success(`Saved preset "${label}"`);
+        setPresetModalOpen(false);
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Failed to save preset.",
+        );
+      } finally {
+        setPresetSaving(false);
+      }
+    },
+    [savedBundles, persistBundles],
+  );
+
+  const handleRemovePresetBundle = useCallback(
+    async (bundleId: string) => {
+      const removed = savedBundles.find((bundle) => bundle.bundleId === bundleId);
+      const nextBundles = savedBundles.filter(
+        (bundle) => bundle.bundleId !== bundleId,
+      );
+      try {
+        await persistBundles(nextBundles);
+        if (removed) {
+          toast.success(`Removed preset "${removed.label}"`);
+        }
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Failed to remove preset.",
+        );
+      }
+    },
+    [savedBundles, persistBundles],
+  );
+
+  const handleApplyPresetBundle = useCallback(
+    (bundleId: string) => {
+      const bundle = savedBundles.find((entry) => entry.bundleId === bundleId);
+      if (!bundle) return;
+      const variantIds = bundle.variantIds.filter(
+        (variantId) => defaultsByVariantId[variantId] !== undefined,
+      );
+      setSelectedVariantIds(variantIds);
+      toast.success(`Applied preset "${bundle.label}"`);
+    },
+    [savedBundles, defaultsByVariantId],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -693,6 +991,74 @@ const CampaignPage: React.FC = () => {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-foreground">
+                      Saved presets
+                    </p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPresetModalOpen(true)}
+                      className="h-7 gap-1 text-xs text-primary"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      New preset
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {presetsLoading ? (
+                      <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+                        <AnimatedLoader size={12} />
+                        Loading saved presets…
+                      </div>
+                    ) : savedBundles.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        No saved presets yet. Save a combination to one-click apply
+                        it on your next campaign.
+                      </p>
+                    ) : (
+                      savedBundles.map((bundle) => {
+                        const tooltipBody =
+                          bundle.description ||
+                          `Includes: ${bundle.variantIds.join(", ")}`;
+                        return (
+                          <Tooltip key={bundle.bundleId}>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs text-foreground">
+                                <button
+                                  type="button"
+                                  className="font-medium hover:text-primary"
+                                  onClick={() =>
+                                    handleApplyPresetBundle(bundle.bundleId)
+                                  }
+                                >
+                                  {bundle.label}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="ml-1 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-error"
+                                  onClick={() =>
+                                    handleRemovePresetBundle(bundle.bundleId)
+                                  }
+                                  aria-label={`Remove preset ${bundle.label}`}
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>{tooltipBody}</TooltipContent>
+                          </Tooltip>
+                        );
+                      })
+                    )}
+                  </div>
+                  {presetsError ? (
+                    <p className="text-xs text-error">{presetsError}</p>
+                  ) : null}
+                </div>
+
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-foreground">Variant presets</p>
                   <div className="grid gap-3 md:grid-cols-2">
@@ -895,6 +1261,14 @@ const CampaignPage: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      <NewPresetModal
+        open={presetModalOpen}
+        onOpenChange={setPresetModalOpen}
+        defaults={CAMPAIGN_VARIANT_PRESETS}
+        onSave={handleSavePresetBundle}
+        saving={presetSaving}
+      />
     </TooltipProvider>
   );
 };

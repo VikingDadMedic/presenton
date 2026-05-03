@@ -45,6 +45,17 @@ export interface CampaignVariantConfig {
   [key: string]: unknown;
 }
 
+export interface CampaignVariantPresetPayload extends CampaignVariantConfig {
+  id: string;
+  label: string;
+  description?: string | null;
+  created_at?: string;
+}
+
+export interface CampaignPresetsResponse {
+  presets: CampaignVariantPresetPayload[];
+}
+
 export interface CampaignGenerateRequest {
   content: string;
   variants: CampaignVariantConfig[];
@@ -828,6 +839,32 @@ export class PresentationGenerationApi {
       response,
       "Failed to update agent profile"
     ) as Promise<AgentProfilePayload>;
+  }
+
+  static async getCampaignPresets(signal?: AbortSignal) {
+    const response = await fetch(getApiUrl(`/api/v1/ppt/campaign-presets`), {
+      method: "GET",
+      headers: getHeader(),
+      cache: "no-cache",
+      signal,
+    });
+    return ApiResponseHandler.handleResponse(
+      response,
+      "Failed to load campaign presets"
+    ) as Promise<CampaignPresetsResponse>;
+  }
+
+  static async updateCampaignPresets(presets: CampaignVariantPresetPayload[]) {
+    const response = await fetch(getApiUrl(`/api/v1/ppt/campaign-presets`), {
+      method: "PATCH",
+      headers: getHeader(),
+      body: JSON.stringify({ presets }),
+      cache: "no-cache",
+    });
+    return ApiResponseHandler.handleResponse(
+      response,
+      "Failed to update campaign presets"
+    ) as Promise<CampaignPresetsResponse>;
   }
 
 }

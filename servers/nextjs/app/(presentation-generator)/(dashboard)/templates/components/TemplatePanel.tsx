@@ -2,7 +2,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
-import { ArrowUpRight, ChevronRight, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ArrowUpRight } from "lucide-react";
+import { MotionIcon } from "motion-icons-react";
+import { AnimatedLoader } from "@/components/ui/animated-loader";
 import { templates } from "@/app/presentation-templates";
 import { TemplateLayoutsWithSettings } from "@/app/presentation-templates/utils";
 import {
@@ -15,7 +18,7 @@ import Link from "next/link";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import {
     TemplatePreviewStage,
-    LayoutsBadge,
+    UseCaseBadge,
     InbuiltTemplatePreview,
     CustomTemplatePreview,
 } from "../../../components/TemplatePreviewComponents";
@@ -38,7 +41,7 @@ export const CustomTemplateCard = React.memo(function CustomTemplateCard({ templ
             onClick={handleOpen}
         >
             <TemplatePreviewStage>
-                <LayoutsBadge count={template.layoutCount} />
+                <UseCaseBadge templateId={`custom-${template.id}`} />
                 <CustomTemplatePreview
                     previewLayouts={previewLayouts}
                     loading={loading}
@@ -75,7 +78,7 @@ const InbuiltTemplateCard = React.memo(function InbuiltTemplateCard({
             onClick={handleOpen}
         >
             <TemplatePreviewStage>
-                <LayoutsBadge count={template.layouts.length} />
+                <UseCaseBadge templateId={template.id} />
                 <InbuiltTemplatePreview layouts={template.layouts} templateId={template.id} />
             </TemplatePreviewStage>
             <div className="relative z-40 flex items-center justify-between gap-4 border-t border-border bg-card px-6 py-5">
@@ -141,19 +144,25 @@ const LayoutPreview = () => {
             <div className="sticky top-0 right-0 z-50 py-[28px] px-6   backdrop-blur ">
                 <div className="flex xl:flex-row flex-col gap-6 xl:gap-0 items-center justify-between">
                     <h3 className=" text-[28px] tracking-[-0.84px] font-display font-normal text-[#101828] flex items-center gap-2">
-                        Templates
+                        <MotionIcon name="Bookmark" animation="bounce" trigger="hover" size={24} className="text-primary" />
+                        Head Starts
                     </h3>
                     <div className="flex  gap-2.5 max-sm:w-full max-md:justify-center max-sm:flex-wrap">
-                        <Link
-                            href="/custom-template"
-                            onClick={() => trackEvent(MixpanelEvent.Templates_New_Template_Clicked)}
-                            className="inline-flex items-center font-display font-semibold gap-2 rounded-md px-4 py-2.5 bg-primary text-primary-foreground text-sm  shadow-sm hover:shadow-md"
-                            aria-label="Create new template"
+                        <Button
+                            asChild
+                            variant="signal"
+                            className="font-display font-semibold"
+                            aria-label="Create new head start"
                         >
-                            <span className="hidden md:inline">New Template</span>
-                            <span className="md:hidden">New</span>
-                            <ChevronRight className="w-4 h-4" />
-                        </Link>
+                            <Link
+                                href="/custom-template"
+                                onClick={() => trackEvent(MixpanelEvent.Templates_New_Template_Clicked)}
+                            >
+                                <MotionIcon name="Plus" animation="spin" trigger="hover" size={16} />
+                                <span className="hidden md:inline">New Head Start</span>
+                                <span className="md:hidden">New</span>
+                            </Link>
+                        </Button>
 
                     </div>
                 </div>
@@ -215,7 +224,7 @@ const LayoutPreview = () => {
                 {tab === 'custom' && <section className="my-12">
                     {customLoading ? (
                         <div className="flex items-center justify-center py-12">
-                            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                            <AnimatedLoader size={32} className="text-primary" />
                             <span className="ml-3 text-muted-foreground">Loading custom templates...</span>
                         </div>
                     ) : (

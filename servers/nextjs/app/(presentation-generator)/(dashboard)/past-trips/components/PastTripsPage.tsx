@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarDays, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { CalendarDays, RefreshCw } from "lucide-react";
+import { MotionIcon } from "motion-icons-react";
+import { AnimatedLoader } from "@/components/ui/animated-loader";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -174,7 +176,7 @@ const PastTripsPage: React.FC = () => {
       <div className="sticky top-0 right-0 z-50 py-[28px] backdrop-blur mb-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h3 className="text-[28px] tracking-[-0.84px] font-display font-normal text-foreground flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
+            <MotionIcon name="Sparkles" animation="pulse" trigger="hover" size={24} className="text-primary" />
             Past trips
           </h3>
           <Button
@@ -185,7 +187,7 @@ const PastTripsPage: React.FC = () => {
           >
             {isLoadingPresentations ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <AnimatedLoader size={16} />
                 Refreshing
               </>
             ) : (
@@ -266,9 +268,6 @@ const PastTripsPage: React.FC = () => {
                         <p className="text-sm font-medium text-foreground">
                           {modeOption.label}
                         </p>
-                        <p className="mt-1 text-[11px] font-mono text-muted-foreground">
-                          {modeOption.value}
-                        </p>
                       </button>
                     );
                   })}
@@ -293,7 +292,7 @@ const PastTripsPage: React.FC = () => {
               >
                 {isGenerating ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <AnimatedLoader size={16} />
                     Generating recap...
                   </>
                 ) : (
@@ -328,7 +327,7 @@ const PastTripsPage: React.FC = () => {
 
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Mode</span>
-              <span className="font-mono text-xs text-foreground">{selectedMode}</span>
+              <span className="text-foreground">{selectedModeOption?.label ?? "—"}</span>
             </div>
 
             {submitError ? (

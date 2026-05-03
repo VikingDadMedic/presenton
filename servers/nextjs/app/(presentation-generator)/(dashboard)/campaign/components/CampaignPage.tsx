@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Megaphone, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
+import { MotionIcon } from "motion-icons-react";
+import { AnimatedLoader } from "@/components/ui/animated-loader";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -525,7 +527,7 @@ const CampaignPage: React.FC = () => {
       <div className="sticky top-0 right-0 z-50 py-[28px] backdrop-blur mb-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h3 className="text-[28px] tracking-[-0.84px] font-display font-normal text-foreground flex items-center gap-2">
-            <Megaphone className="h-6 w-6 text-primary" />
+            <MotionIcon name="Megaphone" animation="wiggle" trigger="hover" size={24} className="text-primary" />
             Campaigns
           </h3>
           <Button
@@ -536,7 +538,7 @@ const CampaignPage: React.FC = () => {
           >
             {isRefreshing ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <AnimatedLoader size={16} />
                 Refreshing
               </>
             ) : (
@@ -664,7 +666,7 @@ const CampaignPage: React.FC = () => {
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <AnimatedLoader size={16} />
                     Starting campaign...
                   </>
                 ) : (

@@ -433,6 +433,9 @@ TripStory exposes an MCP server at `/mcp/` for AI agent integration. The followi
 | `generate_recap` | `POST /presentation/recap` | Generate a recap deck from a prior trip presentation |
 | `get_agent_profile` | `GET /profile` | Read agent profile branding defaults |
 | `update_agent_profile` | `PATCH /profile` | Update agent profile branding defaults |
+| `get_campaign_presets` | `GET /campaign-presets` | List saved campaign variant presets |
+| `update_campaign_presets` | `PATCH /campaign-presets` | Replace the saved campaign variant preset list |
+| `get_activity_feed` | `GET /activity?type=campaign\|recap&limit=N` | List recent campaigns or recaps for dashboard activity panels |
 
 ### MCP Example (Claude Desktop / Cursor)
 

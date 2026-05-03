@@ -1,7 +1,7 @@
 # TripStory — Stakeholder Briefing
 
 > A single-source briefing on what TripStory is, what's shipped, why it's defensible, who buys it, and what's next.
-> Last updated: May 2026. Companion docs: [README.md](README.md), [VISION.md](VISION.md), [REFACTOR-PIVOT.MD](REFACTOR-PIVOT.MD), [FEAT-EXPANSION.md](FEAT-EXPANSION.md), [FEATURE-BUILDING.md](FEATURE-BUILDING.md), [EXPORTS.md](EXPORTS.md), [main-workflow.md](main-workflow.md), [DEPLOYMENT.md](DEPLOYMENT.md), [docs/CREATIVE-RECIPES.md](docs/CREATIVE-RECIPES.md), [docs/RECAP-CRON-RECIPES.md](docs/RECAP-CRON-RECIPES.md).
+> Last updated: May 3, 2026. Companion docs: [README.md](README.md), [VISION.md](VISION.md), [REFACTOR-PIVOT.MD](REFACTOR-PIVOT.MD), [FEAT-EXPANSION.md](FEAT-EXPANSION.md), [FEATURE-BUILDING.md](FEATURE-BUILDING.md), [EXPORTS.md](EXPORTS.md), [main-workflow.md](main-workflow.md), [DEPLOYMENT.md](DEPLOYMENT.md), [docs/CREATIVE-RECIPES.md](docs/CREATIVE-RECIPES.md), [docs/RECAP-CRON-RECIPES.md](docs/RECAP-CRON-RECIPES.md).
 
 ---
 
@@ -128,6 +128,11 @@ Itinerary scheduler distributes activities across trip days with category divers
 | Campaign generator | `POST /api/v1/ppt/campaign/generate` | Async multi-variant creative generation from one brief + status polling |
 | Recap mode | `POST /api/v1/ppt/presentation/recap` | Post-trip lifecycle content (`welcome_home`, `anniversary`, `next_planning_window`) |
 | Multi-aspect export | `export_options.aspect_ratio` | Landscape/vertical/square output for PPTX/PDF/HTML/video routes |
+| Saved campaign presets | `lib/campaign-presets.ts` + `/api/v1/ppt/campaign-presets` | Persist multi-variant bundles per agent for quick re-use across campaigns |
+| Schedule-this-recap | `ScheduleRecapModal.tsx` + [`docs/RECAP-CRON-RECIPES.md`](docs/RECAP-CRON-RECIPES.md) | Generate cron / GitHub Actions snippets to automate post-trip recap delivery |
+| Bulk recap | `source_presentation_ids` on `/presentation/recap` | Generate recap decks across multiple past trips in one click |
+| Recent activity panels | `/api/v1/ppt/activity` + `<RecentActivityCard>` | Surface last 5 campaigns / recaps in dashboard sidebars with click-through |
+| End-of-campaign hero summary | `CampaignPage.tsx` hero summary | Replace row-list with a celebratory artifact grid + Send-to-client `mailto:` when all variants complete |
 
 Async video export at `/api/export-as-video` returns `{ jobId, statusUrl }` immediately; status reports `progressPct`, `currentFrame`, `totalFrames`. File-backed job store with 24-hour reaper.
 
@@ -281,6 +286,7 @@ Phases 0-12 of the travel pivot are complete and deployed at `https://presenton-
 - Async video export job pipeline with file-backed status store and progress polling
 - Azure App Service deployment with `/health` monitoring, single-command redeploy script (`scripts/redeploy-azure.sh`), end-to-end smoke harness (`scripts/smoke-narration.sh`)
 - TripStory rebrand (user-visible strings); code identifiers retained as "presenton" intentionally
+- Phase 3 strategic UX features (saved campaign presets, scheduled-recap cron / GitHub Actions generator, bulk recap, recent activity feeds, built-in template categorization, CRM-aware Past trips filter, end-of-campaign hero summary) all live on `feat/ux-ui-improvements`
 
 ### In flight or planned
 

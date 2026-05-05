@@ -22,7 +22,7 @@ TripStory generates polished destination showcases, itineraries, deal packages, 
 - **6 export formats**: PPTX, PDF, HTML slideshow ZIP (with narration audio bundle when available), Video/MP4 (GSAP transitions), JSON, interactive embed -- all four rich formats brand-stamped, UTM-tagged, and renderable at three aspect ratios (`landscape | vertical | square`)
 - **ElevenLabs narration pipeline** with per-slide overrides, curated tone presets, pronunciation dictionaries, auto-IPA hints, monthly character budget, and usage tracking
 - **Per-call model routing**: different LLM models for outline generation, layout assignment, and content filling
-- **Built-in MCP server** at `/mcp/` for AI agent integration (19 tools, including campaign + recap + agent-profile)
+- **Built-in MCP server** at `/mcp/` for AI agent integration (22 tools, including campaign + recap + agent-profile + saved presets + activity feed)
 - **Single-admin auth** with HTTP Basic on all `/api/v1/*` routes
 
 ### How Real Data Flows In

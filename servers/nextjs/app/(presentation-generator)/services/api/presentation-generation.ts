@@ -49,6 +49,7 @@ export interface CampaignVariantPresetPayload extends CampaignVariantConfig {
   id: string;
   label: string;
   description?: string | null;
+  bundle_id?: string | null;
   created_at?: string;
 }
 

@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useCallback, memo } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { TemplateLayoutsWithSettings } from "@/app/presentation-templates/utils";
+import { HIDDEN_TEMPLATE_IDS, TemplateLayoutsWithSettings } from "@/app/presentation-templates/utils";
 import { templates } from "@/app/presentation-templates";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -140,8 +140,6 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(function Templa
       </div>
     );
   }, [customLoading, customTemplates, handleCustomSelect, selectedCustomId]);
-
-  const HIDDEN_TEMPLATE_IDS = new Set(["code", "education", "product-overview"]);
 
   const builtInTemplateCards = useMemo(
     () =>

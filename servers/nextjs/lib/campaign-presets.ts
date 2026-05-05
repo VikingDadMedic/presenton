@@ -19,13 +19,7 @@ export interface SavedPresetBundle {
   variantIds: string[];
 }
 
-/**
- * Bundle marker stored in the unused `utm_content` field on each persisted
- * preset row. Rows that share the same marker reconstruct a single UI
- * "bundle" pill. This avoids a separate bundles table while keeping the
- * backend `CampaignVariantPreset` schema 1-to-1 with `CampaignVariantRequest`.
- */
-export const BUNDLE_TAG_PREFIX = "bundle_id::";
+const LEGACY_BUNDLE_TAG_PREFIX = "bundle_id::";
 
 export function buildBundlesFromPresets(
   presets: CampaignVariantPresetPayload[],
@@ -33,11 +27,15 @@ export function buildBundlesFromPresets(
   const order: string[] = [];
   const bundles = new Map<string, SavedPresetBundle>();
   for (const preset of presets) {
-    const tag =
+    const legacyBundleId =
       typeof preset.utm_content === "string" &&
-      preset.utm_content.startsWith(BUNDLE_TAG_PREFIX)
-        ? preset.utm_content.slice(BUNDLE_TAG_PREFIX.length)
-        : preset.id;
+      preset.utm_content.startsWith(LEGACY_BUNDLE_TAG_PREFIX)
+        ? preset.utm_content.slice(LEGACY_BUNDLE_TAG_PREFIX.length)
+        : null;
+    const tag =
+      (typeof preset.bundle_id === "string" && preset.bundle_id.trim()) ||
+      legacyBundleId?.trim() ||
+      preset.id;
     const existing = bundles.get(tag);
     if (existing) {
       existing.variantIds.push(preset.name);
@@ -53,7 +51,9 @@ export function buildBundlesFromPresets(
       });
     }
   }
-  return order.map((tag) => bundles.get(tag)!).filter(Boolean);
+  return order
+    .map((tag) => bundles.get(tag))
+    .filter((bundle): bundle is SavedPresetBundle => bundle !== undefined);
 }
 
 export function buildPresetsFromBundles(
@@ -76,8 +76,8 @@ export function buildPresetsFromBundles(
         id: presetId,
         label: bundle.label,
         description: bundle.description ?? null,
+        bundle_id: bundle.bundleId,
         ...(config as Omit<CampaignDefaultVariant, "id" | "label" | "description">),
-        utm_content: `${BUNDLE_TAG_PREFIX}${bundle.bundleId}`,
       } as CampaignVariantPresetPayload);
     }
   }

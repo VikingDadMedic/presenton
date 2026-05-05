@@ -1,6 +1,7 @@
 {
-  "description": "Data and narrative report layouts for intros, analysis charts, dashboards, and closing slides",
-  "ordered": false,
-  "default": false,
-  "category": "Report"
+    "description": "Data and narrative report layouts for intros, analysis charts, dashboards, and closing slides",
+    "ordered": false,
+    "default": false,
+    "category": "Report",
+    "aspectFit": "landscape"
 }

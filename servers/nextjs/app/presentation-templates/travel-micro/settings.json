@@ -2,5 +2,6 @@
     "description": "Fast 4-slide weekend or 48-hour micro-adventure: hero, mood board, cuisine, booking",
     "ordered": true,
     "default": false,
-    "category": "Travel"
+    "category": "Travel",
+    "aspectFit": "vertical"
 }

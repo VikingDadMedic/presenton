@@ -138,7 +138,7 @@ Async video export at `/api/export-as-video` returns `{ jobId, statusUrl }` imme
 
 ### E. AI Agent Integration (MCP) [LIVE]
 
-MCP server at `/mcp/` exposes **19 tools** auto-registered from the FastAPI OpenAPI spec, including `generate_presentation`, `get_presentation`, `export_presentation`, `edit_slide_field`, `get_enricher_status`, `list_presentations`, `templates_list`, `bulk_generate_narration`, `narration_estimate`, `get_narration_voices`, `get_narration_status`, `get_embed_url`, `export_json`, `generate_async`, `generate_campaign`, `get_campaign_status`, `generate_recap`, `get_agent_profile`, and `update_agent_profile`. Works in Cursor, Claude Desktop, n8n, and any MCP-compliant agent. See [EXPORTS.md Section 9](EXPORTS.md#9-mcp-integration) for the canonical tool table.
+MCP server at `/mcp/` exposes **22 tools** auto-registered from the FastAPI OpenAPI spec, including `generate_presentation`, `get_presentation`, `export_presentation`, `edit_slide_field`, `get_enricher_status`, `list_presentations`, `templates_list`, `bulk_generate_narration`, `narration_estimate`, `get_narration_voices`, `get_narration_status`, `get_embed_url`, `export_json`, `generate_async`, `generate_campaign`, `get_campaign_status`, `generate_recap`, `get_agent_profile`, `update_agent_profile`, `get_campaign_presets`, `update_campaign_presets`, and `get_activity_feed`. Works in Cursor, Claude Desktop, n8n, and any MCP-compliant agent. See [EXPORTS.md Section 9](EXPORTS.md#9-mcp-integration) for the canonical tool table.
 
 ### F. Editing & Customization [LIVE]
 
@@ -281,7 +281,7 @@ Phases 0-12 of the travel pivot are complete and deployed at `https://presenton-
 - All 6 export formats wired to the UI export dropdown
 - Showcase mode + Pricing Configurator widget + AI Q&A hotspot (with `is_public`-gated public sharing)
 - ElevenLabs narration with usage tracking, monthly budgets, IPA augmentation
-- MCP server at `/mcp/` with 19 tools (see [EXPORTS.md Section 9](EXPORTS.md#9-mcp-integration))
+- MCP server at `/mcp/` with 22 tools (see [EXPORTS.md Section 9](EXPORTS.md#9-mcp-integration))
 - Eggshell Bright Tech theme system (4-theme registry)
 - Async video export job pipeline with file-backed status store and progress polling
 - Azure App Service deployment with `/health` monitoring, single-command redeploy script (`scripts/redeploy-azure.sh`), end-to-end smoke harness (`scripts/smoke-narration.sh`)
@@ -309,6 +309,7 @@ Phases 0-12 of the travel pivot are complete and deployed at `https://presenton-
 - Marketing site launch (`servers/marketing/`) with public landing, features, pricing, embedded product demos via the existing `/embed/{id}` route
 - Multi-tenant architecture (PostgreSQL via `DATABASE_URL` already supported; row-level scoping needed)
 - QR codes on exported decks pointing to interactive embed view
+- `presentations.recap_mode` column migration so recap activity feeds can use exact mode filtering instead of title-substring heuristics
 
 #### Q4 2026
 
@@ -316,6 +317,7 @@ Phases 0-12 of the travel pivot are complete and deployed at `https://presenton-
 - Interactive map embeds with route polylines and click-to-navigate markers
 - Multi-currency live pricing
 - Agency white-label option (custom domain, custom branding, isolated tenant)
+- Built-in recap scheduler with backend persistence (replacing the current localStorage-only cron/GitHub Actions recipe helper)
 
 ### Risks and mitigations
 

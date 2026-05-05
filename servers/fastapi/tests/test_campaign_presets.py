@@ -27,8 +27,13 @@ def client(app):
     return TestClient(app, raise_server_exceptions=False)
 
 
-def _sample_preset(*, preset_id: str = "preset-1", label: str = "Reel preset") -> dict:
-    return {
+def _sample_preset(
+    *,
+    preset_id: str = "preset-1",
+    label: str = "Reel preset",
+    **overrides,
+) -> dict:
+    payload = {
         "id": preset_id,
         "label": label,
         "description": "Short-form social cut",
@@ -40,6 +45,8 @@ def _sample_preset(*, preset_id: str = "preset-1", label: str = "Reel preset") -
         "aspect_ratio": "vertical",
         "slide_duration": 3,
     }
+    payload.update(overrides)
+    return payload
 
 
 def test_get_campaign_presets_returns_empty_list_initially(client, user_config_path):
@@ -131,6 +138,42 @@ def test_get_campaign_presets_drops_malformed_persisted_entries(
     assert response.status_code == 200
     body = response.json()
     assert [preset["id"] for preset in body["presets"]] == ["good"]
+
+
+def test_get_campaign_presets_migrates_legacy_bundle_marker(client, user_config_path):
+    user_config_path.write_text(
+        json.dumps(
+            {
+                "campaign_presets": [
+                    _sample_preset(
+                        preset_id="legacy-a::reel",
+                        label="Legacy bundle",
+                        utm_content="bundle_id::legacy-a",
+                    ),
+                    _sample_preset(
+                        preset_id="legacy-a::audience-carousel",
+                        label="Legacy bundle",
+                        name="audience-carousel",
+                        template="travel-audience",
+                        export_as="html",
+                        utm_content="bundle_id::legacy-a",
+                    ),
+                ]
+            }
+        )
+    )
+
+    response = client.get("/api/v1/ppt/campaign-presets")
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["presets"]) == 2
+    assert all(preset["bundle_id"] == "legacy-a" for preset in body["presets"])
+    assert all(preset["utm_content"] is None for preset in body["presets"])
+
+    persisted = json.loads(user_config_path.read_text())
+    assert len(persisted["campaign_presets"]) == 2
+    assert all(preset["bundle_id"] == "legacy-a" for preset in persisted["campaign_presets"])
+    assert all(preset["utm_content"] is None for preset in persisted["campaign_presets"])
 
 
 def test_patch_campaign_presets_requires_user_config_path(monkeypatch, client):

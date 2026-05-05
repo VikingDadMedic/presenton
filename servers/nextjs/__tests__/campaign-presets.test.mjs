@@ -56,8 +56,8 @@ const sampleDefaults = {
   },
 };
 
-test("buildPresetsFromBundles tags every member with the same bundle marker", async () => {
-  const { buildPresetsFromBundles, BUNDLE_TAG_PREFIX } = await loadModule();
+test("buildPresetsFromBundles tags every member with the same bundle_id", async () => {
+  const { buildPresetsFromBundles } = await loadModule();
   const bundles = [
     {
       bundleId: "bundle-1",
@@ -70,7 +70,8 @@ test("buildPresetsFromBundles tags every member with the same bundle marker", as
   const presets = buildPresetsFromBundles(bundles, sampleDefaults);
   assert.strictEqual(presets.length, 2);
   for (const preset of presets) {
-    assert.strictEqual(preset.utm_content, `${BUNDLE_TAG_PREFIX}bundle-1`);
+    assert.strictEqual(preset.bundle_id, "bundle-1");
+    assert.strictEqual(preset.utm_content, undefined);
     assert.strictEqual(preset.label, "Cold-outreach combo");
     assert.strictEqual(preset.description, "first send");
   }
@@ -131,7 +132,7 @@ test("buildPresetsFromBundles drops unknown variant ids without throwing", async
   assert.strictEqual(presets[0].name, "reel");
 });
 
-test("buildBundlesFromPresets falls back to preset id when utm_content marker is absent", async () => {
+test("buildBundlesFromPresets falls back to preset id when bundle_id is absent", async () => {
   const { buildBundlesFromPresets } = await loadModule();
   const presets = [
     {
@@ -157,4 +158,32 @@ test("buildBundlesFromPresets falls back to preset id when utm_content marker is
     bundles.map((bundle) => bundle.bundleId),
     ["legacy-preset-1", "legacy-preset-2"],
   );
+});
+
+test("buildBundlesFromPresets supports legacy utm_content bundle markers", async () => {
+  const { buildBundlesFromPresets } = await loadModule();
+  const presets = [
+    {
+      id: "legacy-a::reel",
+      label: "Legacy A",
+      description: null,
+      name: "reel",
+      template: "travel-reveal",
+      export_as: "video",
+      utm_content: "bundle_id::legacy-a",
+    },
+    {
+      id: "legacy-a::audience-carousel",
+      label: "Legacy A",
+      description: null,
+      name: "audience-carousel",
+      template: "travel-audience",
+      export_as: "html",
+      utm_content: "bundle_id::legacy-a",
+    },
+  ];
+  const bundles = buildBundlesFromPresets(presets);
+  assert.strictEqual(bundles.length, 1);
+  assert.strictEqual(bundles[0].bundleId, "legacy-a");
+  assert.deepStrictEqual(bundles[0].variantIds, ["reel", "audience-carousel"]);
 });

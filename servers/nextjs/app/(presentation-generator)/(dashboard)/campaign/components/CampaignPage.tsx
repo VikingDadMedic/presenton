@@ -50,6 +50,7 @@ import {
   buildPresetsFromBundles,
   type SavedPresetBundle,
 } from "@/lib/campaign-presets";
+import { isCampaignReady, isCampaignTerminal } from "@/lib/campaign-status";
 import { CampaignCostPreview } from "./CampaignCostPreview";
 
 const POLL_INTERVAL_MS = 2500;
@@ -199,21 +200,6 @@ const normalizeVariants = (
   }
 
   return [];
-};
-
-const isCampaignTerminal = (status: CampaignStatusResponse | null): boolean => {
-  if (!status) return false;
-
-  const overallStatus = toStatusKey(status.status);
-  if (TERMINAL_STATUSES.has(overallStatus)) {
-    return true;
-  }
-
-  const variants = normalizeVariants(status.variants);
-  return (
-    variants.length > 0 &&
-    variants.every((variant) => TERMINAL_STATUSES.has(toStatusKey(variant.status)))
-  );
 };
 
 const getVariantLinks = (variant: CampaignVariantStatus): CampaignVariantLink[] => {
@@ -965,13 +951,8 @@ const CampaignPage: React.FC = () => {
    * doesn't mistakenly trigger celebration UI.
    */
   const isHeroEligible = useMemo(() => {
-    if (!isCampaignTerminal(campaignStatus)) return false;
-    if (variants.length === 0) return false;
-    return variants.every((variant) => {
-      const status = toStatusKey(variant.status);
-      return status === "completed" || status === "done";
-    });
-  }, [campaignStatus, variants]);
+    return isCampaignReady(campaignStatus);
+  }, [campaignStatus]);
 
   const aggregateMetrics = useMemo(() => {
     let totalChars = 0;

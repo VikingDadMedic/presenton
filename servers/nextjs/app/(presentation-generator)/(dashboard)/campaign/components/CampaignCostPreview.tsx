@@ -12,6 +12,12 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { NarrationBudgetRemainingResponse } from "@/app/(presentation-generator)/services/api/presentation-generation";
+import {
+    getBudgetGaugeColor,
+    getBudgetUsageRatio,
+    getOverBudgetChars,
+    shouldShowOverBudgetDelta,
+} from "@/lib/campaign-cost-preview";
 
 interface CampaignCostPreviewTotals {
     chars: number;
@@ -73,15 +79,28 @@ function BudgetGauge({ used, budget, overBudgetChars }: BudgetGaugeProps) {
         );
     }
 
-    const totalBudget = Math.max(budget.budget, 1);
     const usedAfter = budget.used + used;
-    const ratio = usedAfter / totalBudget;
+    const ratio = getBudgetUsageRatio(usedAfter, budget.budget);
+    if (ratio === null) {
+        return null;
+    }
+
     const fillRatio = Math.min(Math.max(ratio, 0), 1.05);
     const widthPct = `${Math.min(fillRatio * 100, 100).toFixed(2)}%`;
 
-    let fillTone = "bg-success";
-    if (ratio >= 1) fillTone = "bg-error";
-    else if (ratio >= 0.8) fillTone = "bg-warning";
+    const fillTone = getBudgetGaugeColor(usedAfter, budget.budget);
+    const fillToneClassName =
+        fillTone === "error"
+            ? "bg-error"
+            : fillTone === "warning"
+                ? "bg-warning"
+                : "bg-success";
+    const percentTextClassName =
+        fillTone === "error"
+            ? "text-error"
+            : fillTone === "warning"
+                ? "text-warning"
+                : "text-success";
 
     return (
         <div className="space-y-1.5">
@@ -94,7 +113,7 @@ function BudgetGauge({ used, budget, overBudgetChars }: BudgetGaugeProps) {
                 <span
                     className={cn(
                         "font-medium",
-                        ratio >= 1 ? "text-error" : ratio >= 0.8 ? "text-warning" : "text-success",
+                        percentTextClassName,
                     )}
                 >
                     {(ratio * 100).toFixed(0)}%
@@ -108,11 +127,11 @@ function BudgetGauge({ used, budget, overBudgetChars }: BudgetGaugeProps) {
                 aria-valuemax={100}
             >
                 <div
-                    className={cn("h-full rounded-full transition-all", fillTone)}
+                    className={cn("h-full rounded-full transition-all", fillToneClassName)}
                     style={{ width: widthPct }}
                 />
             </div>
-            {overBudgetChars > 0 ? (
+            {shouldShowOverBudgetDelta(overBudgetChars) ? (
                 <p className="text-xs font-medium text-error">
                     Over budget by ~{overBudgetChars.toLocaleString()} chars
                 </p>
@@ -128,8 +147,7 @@ export function CampaignCostPreview({
     budgetError,
 }: CampaignCostPreviewProps) {
     const overBudgetChars = React.useMemo(() => {
-        if (!budget || budget.remaining === null) return 0;
-        return Math.max(totals.chars - budget.remaining, 0);
+        return getOverBudgetChars(totals.chars, budget?.remaining ?? null);
     }, [budget, totals.chars]);
 
     return (

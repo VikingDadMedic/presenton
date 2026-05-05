@@ -18,8 +18,13 @@ import {
   ActivityKind,
   PresentationGenerationApi,
 } from "@/app/(presentation-generator)/services/api/presentation-generation";
-
-const REFRESH_INTERVAL_MS = 30_000;
+import {
+  RECENT_ACTIVITY_LIMIT,
+  REFRESH_INTERVAL_MS,
+  getActivityHref,
+  isRecentActivityEmpty,
+  selectLatestActivities,
+} from "@/lib/recent-activity";
 
 interface RecentActivityCardProps {
   type: ActivityKind;
@@ -71,10 +76,10 @@ export function RecentActivityCard({
       try {
         const response = await PresentationGenerationApi.getActivityFeed(
           type,
-          5,
+          RECENT_ACTIVITY_LIMIT,
           signal,
         );
-        setActivities(response.activities ?? []);
+        setActivities(selectLatestActivities(response.activities ?? [], RECENT_ACTIVITY_LIMIT));
         setError(null);
       } catch (caught) {
         if (caught instanceof DOMException && caught.name === "AbortError") return;
@@ -114,7 +119,7 @@ export function RecentActivityCard({
           </div>
         ) : error ? (
           <p className="text-xs text-error">{error}</p>
-        ) : activities.length === 0 ? (
+        ) : isRecentActivityEmpty(activities) ? (
           <EmptyState
             className="py-6"
             icon={
@@ -130,11 +135,7 @@ export function RecentActivityCard({
         ) : (
           <ul className="space-y-2">
             {activities.map((activity) => {
-              const href =
-                activity.edit_path ||
-                (activity.presentation_id
-                  ? `/presentation?id=${encodeURIComponent(activity.presentation_id)}`
-                  : null);
+              const href = getActivityHref(activity);
               return (
                 <li
                   key={activity.id}

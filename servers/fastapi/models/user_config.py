@@ -27,6 +27,10 @@ class CampaignVariantPreset(BaseModel):
     id: str = Field(..., min_length=1, description="Stable preset id (uuid)")
     label: str = Field(..., min_length=1, description="Display label for the preset")
     description: Optional[str] = Field(default=None, description="Short helper text")
+    bundle_id: Optional[str] = Field(
+        default=None,
+        description="Optional UI bundle identifier for grouped preset variants",
+    )
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     name: str = Field(..., min_length=1, description="Variant name")

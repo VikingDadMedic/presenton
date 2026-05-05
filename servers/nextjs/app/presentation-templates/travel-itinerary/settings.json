@@ -2,5 +2,6 @@
     "description": "Ordered itinerary template with fixed travel narrative sequence: hero, highlights, daily itinerary, accommodation, flights, pricing, booking",
     "ordered": true,
     "default": false,
-    "category": "Travel"
+    "category": "Travel",
+    "aspectFit": "landscape"
 }

@@ -2,5 +2,6 @@
     "description": "Urgency-led promo arc for short-lived offers: hero, countdown deal, inclusions, and fast booking CTA",
     "ordered": true,
     "default": false,
-    "category": "Travel"
+    "category": "Travel",
+    "aspectFit": "square"
 }

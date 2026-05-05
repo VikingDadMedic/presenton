@@ -9,7 +9,7 @@ import { AnimatedLoader } from "@/components/ui/animated-loader";
 import { DashboardPageHeader } from "@/components/ui/dashboard-page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { templates } from "@/app/presentation-templates";
-import { TemplateLayoutsWithSettings } from "@/app/presentation-templates/utils";
+import { HIDDEN_TEMPLATE_IDS, TemplateLayoutsWithSettings } from "@/app/presentation-templates/utils";
 import { getUseCaseLabel } from "@/app/presentation-templates/use-case-taxonomy";
 import {
     useCustomTemplateSummaries,
@@ -28,12 +28,13 @@ import {
 } from "../../../components/TemplatePreviewComponents";
 import {
     HeadStartsFilterBar,
-    type AspectOption,
-    type HeadStartsFilters,
-    hasActiveFilters,
-    readHeadStartsFiltersFromParams,
 } from "./HeadStartsFilterBar";
 import { recordHeadStartUse, readRecents, readUseCounts } from "./headStartsHistory";
+import {
+    applyHeadStartFilters,
+    hasActiveFilters,
+    readHeadStartsFiltersFromParams,
+} from "@/lib/head-starts-filters";
 
 const HOVER_PREVIEW_DELAY_MS = 800;
 
@@ -171,64 +172,6 @@ const InbuiltTemplateCard = React.memo(function InbuiltTemplateCard({
     );
 });
 
-const HIDDEN_TEMPLATE_IDS = new Set(["code", "education", "product-overview"]);
-
-function applyHeadStartFilters(
-    list: TemplateLayoutsWithSettings[],
-    filters: HeadStartsFilters,
-    recents: string[],
-    counts: Record<string, number>,
-): TemplateLayoutsWithSettings[] {
-    const lowerQ = filters.q.toLowerCase();
-    let result = list.filter((template) => {
-        if (lowerQ) {
-            const haystack = [
-                template.name ?? "",
-                template.description ?? "",
-                getUseCaseLabel(template.id),
-                template.id,
-            ]
-                .join(" ")
-                .toLowerCase();
-            if (!haystack.includes(lowerQ)) return false;
-        }
-
-        if (filters.useCases.length > 0) {
-            if (!filters.useCases.includes(getUseCaseLabel(template.id))) return false;
-        }
-
-        // Aspect-ratio filter is a v1 heuristic: built-in templates are
-        // currently authored landscape-first and lack an explicit aspect hint
-        // on settings.json. Until a `settings.aspectFit` field is added, we
-        // pass-through any template that doesn't declare an aspect, so the
-        // chip selector stays a no-op until the data catches up.
-        if (filters.aspect !== "all") {
-            const hint = (template.settings as { aspectFit?: AspectOption } | undefined)?.aspectFit;
-            if (hint && hint !== filters.aspect) return false;
-        }
-
-        return true;
-    });
-
-    if (filters.sort === "az") {
-        result = [...result].sort((a, b) =>
-            (a.name ?? "").toLowerCase().localeCompare((b.name ?? "").toLowerCase()),
-        );
-    } else if (filters.sort === "recent") {
-        const recentIndex = new Map<string, number>();
-        recents.forEach((id, index) => recentIndex.set(id, index));
-        result = [...result].sort((a, b) => {
-            const ai = recentIndex.has(a.id) ? recentIndex.get(a.id)! : Number.POSITIVE_INFINITY;
-            const bi = recentIndex.has(b.id) ? recentIndex.get(b.id)! : Number.POSITIVE_INFINITY;
-            return ai - bi;
-        });
-    } else if (filters.sort === "popular") {
-        result = [...result].sort((a, b) => (counts[b.id] ?? 0) - (counts[a.id] ?? 0));
-    }
-
-    return result;
-}
-
 const LayoutPreview = () => {
     const [tab, setTab] = useState<'custom' | 'default'>('default');
     const router = useRouter();
@@ -308,11 +251,25 @@ const LayoutPreview = () => {
     }, [historyVersion, filters.sort]);
 
     const filteredNonNeo = useMemo(
-        () => applyHeadStartFilters(nonNeoInbuilt, filters, historyData.recents, historyData.counts),
+        () =>
+            applyHeadStartFilters(
+                nonNeoInbuilt,
+                filters,
+                historyData.recents,
+                historyData.counts,
+                (template) => getUseCaseLabel(template.id),
+            ),
         [nonNeoInbuilt, filters, historyData.recents, historyData.counts],
     );
     const filteredNeo = useMemo(
-        () => applyHeadStartFilters(neoInbuilt, filters, historyData.recents, historyData.counts),
+        () =>
+            applyHeadStartFilters(
+                neoInbuilt,
+                filters,
+                historyData.recents,
+                historyData.counts,
+                (template) => getUseCaseLabel(template.id),
+            ),
         [neoInbuilt, filters, historyData.recents, historyData.counts],
     );
 

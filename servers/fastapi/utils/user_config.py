@@ -128,6 +128,8 @@ AGENT_PROFILE_FIELDS = (
     "default_utm_campaign",
 )
 
+LEGACY_BUNDLE_TAG_PREFIX = "bundle_id::"
+
 
 def _load_user_config_json(user_config_path: str) -> dict:
     if not user_config_path:
@@ -137,6 +139,47 @@ def _load_user_config_json(user_config_path: str) -> dict:
     with open(user_config_path, "r") as f:
         payload = json.load(f)
     return payload if isinstance(payload, dict) else {}
+
+
+def _migrate_campaign_preset_bundle_ids(raw_config: dict, user_config_path: str) -> dict:
+    """
+    One-time migration shim for legacy bundle markers written to `utm_content`.
+    If `bundle_id` is missing and `utm_content` starts with `bundle_id::`,
+    lift the marker into `bundle_id`, clear `utm_content`, and persist.
+    """
+    if not isinstance(raw_config, dict):
+        return raw_config
+
+    raw_presets = raw_config.get("campaign_presets")
+    if not isinstance(raw_presets, list):
+        return raw_config
+
+    has_changes = False
+    for entry in raw_presets:
+        if not isinstance(entry, dict):
+            continue
+
+        existing_bundle_id = entry.get("bundle_id")
+        if isinstance(existing_bundle_id, str) and existing_bundle_id.strip():
+            continue
+
+        utm_content = entry.get("utm_content")
+        if not isinstance(utm_content, str):
+            continue
+        if not utm_content.startswith(LEGACY_BUNDLE_TAG_PREFIX):
+            continue
+
+        lifted_bundle_id = utm_content[len(LEGACY_BUNDLE_TAG_PREFIX):].strip()
+        if lifted_bundle_id:
+            entry["bundle_id"] = lifted_bundle_id
+        entry["utm_content"] = None
+        has_changes = True
+
+    if has_changes and user_config_path:
+        with open(user_config_path, "w") as f:
+            json.dump(raw_config, f)
+
+    return raw_config
 
 
 def _extract_agent_profile_from_raw_config(raw_config: dict) -> AgentProfile:
@@ -190,6 +233,7 @@ def get_user_config():
     raw_config: dict = {}
     try:
         raw_config = _load_user_config_json(user_config_path)
+        raw_config = _migrate_campaign_preset_bundle_ids(raw_config, user_config_path)
         if raw_config:
             existing_config = UserConfig(**raw_config)
     except Exception:

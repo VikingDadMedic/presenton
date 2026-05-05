@@ -1,6 +1,7 @@
 {
-  "description": "School and training layouts for covers, outlines, timelines, statistics, and visual storytelling",
-  "ordered": false,
-  "default": false,
-  "category": "Education"
+    "description": "School and training layouts for covers, outlines, timelines, statistics, and visual storytelling",
+    "ordered": false,
+    "default": false,
+    "category": "Education",
+    "aspectFit": "landscape"
 }

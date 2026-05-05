@@ -1,29 +1,25 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-export const ASPECT_OPTIONS = ["all", "landscape", "vertical", "square"] as const;
-export type AspectOption = (typeof ASPECT_OPTIONS)[number];
-
-export const SORT_OPTIONS = [
-    { value: "recent", label: "Recently used" },
-    { value: "popular", label: "Most popular" },
-    { value: "az", label: "A-Z" },
-] as const;
-export type SortOption = (typeof SORT_OPTIONS)[number]["value"];
-
-export const ASPECT_LABELS: Record<Exclude<AspectOption, "all">, string> = {
-    landscape: "Landscape",
-    vertical: "Vertical",
-    square: "Square",
-};
-
-const SEARCH_DEBOUNCE_MS = 250;
+import {
+    ASPECT_LABELS,
+    ASPECT_OPTIONS,
+    SEARCH_DEBOUNCE_MS,
+    SORT_OPTIONS,
+    applySearchParamUpdates,
+    createDebouncedUpdater,
+    hasActiveFilters,
+    readHeadStartsFiltersFromParams,
+    serializeUseCaseSelection,
+    toggleUseCaseSelection,
+    type AspectOption,
+    type HeadStartsFilters,
+    type SortOption,
+} from "@/lib/head-starts-filters";
 
 interface HeadStartsFilterBarProps {
     availableUseCases: string[];
@@ -38,6 +34,7 @@ export function HeadStartsFilterBar({ availableUseCases }: HeadStartsFilterBarPr
     const urlUseCase = searchParams?.get("useCase") ?? "";
     const urlAspect = (searchParams?.get("aspect") ?? "all") as AspectOption;
     const urlSort = searchParams?.get("sort") ?? "";
+    const debouncedQueryUpdateRef = useRef<ReturnType<typeof createDebouncedUpdater<string>> | null>(null);
 
     const selectedUseCases = useMemo(
         () => urlUseCase.split(",").map((v) => v.trim()).filter(Boolean),
@@ -52,13 +49,8 @@ export function HeadStartsFilterBar({ availableUseCases }: HeadStartsFilterBarPr
 
     const updateParams = useCallback(
         (updates: Record<string, string | null>) => {
-            const next = new URLSearchParams(searchParams?.toString() ?? "");
-            for (const [key, value] of Object.entries(updates)) {
-                if (value === null || value === "") next.delete(key);
-                else next.set(key, value);
-            }
-            const queryString = next.toString();
-            router.replace(`${pathname}${queryString ? `?${queryString}` : ""}`, {
+            const queryString = applySearchParamUpdates(searchParams?.toString() ?? "", updates);
+            router.replace(`${pathname}${queryString}`, {
                 scroll: false,
             });
         },
@@ -66,12 +58,17 @@ export function HeadStartsFilterBar({ availableUseCases }: HeadStartsFilterBarPr
     );
 
     useEffect(() => {
-        if (searchInput === urlQ) return;
-        const handle = window.setTimeout(() => {
-            updateParams({ q: searchInput });
+        const debounced = createDebouncedUpdater((value: string) => {
+            updateParams({ q: value });
         }, SEARCH_DEBOUNCE_MS);
-        return () => window.clearTimeout(handle);
-    }, [searchInput, urlQ, updateParams]);
+        debouncedQueryUpdateRef.current = debounced;
+        return () => debounced.cancel();
+    }, [updateParams]);
+
+    useEffect(() => {
+        if (searchInput === urlQ) return;
+        debouncedQueryUpdateRef.current?.push(searchInput);
+    }, [searchInput, urlQ]);
 
     const clearSearch = useCallback(() => {
         setSearchInput("");
@@ -80,11 +77,8 @@ export function HeadStartsFilterBar({ availableUseCases }: HeadStartsFilterBarPr
 
     const toggleUseCase = useCallback(
         (label: string) => {
-            const current = new Set(selectedUseCases);
-            if (current.has(label)) current.delete(label);
-            else current.add(label);
-            const next = Array.from(current);
-            updateParams({ useCase: next.length ? next.join(",") : null });
+            const next = toggleUseCaseSelection(selectedUseCases, label);
+            updateParams({ useCase: serializeUseCaseSelection(next) });
         },
         [selectedUseCases, updateParams],
     );
@@ -135,7 +129,7 @@ export function HeadStartsFilterBar({ availableUseCases }: HeadStartsFilterBarPr
 
                 <div className="flex items-center gap-1.5">
                     {(ASPECT_OPTIONS as readonly AspectOption[]).map((option) => {
-                        const isActive = urlAspect === option;
+                        const isActive = (option === "all" ? "all" : option) === urlAspect;
                         const label = option === "all" ? "All sizes" : ASPECT_LABELS[option];
                         return (
                             <button
@@ -214,38 +208,13 @@ export function HeadStartsFilterBar({ availableUseCases }: HeadStartsFilterBarPr
     );
 }
 
-export interface HeadStartsFilters {
-    q: string;
-    useCases: string[];
-    aspect: AspectOption;
-    sort: SortOption | null;
-}
-
-interface SearchParamsLike {
-    get(name: string): string | null;
-}
-
-export function readHeadStartsFiltersFromParams(
-    searchParams: SearchParamsLike | null,
-): HeadStartsFilters {
-    const q = (searchParams?.get("q") ?? "").trim();
-    const useCases = (searchParams?.get("useCase") ?? "")
-        .split(",")
-        .map((value) => value.trim())
-        .filter(Boolean);
-    const aspectRaw = (searchParams?.get("aspect") ?? "all").toLowerCase() as AspectOption;
-    const aspect = (ASPECT_OPTIONS as readonly string[]).includes(aspectRaw) ? aspectRaw : "all";
-    const sortRaw = (searchParams?.get("sort") ?? "") as SortOption | "";
-    const validSorts = SORT_OPTIONS.map((option) => option.value);
-    const sort = (validSorts as readonly string[]).includes(sortRaw) ? (sortRaw as SortOption) : null;
-    return { q, useCases, aspect, sort };
-}
-
-export function hasActiveFilters(filters: HeadStartsFilters): boolean {
-    return (
-        filters.q.length > 0 ||
-        filters.useCases.length > 0 ||
-        filters.aspect !== "all" ||
-        filters.sort !== null
-    );
-}
+export {
+    ASPECT_LABELS,
+    ASPECT_OPTIONS,
+    SORT_OPTIONS,
+    hasActiveFilters,
+    readHeadStartsFiltersFromParams,
+    type AspectOption,
+    type HeadStartsFilters,
+    type SortOption,
+};

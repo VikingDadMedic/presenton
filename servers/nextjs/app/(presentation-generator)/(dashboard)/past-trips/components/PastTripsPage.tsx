@@ -38,6 +38,7 @@ import {
   type ScheduleRecapPersistedRow,
 } from "@/lib/scheduled-recap-generator";
 import { useClientProfiles } from "@/app/(presentation-generator)/upload/hooks/useClientProfiles";
+import { buildRecapIndex } from "@/lib/recap-matching";
 import { ScheduleRecapModal } from "./ScheduleRecapModal";
 
 interface RecapModeOption {
@@ -116,57 +117,6 @@ const sortByUpdatedAtDesc = (
     (a, b) =>
       new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
   );
-
-interface RecapMatch {
-  presentationId: string;
-  title: string;
-  updatedAt: string;
-}
-
-/**
- * Build a `Map<sourceTripId, Map<RecapMode, RecapMatch>>` by fuzzy-matching
- * presentation titles against each existing source trip. v1 heuristic:
- * a presentation is treated as a recap of source S in mode M when its title
- * (lowercased) contains both the mode-specific marker (e.g., "anniversary
- * recap") AND the source trip's title (lowercased). Both substring checks
- * are case-insensitive. False positives are tolerable for v1.
- */
-function buildRecapMatchIndex(
-  presentations: PresentationResponse[]
-): Map<string, Map<RecapMode, RecapMatch>> {
-  const sources = presentations.map((presentation) => ({
-    id: presentation.id,
-    title: getTitle(presentation),
-    titleLower: getTitle(presentation).toLowerCase(),
-  }));
-
-  const index = new Map<string, Map<RecapMode, RecapMatch>>();
-  for (const source of sources) {
-    index.set(source.id, new Map());
-  }
-
-  for (const candidate of presentations) {
-    const candidateTitleLower = getTitle(candidate).toLowerCase();
-    for (const option of RECAP_MODE_OPTIONS) {
-      if (!candidateTitleLower.includes(option.marker)) continue;
-      for (const source of sources) {
-        if (source.id === candidate.id) continue;
-        if (!source.titleLower.trim()) continue;
-        if (candidateTitleLower.includes(source.titleLower)) {
-          const bucket = index.get(source.id)!;
-          if (!bucket.has(option.value)) {
-            bucket.set(option.value, {
-              presentationId: candidate.id,
-              title: getTitle(candidate),
-              updatedAt: candidate.updated_at,
-            });
-          }
-        }
-      }
-    }
-  }
-  return index;
-}
 
 const STATUS_DOT_BASE_CLASS =
   "inline-flex h-1.5 w-1.5 rounded-full border border-border bg-card";
@@ -282,7 +232,7 @@ const PastTripsPage: React.FC = () => {
   );
 
   const recapMatchIndex = useMemo(
-    () => buildRecapMatchIndex(presentations),
+    () => buildRecapIndex(presentations),
     [presentations]
   );
 

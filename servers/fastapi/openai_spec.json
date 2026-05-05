@@ -996,6 +996,7 @@
           "id": { "type": "string", "description": "Stable preset id (uuid)" },
           "label": { "type": "string", "description": "Display label" },
           "description": { "type": "string", "nullable": true },
+          "bundle_id": { "type": "string", "nullable": true },
           "created_at": { "type": "string", "format": "date-time" },
           "name": { "type": "string", "description": "Variant name passed to /campaign/generate" },
           "template": { "type": "string", "default": "travel-itinerary" },

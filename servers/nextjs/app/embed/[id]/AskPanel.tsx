@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { buildShowcaseAskSubmittedPayload } from "@/lib/showcase-mixpanel";
+import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { fetchShowcaseAsk, type ShowcaseAskHistoryTurn } from "./showcaseApi";
 
 interface AskPanelProps {
@@ -98,13 +100,14 @@ export default function AskPanel({
       setState({ kind: "loading", status: "Thinking...", partial: "" });
 
       try {
+        const historySnapshot = history.length > 0 ? history.slice(-5) : undefined;
         const { response: res } = await fetchShowcaseAsk(
           {
             presentation_id: presentationId,
             slide_id: slideId,
             question: q,
             topic: topicHint || undefined,
-            history: history.length > 0 ? history.slice(-5) : undefined,
+            history: historySnapshot,
           },
           { signal: controller.signal }
         );
@@ -112,6 +115,19 @@ export default function AskPanel({
         if (!res.ok || !res.body) {
           throw new Error(`HTTP ${res.status}`);
         }
+
+        // 2xx + body — the request was accepted and the SSE stream is open.
+        // Fire telemetry before reading the stream so the event captures the
+        // submit even if streaming fails downstream.
+        trackEvent(
+          MixpanelEvent.Showcase_Ask_Submitted,
+          buildShowcaseAskSubmittedPayload({
+            presentationId,
+            slideId,
+            question: q,
+            historyLength: historySnapshot?.length ?? 0,
+          })
+        );
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();

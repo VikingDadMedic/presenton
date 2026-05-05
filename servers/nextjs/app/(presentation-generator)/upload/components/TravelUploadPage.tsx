@@ -25,6 +25,11 @@ import { OverlayLoader } from "@/components/ui/overlay-loader";
 import Wrapper from "@/components/Wrapper";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { cn } from "@/lib/utils";
+import {
+  DEFAULT_TRAVEL_ARC,
+  TRAVEL_ARC_OPTIONS,
+  type TravelArcTemplateId,
+} from "@/lib/travel-arcs";
 
 interface LoadingState {
   isLoading: boolean;
@@ -57,73 +62,6 @@ const INTEREST_OPTIONS = [
   "Shopping",
   "Wellness",
 ] as const;
-
-type TravelArcTemplateId =
-  | "travel-itinerary"
-  | "travel-reveal"
-  | "travel-contrast"
-  | "travel-audience"
-  | "travel-micro"
-  | "travel-local"
-  | "travel-series"
-  | "travel-recap"
-  | "travel-deal-flash"
-  | "travel-partner-spotlight";
-
-const DEFAULT_TRAVEL_ARC: TravelArcTemplateId = "travel-itinerary";
-
-const TRAVEL_ARC_OPTIONS: Array<{
-  value: TravelArcTemplateId;
-  label: string;
-  tooltip?: string;
-}> = [
-  { value: "travel-itinerary", label: "Itinerary" },
-  {
-    value: "travel-reveal",
-    label: "Reveal",
-    tooltip: "Builds anticipation with a destination-first reveal flow.",
-  },
-  {
-    value: "travel-contrast",
-    label: "Contrast",
-    tooltip: "Highlights trade-offs and before/after moments.",
-  },
-  {
-    value: "travel-audience",
-    label: "Audience",
-    tooltip: "Tailors pacing for solo, couple, or family travelers.",
-  },
-  {
-    value: "travel-micro",
-    label: "Micro",
-    tooltip: "Focuses on a short, high-impact micro-adventure.",
-  },
-  {
-    value: "travel-local",
-    label: "Local",
-    tooltip: "Frames the trip through a local's perspective.",
-  },
-  {
-    value: "travel-series",
-    label: "Series",
-    tooltip: "Compares multiple destinations in one coherent decision deck.",
-  },
-  {
-    value: "travel-recap",
-    label: "Recap",
-    tooltip: "Turns a past trip into a memory-led re-engagement story.",
-  },
-  {
-    value: "travel-deal-flash",
-    label: "Deal Flash",
-    tooltip: "Pushes urgency with countdown offer framing and inclusions.",
-  },
-  {
-    value: "travel-partner-spotlight",
-    label: "Partner",
-    tooltip: "Highlights a hotel, airline, or DMO co-marketing partner.",
-  },
-];
 
 const TravelUploadPage = () => {
   const router = useRouter();
@@ -373,6 +311,7 @@ const TravelUploadPage = () => {
                 type="button"
                 title={arc.tooltip}
                 aria-label={arc.tooltip ? `${arc.label}: ${arc.tooltip}` : arc.label}
+                data-testid={`travel-arc-chip-${arc.value}`}
                 onClick={() => setSelectedTravelArc(arc.value)}
                 className={cn(
                   "rounded-full border px-3 py-1.5 text-xs font-instrument_sans font-medium transition-all",

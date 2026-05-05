@@ -330,10 +330,10 @@ flowchart LR
 
 | Data | Call 1 (Outlines) | Call 2 (Structure) | Call 3 (Content) | Post-Call 3 |
 |------|------|------|------|------|
-| `enriched_context` (markdown) | Injected as `additional_context` in **user prompt** under "Additional Information" | Not injected | Injected as `instructions` in **system prompt** under "# User Instructions" | -- |
+| `enriched_context` (markdown) | Injected as `additional_context` in **user prompt** under `Context:` | Not injected | Injected as `enriched_context` kwarg in **user prompt** under `# Verified Context (from enrichment pipeline):` | -- |
 | `enriched_data` (raw JSON) | Not used | Not used | Not used directly | **Overlay**: `to_slide_data()` deep-merges factual fields (prices, ratings, times) onto LLM output |
 
-> **ISSUE**: enriched_context is injected in two different positions across calls: user prompt (Call 1) vs. system prompt (Call 3). This inconsistency means the LLM treats the same data differently in each call.
+> **RESOLVED (May 2026)**: enriched_context is now injected into the **user prompt** for both Call 1 and Call 3 (Section 6 issue E). System prompt stays stable across slides — precondition for Anthropic prompt caching of the Call 3 prefix.
 
 ---
 
@@ -434,14 +434,22 @@ The `usePresentationGeneration` hook hardcodes `ordered: false` when building th
 
 **Fix**: Read `selectedTemplate.settings?.ordered ?? false` and pass it in the layout object.
 
-### E. Enriched Context Injection Inconsistency
+### E. Enriched Context Injection Inconsistency (RESOLVED — May 2026)
 
-**Files**: `generate_presentation_outlines.py` (Call 1), `generate_slide_content.py` (Call 3)
+**Files**: `generate_presentation_outlines.py` (Call 1), `generate_slide_content.py` (Call 3), `api/v1/ppt/endpoints/presentation.py` (callers).
 
-In Call 1, enriched context goes into the **user prompt** as "Additional Information."  
-In Call 3, enriched context goes into the **system prompt** as "# User Instructions."
+**Original drift**: enriched context lived in the **user prompt** for Call 1 (under `Context:`) but the **system prompt** for Call 3 (under `# User Instructions`, via a caller-side `instructions = instructions + enriched_context` splice in both `/stream` and `/generate`). This meant the LLM treated the same enricher data with different authority levels across calls and the variable per-presentation context polluted what should have been a stable cache prefix.
 
-This means the LLM treats the same enricher data with different authority levels across calls. System prompt content is generally weighted more heavily by LLMs than user message content.
+**Canonical resolution**:
+
+- Enriched context flows through the **user prompt** for both Call 1 and Call 3. Call 3's user prompt now has a dedicated `# Verified Context (from enrichment pipeline):` section (mirroring Call 1's `Context:` block).
+- `get_slide_content_from_type_and_outline` (and `get_messages` / `get_user_prompt` underneath it) take a separate `enriched_context` kwarg.
+- `/stream` and `/generate` pass `presentation.enriched_context` (or `enriched_context_for_model`) as that kwarg and **no longer splice it into `instructions`**. `instructions` stays user-supplied only.
+- Side benefit: system prompt is now stable across slides for a given presentation, which is the precondition for Anthropic prompt caching of Call 3's stable prefix (Phase C.1 in the Phase 7 roadmap).
+
+**Test guards**: `tests/test_presentation_generation_api.py` adds four assertions covering the contract (user-prompt routing, system-prompt absence, get_messages allocation, opt-out when no enrichment is available). These guards fire if a future commit re-introduces the splice.
+
+**Pipeline duplication note**: enrichment runs in two places by design — `/prepare` (which persists `enriched_context` + `enriched_data` on the `presentations` row, read by `/stream` without re-running) and `/generate` (one-shot path that skips `/prepare`). Neither path duplicates work within a single presentation.
 
 ### F. Outline `to_string()` Uses Pydantic `__str__`
 

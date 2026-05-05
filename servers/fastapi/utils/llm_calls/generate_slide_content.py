@@ -88,7 +88,7 @@ English
 - Previous Slide Title: {previous_slide_title}
 - Next Slide Title: {next_slide_title}
 - Presentation Synopsis: {presentation_synopsis}
-
+{enriched_context_block}
 # SLIDE CONTENT: START
 {content}
 # SLIDE CONTENT: END
@@ -193,7 +193,19 @@ def get_user_prompt(
     previous_slide_title: Optional[str] = None,
     next_slide_title: Optional[str] = None,
     presentation_synopsis: Optional[str] = None,
+    enriched_context: Optional[str] = None,
 ):
+    enriched_block = ""
+    cleaned_enriched = (enriched_context or "").strip()
+    if cleaned_enriched:
+        # Mirrors Call 1's "Context:" pattern: enriched_context lives in the
+        # USER prompt so the system prompt remains a stable cache prefix and
+        # both calls treat enricher data with the same authority level.
+        enriched_block = (
+            "\n# Verified Context (from enrichment pipeline):\n"
+            f"{cleaned_enriched}\n"
+        )
+
     return SLIDE_CONTENT_USER_PROMPT.format(
         current_date_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         language=_resolve_prompt_language(language),
@@ -202,6 +214,7 @@ def get_user_prompt(
         presentation_synopsis=_normalize_context_value(
             presentation_synopsis, "No synopsis provided."
         ),
+        enriched_context_block=enriched_block,
         content=outline,
     )
 
@@ -218,6 +231,7 @@ def get_messages(
     next_slide_title: Optional[str] = None,
     presentation_synopsis: Optional[str] = None,
     tone_preset: Optional[str] = None,
+    enriched_context: Optional[str] = None,
 ) -> list[Message]:
 
     return [
@@ -238,6 +252,7 @@ def get_messages(
                 previous_slide_title=previous_slide_title,
                 next_slide_title=next_slide_title,
                 presentation_synopsis=presentation_synopsis,
+                enriched_context=enriched_context,
             ),
         ),
     ]
@@ -256,6 +271,7 @@ async def get_slide_content_from_type_and_outline(
     presentation_synopsis: Optional[str] = None,
     tone_preset: Optional[str] = None,
     destination_context: Optional[dict] = None,
+    enriched_context: Optional[str] = None,
 ):
     config, model, extra_body = get_content_model_config()
     client = get_client(config=config)
@@ -306,6 +322,7 @@ async def get_slide_content_from_type_and_outline(
             next_slide_title,
             presentation_synopsis,
             tone_preset,
+            enriched_context=enriched_context,
         )
 
         for attempt in range(3):

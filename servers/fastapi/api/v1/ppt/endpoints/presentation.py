@@ -825,13 +825,11 @@ async def stream_presentation(
             }),
         ).to_string()
 
-        enriched_instructions = presentation.instructions or ""
-        if presentation.enriched_context:
-            enriched_instructions = (
-                f"{enriched_instructions}\n\n{presentation.enriched_context}"
-                if enriched_instructions
-                else presentation.enriched_context
-            )
+        # Issue E (RESOLVED): enriched_context flows through the USER prompt
+        # for both Call 1 and Call 3. Instructions stays user-supplied only —
+        # do not splice enriched_context into it. See main-workflow.md
+        # Section 6, item E for the full migration note.
+        base_instructions = presentation.instructions or ""
         try:
             agent_profile = get_agent_profile()
         except Exception:
@@ -847,7 +845,7 @@ async def stream_presentation(
         for i, slide_layout_index in enumerate(structure.slides):
             slide_layout = layout.slides[slide_layout_index]
             slide_instructions = build_agent_profile_slide_instructions(
-                enriched_instructions,
+                base_instructions,
                 slide_layout.id,
                 agent_profile,
             )
@@ -868,6 +866,7 @@ async def stream_presentation(
                     presentation_synopsis=presentation_synopsis,
                     tone_preset=resolved_narration_tone,
                     destination_context=presentation.enriched_data,
+                    enriched_context=presentation.enriched_context,
                 )
             except HTTPException as e:
                 yield SSEErrorResponse(detail=e.detail).to_string()
@@ -1582,13 +1581,10 @@ async def generate_presentation_handler(
             presentation.title,
         )
 
-        enriched_instructions = request.instructions or ""
-        if enriched_context_for_model:
-            enriched_instructions = (
-                f"{enriched_instructions}\n\n{enriched_context_for_model}"
-                if enriched_instructions
-                else enriched_context_for_model
-            )
+        # Issue E (RESOLVED): enriched_context lives in the USER prompt.
+        # Instructions stays user-supplied only and is not concatenated with
+        # enriched_context. See main-workflow.md Section 6 item E.
+        base_instructions = request.instructions or ""
         try:
             agent_profile = get_agent_profile()
         except Exception:
@@ -1606,7 +1602,7 @@ async def generate_presentation_handler(
                     request.tone.value,
                     request.verbosity.value,
                     build_agent_profile_slide_instructions(
-                        enriched_instructions,
+                        base_instructions,
                         slide_layouts[i].id,
                         agent_profile,
                     ),
@@ -1618,6 +1614,7 @@ async def generate_presentation_handler(
                     presentation_synopsis=presentation_synopsis,
                     tone_preset=resolved_narration_tone,
                     destination_context=enriched_data_for_model,
+                    enriched_context=enriched_context_for_model,
                 )
                 for i in range(start, end)
             ]

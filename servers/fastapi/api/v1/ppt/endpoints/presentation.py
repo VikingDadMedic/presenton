@@ -77,6 +77,11 @@ from utils.llm_calls.generate_presentation_structure import (
 from utils.llm_calls.generate_slide_content import (
     get_slide_content_from_type_and_outline,
 )
+from utils.call3_concurrency import (
+    Call3SlideResult,
+    OrderedSlideEmitter,
+    parse_content_model_concurrency,
+)
 from utils.ppt_utils import (
     select_toc_or_list_slide_layout_index,
 )
@@ -842,84 +847,170 @@ async def stream_presentation(
             event="response",
             data=json.dumps({"type": "chunk", "chunk": '{ "slides": [ '}),
         ).to_string()
-        for i, slide_layout_index in enumerate(structure.slides):
-            slide_layout = layout.slides[slide_layout_index]
-            slide_instructions = build_agent_profile_slide_instructions(
-                base_instructions,
-                slide_layout.id,
-                agent_profile,
-            )
 
-            try:
-                slide_content = await get_slide_content_from_type_and_outline(
-                    slide_layout,
-                    outline.slides[i],
-                    presentation.language,
-                    presentation.tone,
-                    presentation.verbosity,
-                    slide_instructions,
-                    template=layout.name,
-                    previous_slide_title=outline_titles[i - 1] if i > 0 else None,
-                    next_slide_title=(
-                        outline_titles[i + 1] if i + 1 < len(outline_titles) else None
-                    ),
-                    presentation_synopsis=presentation_synopsis,
-                    tone_preset=resolved_narration_tone,
-                    destination_context=presentation.enriched_data,
-                    enriched_context=presentation.enriched_context,
+        # Phase C.2: bounded-concurrency parallel Call 3 with per-slide error
+        # isolation and in-order SSE emission. The producer fires N tasks
+        # gated by a semaphore; the consumer drains a result queue and feeds
+        # an OrderedSlideEmitter so the SSE stream still emits slide-by-slide.
+        # CONTENT_MODEL_CONCURRENCY env var (default 4, max 12) gates the
+        # parallel-fan-out width.
+        concurrency = parse_content_model_concurrency(
+            os.getenv("CONTENT_MODEL_CONCURRENCY")
+        )
+        total_slides = len(structure.slides)
+        emitter = OrderedSlideEmitter[dict](total=total_slides)
+        result_queue: asyncio.Queue = asyncio.Queue()
+        semaphore = asyncio.Semaphore(concurrency)
+
+        async def _generate_one_slide(slide_index: int, layout_idx: int) -> None:
+            # `async with semaphore` enforces the bounded-concurrency cap.
+            async with semaphore:
+                slide_layout = layout.slides[layout_idx]
+                slide_instructions = build_agent_profile_slide_instructions(
+                    base_instructions,
+                    slide_layout.id,
+                    agent_profile,
                 )
-            except HTTPException as e:
-                yield SSEErrorResponse(detail=e.detail).to_string()
-                return
-
-            if presentation.enriched_data:
                 try:
-                    from enrichers.overlay import apply_enricher_overlays
-                    slide_content = apply_enricher_overlays(slide_content, slide_layout.id, presentation.enriched_data)
-                except Exception as overlay_err:
-                    import logging
-                    logging.getLogger(__name__).warning(
-                        f"Enricher overlay failed for slide {i} (continuing without overlay): {overlay_err}"
-                    )
-            slide_content = apply_agent_profile_overlays(
-                slide_content,
-                slide_layout.id,
-                agent_profile,
-            )
-
-            slide = SlideModel(
-                presentation=id,
-                layout_group=layout.name,
-                layout=slide_layout.id,
-                index=i,
-                speaker_note=slide_content.get("__speaker_note__", ""),
-                narration_tone=resolved_narration_tone,
-                content=slide_content,
-            )
-            slides.append(slide)
-
-            # This will mutate slide and add placeholder assets
-            process_slide_add_placeholder_assets(slide)
-
-            # This will mutate slide - start task immediately so it runs in parallel with next slide LLM generation
-            async_assets_generation_tasks.append(
-                asyncio.create_task(
-                    process_slide_and_fetch_assets(
-                        image_generation_service,
-                        slide,
-                        outline_image_urls=(
-                            image_urls_for_slides[i]
-                            if i < len(image_urls_for_slides)
+                    slide_content = await get_slide_content_from_type_and_outline(
+                        slide_layout,
+                        outline.slides[slide_index],
+                        presentation.language,
+                        presentation.tone,
+                        presentation.verbosity,
+                        slide_instructions,
+                        template=layout.name,
+                        previous_slide_title=(
+                            outline_titles[slide_index - 1]
+                            if slide_index > 0
                             else None
                         ),
+                        next_slide_title=(
+                            outline_titles[slide_index + 1]
+                            if slide_index + 1 < len(outline_titles)
+                            else None
+                        ),
+                        presentation_synopsis=presentation_synopsis,
+                        tone_preset=resolved_narration_tone,
+                        destination_context=presentation.enriched_data,
+                        enriched_context=presentation.enriched_context,
                     )
-                )
-            )
+                    await result_queue.put(
+                        Call3SlideResult(
+                            index=slide_index,
+                            status="ok",
+                            payload=slide_content,
+                        )
+                    )
+                except HTTPException as exc:
+                    await result_queue.put(
+                        Call3SlideResult(
+                            index=slide_index,
+                            status="error",
+                            payload=str(exc.detail),
+                        )
+                    )
+                except Exception as exc:
+                    await result_queue.put(
+                        Call3SlideResult(
+                            index=slide_index,
+                            status="error",
+                            payload=str(exc),
+                        )
+                    )
 
-            yield SSEResponse(
-                event="response",
-                data=json.dumps({"type": "chunk", "chunk": slide.model_dump_json()}),
-            ).to_string()
+        producer_tasks = [
+            asyncio.create_task(_generate_one_slide(i, layout_idx))
+            for i, layout_idx in enumerate(structure.slides)
+        ]
+
+        try:
+            while not emitter.is_complete:
+                result = await result_queue.get()
+                for ready in emitter.add(result):
+                    if ready.status == "error":
+                        # Per-slide failure isolation: emit a structured SSE
+                        # error event in the slide's slot and continue. The
+                        # slot stays empty in the slides list so downstream
+                        # code (slides[i] indexing) must NOT assume each
+                        # index is populated; we maintain ordering via the
+                        # emitter and only append successful slides.
+                        yield SSEErrorResponse(
+                            detail=(
+                                f"Slide {ready.index} generation failed: "
+                                f"{ready.payload}"
+                            )
+                        ).to_string()
+                        continue
+
+                    slide_index = ready.index
+                    slide_content = ready.payload
+                    slide_layout = layout.slides[structure.slides[slide_index]]
+
+                    if presentation.enriched_data:
+                        try:
+                            from enrichers.overlay import apply_enricher_overlays
+                            slide_content = apply_enricher_overlays(
+                                slide_content,
+                                slide_layout.id,
+                                presentation.enriched_data,
+                            )
+                        except Exception as overlay_err:
+                            import logging
+                            logging.getLogger(__name__).warning(
+                                f"Enricher overlay failed for slide "
+                                f"{slide_index} (continuing without "
+                                f"overlay): {overlay_err}"
+                            )
+                    slide_content = apply_agent_profile_overlays(
+                        slide_content,
+                        slide_layout.id,
+                        agent_profile,
+                    )
+
+                    slide = SlideModel(
+                        presentation=id,
+                        layout_group=layout.name,
+                        layout=slide_layout.id,
+                        index=slide_index,
+                        speaker_note=slide_content.get("__speaker_note__", ""),
+                        narration_tone=resolved_narration_tone,
+                        content=slide_content,
+                    )
+                    slides.append(slide)
+                    process_slide_add_placeholder_assets(slide)
+                    async_assets_generation_tasks.append(
+                        asyncio.create_task(
+                            process_slide_and_fetch_assets(
+                                image_generation_service,
+                                slide,
+                                outline_image_urls=(
+                                    image_urls_for_slides[slide_index]
+                                    if slide_index < len(image_urls_for_slides)
+                                    else None
+                                ),
+                            )
+                        )
+                    )
+
+                    yield SSEResponse(
+                        event="response",
+                        data=json.dumps(
+                            {"type": "chunk", "chunk": slide.model_dump_json()}
+                        ),
+                    ).to_string()
+        finally:
+            # If the consumer exits early (e.g. client disconnect) we still
+            # need to drain the producer tasks to avoid orphaned coroutines.
+            await asyncio.gather(*producer_tasks, return_exceptions=True)
+
+        # The slides list is appended in completion order, but each slide
+        # carries its true index. Sort to produce a deterministic order
+        # for downstream DB writes (which historically expected ascending
+        # index). Failed slides are absent from the list — the resulting
+        # presentation has gaps at those indices, which is consistent with
+        # how a sequential fail-fast loop used to truncate.
+        slides.sort(key=lambda s: s.index)
 
         yield SSEResponse(
             event="response",

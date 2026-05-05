@@ -67,6 +67,10 @@ You're a professional presentation designer with creative freedom to design enga
 # DESIGN PHILOSOPHY
 - Create visually compelling and varied presentations
 - Match layout to content purpose and audience needs
+- Match layout to content SHAPE — each layout's `Fields:` line tells you the
+  required and optional content slots (with `*` for required). Prefer a
+  layout whose required fields the outline can plausibly populate, over a
+  layout that "thematically fits" but requires data the outline lacks.
 
 # Layout Selection Guidelines
 1. **Content-driven choices**: Let the slide's purpose guide layout selection
@@ -77,24 +81,36 @@ You're a professional presentation designer with creative freedom to design enga
 - Concepts/ideas → Image + text layouts
 - Key insights → Emphasis layouts
 
-2. **Visual variety**: Aim for diverse slide layouts across the presentation. 
+2. **Schema-shape compatibility**: The layout's `Fields:` line lists each
+   slot's name, type, required marker (`*`), and array length hints (`len 2-4`).
+   Reject layouts whose required fields the outline doesn't supply data for:
+   - Don't assign a layout requiring 4+ image slots if the outline only
+     references one visual asset.
+   - Don't assign a layout requiring an array of `len 3-5` partner_logos
+     if the outline mentions only one partner.
+   - Don't assign a chart/metric layout when the content has no numeric
+     data the LLM could populate the fields from.
+   When two layouts could fit thematically, prefer the one whose required
+   fields are closer to what the outline actually carries.
+
+3. **Visual variety**: Aim for diverse slide layouts across the presentation. 
 - Don't use same layout for multiple slides unless necessary.
 - Mix text-heavy and visual-heavy slides naturally
 - Use your judgment on when repetition serves the content
 - Balance information density across slides
 - Adjacent slide layouts should be different unless instructed/necessary otherwise.
 
-3. **Audience experience**: Consider how slides work together
+4. **Audience experience**: Consider how slides work together
 - Create natural transitions between topics
 
-4. **Table of contents**:
+5. **Table of contents**:
 - Must only use table of contents layout if slide content contains table of contents.
 
 {user_instruction_header}
 
 User instruction should be taken into account while creating the presentation structure, except for number of slides.
 
-Select layout index for each of the {n_slides} slides based on what will best serve the presentation's goals.
+Select layout index for each of the {n_slides} slides based on what will best serve the presentation's goals AND match the schema shape of the available content.
 
 """
 
@@ -110,11 +126,15 @@ def get_messages(
         n_slides=n_slides,
     )
 
+    # Phase C.3: pass `include_schemas=True` so the LLM gets each layout's
+    # field shape (names + types + required markers + array length hints)
+    # alongside name/description, enabling shape-aware assignment instead
+    # of pure name/description matching.
     return [
         SystemMessage(content=system_prompt),
         UserMessage(
             content=(
-                f"{presentation_layout.to_string()}\n\n"
+                f"{presentation_layout.to_string(include_schemas=True)}\n\n"
                 "--------------------------------------\n\n"
                 f"{data}"
             )
@@ -128,9 +148,12 @@ def get_messages_for_slides_markdown(
     data: str,
     instructions: Optional[str] = None,
 ) -> list[Message]:
+    # The slides-markdown path already used a `with_schema=True` kwarg, but
+    # the underlying `to_string` signature accepts only `include_schemas`.
+    # Renamed here to match the canonical API after Phase C.3.
     system_prompt = STRUCTURE_FROM_SLIDES_MARKDOWN_SYSTEM_PROMPT.format(
         user_instructions=instructions or "",
-        presentation_layout=presentation_layout.to_string(with_schema=True),
+        presentation_layout=presentation_layout.to_string(include_schemas=True),
     )
 
     return [SystemMessage(content=system_prompt), UserMessage(content=data)]

@@ -414,15 +414,22 @@ The `/generate` path already batches 10 slides in parallel via `asyncio.gather`,
 
 **Impact**: Streaming path is 4-8x slower than it needs to be for the LLM portion.
 
-### C. Call 2 Doesn't See JSON Schemas
+### C. Call 2 Doesn't See JSON Schemas (RESOLVED — May 2026)
 
-**File**: `utils/llm_calls/generate_presentation_structure.py`
+**File**: `utils/llm_calls/generate_presentation_structure.py`, `templates/presentation_layout.py`.
 
-The structure generation prompt only shows the LLM layout names and natural-language descriptions (via `layout.to_string()`). It does NOT include the JSON schema for each layout. This means the LLM can't reason about which layouts have chart fields, which have image grids, which have pricing tiers, etc.
+**Original drift**: Call 2's structure-generation prompt only shipped layout names + natural-language descriptions (`layout.to_string()` with no schema flag). The LLM could match by theme but couldn't reason about field shapes — which layouts have 4-image grids vs single-hero, which have pricing tiers, which have arrays of partner_logos with min/max length constraints. Layout assignment was probabilistic where it should have been deterministic.
 
-**Impact**: Layout assignment is based on name/description matching rather than structural compatibility. The LLM might assign a "metrics" outline to a layout that has no metrics fields.
+**Canonical resolution**:
 
-**Fix**: Include a summary of each layout's schema fields (field names + types) in the prompt, or include the full JSON schema.
+- `PresentationLayoutModel.to_string()` now accepts an optional `include_schemas: bool = False` flag. Default `False` preserves the legacy name+description rendering for any caller that wants the lighter prompt.
+- New `_summarize_schema_fields(json_schema, max_fields=12)` helper produces a compact one-line-per-field summary — `field_name*: type (of items_type, len min-max)` — capped at 12 fields per layout to bound the prompt token budget. Required fields get a `*` marker; arrays include `len min-max` hints; anyOf/null variants resolve to a primitive type.
+- `get_messages` (the default outline-driven Call 2 path) and `get_messages_for_slides_markdown` (the slides-markdown path) both call `presentation_layout.to_string(include_schemas=True)`. The slides-markdown path previously called `to_string(with_schema=True)` which was a latent TypeError waiting to fire — now harmonized to `include_schemas=True`.
+- The Call 2 system prompt has a new "Schema-shape compatibility" rule block telling the LLM to read each layout's `Fields:` line and reject layouts whose required fields the outline doesn't supply data for (no 4-image-grid for a 1-image outline, no `len 3-5` partner_logos array for a 1-partner outline, no chart layout when content has no numeric data).
+
+**Test guards**: `tests/test_call2_layout.py` adds 12 assertions covering the field-summary helper edge cases (required marker, array length hints, max_fields cap, anyOf walk, missing-properties graceful degradation), the to_string `include_schemas` flag, the Call 2 prompt's schema inclusion, the system-prompt shape-aware steering copy, and the no-fit fallback (legacy layouts with empty schemas still render via name+description).
+
+**Unblocks**: Recipes 8 (visa+safety explainer) and 9 (package comparison) in `docs/CREATIVE-RECIPES.md`, which previously relied on probabilistic layout selection because the un-ordered `travel` template surface had to choose layouts purely from name/description matching.
 
 ### D. `ordered` Flag is Broken in Frontend
 

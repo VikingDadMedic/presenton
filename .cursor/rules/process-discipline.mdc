@@ -1,0 +1,55 @@
+---
+description: Five durable process patterns extracted from the Phases 0-6 / UX-UI cleanup retrospective. Apply on every code-shipping task in this repo.
+globs: **/*
+alwaysApply: true
+---
+
+- **1. Treat "ship" as a git-state checklist, not a narrative claim.**
+  - Required evidence before claiming any work is shipped:
+    - `git rev-parse HEAD` SHA on the target branch.
+    - Branch present on remote (`git ls-remote --heads origin <branch>` returns the SHA).
+    - For deployed work: `/health` returns 200 against the live URL.
+  - "Done" / "shipped" / "deployed" without all three is a violation.
+  - **Why this exists:** May 1, 2026 — `feat/ux-ui-improvements` carried 16-17 commits, 53 modified + 37 untracked files, with multi-day "shipped" claims while the branch never left the local working tree. The unmerged work blocked every doc fix, test, and refactor downstream until Phase A of the Phase 7 roadmap finally pushed it. Narrative != git-state.
+
+- **2. Doc-refresh tasks must include a prose-claim sweep, not just the canonical-table update.**
+  - When a count, version, or status changes, search every doc for the *old* value before declaring the refresh complete:
+    - `rg "<old_count>" *.md docs/*.md` — catch loose prose mentions.
+    - `rg "<old_version>" *.md docs/*.md` — catch outdated install / deploy hints.
+    - `rg "Phase[s]? <range>.*planned|none implemented|todo|deferred" *.md docs/*.md` — catch stale status callouts.
+  - Update both the canonical reference table (e.g., `AGENTS.md` "Learned Workspace Facts") AND every prose mention.
+  - **Why this exists:** The "19 vs 22 MCP tools" drift across `README.md` + `stakeholder.md` survived two doc-refresh subagents because both only updated the canonical fact-table and skipped the prose-claim sweep. `FEATURE-BUILDING.md` line 3 stale "none implemented" header survived 6 phases of shipping for the same reason — the fact-table elsewhere said the right thing.
+
+- **3. Never ship a UI affordance whose data backfill lives in a different commit — gate or hide it.**
+  - If you ship a button, chip, dropdown, badge, filter, or any visible UI control that depends on data the same commit doesn't provide, you must either:
+    - Hide the control behind a feature flag, OR
+    - Disable + tooltip the control with a clear "coming soon" / "requires X" affordance, OR
+    - Defer the control's introduction to the same commit as its data backfill.
+  - A "no-op disguised as a feature" is worse than no feature at all because it pollutes user trust and makes regression bisects harder.
+  - **Why this exists:** The aspect-ratio chip on the Head Starts grid (canonical case) and the `bundle_id::utm_content` marker (same anti-pattern, different surface) both shipped as user-visible controls with no working data path. Both required follow-up cleanup commits in `feat/ux-ui-improvements` Phase 1-3 hindsight.
+
+- **4. Test coverage is a same-commit obligation, not a "next-phase concern."**
+  - When introducing a new component, helper, or pure function:
+    - Extract the testable logic into a `lib/*.ts` (Next.js) or `utils/*.py` (FastAPI) module *at component-build time*.
+    - Add the unit test in the same commit as the production code, not retroactively.
+  - Pure-helper extraction patterns from this repo:
+    - `lib/campaign-cost-preview.ts` (`getBudgetGaugeColor`) — extracted retroactively in Phase 1-3 cleanup.
+    - `lib/campaign-status.ts` (`isCampaignReady`) — same.
+    - `lib/recap-matching.ts` (`buildRecapIndex`) — same.
+    - `lib/head-starts-filters.ts`, `lib/recent-activity.ts` — same.
+  - The fact that all five were *reachable* as pure helpers proves they were extractable at component-build time. Retroactive extraction is rework.
+  - **Why this exists:** Five Phase 1-3 components (campaign cost preview, campaign status pills, recap source picker, head-starts filter bar, recent activity feed) shipped without tests, then required a hindsight cleanup pass to retrofit ~50 unit tests behind extracted helpers. The "we'll add tests next phase" framing predictably became "we'll add tests next quarter" until the cleanup was forced.
+
+- **5. Every new FastAPI endpoint = same-commit `openai_spec.json` operationId + `tests/test_mcp_server.py` operationId list update.**
+  - When adding any route to a `*_ROUTER` in `servers/fastapi/api/v1/ppt/endpoints/*.py`:
+    - Add the `operationId` entry under `paths.<route>.<method>.operationId` in [openai_spec.json](mdc:servers/fastapi/openai_spec.json).
+    - If the endpoint should be MCP-callable, add the operationId to the expected-list in [tests/test_mcp_server.py](mdc:servers/fastapi/tests/test_mcp_server.py).
+    - Add request/response shape to `components.schemas` if it's not inline.
+    - Verify the spec parses: `python -m json.tool openai_spec.json > /dev/null`.
+    - All four steps in the same commit as the route registration — not a follow-up.
+  - **Why this exists:** The `GET/PATCH /api/v1/ppt/profile` agent-profile endpoints shipped weeks before being exposed via MCP because the `openai_spec.json` operationId never landed in the same commit as the route. MCP tools auto-register from the spec via `FastMCP.from_openapi`, so a missing operationId == an MCP-invisible feature. The fix was a separate, easy-to-forget follow-up commit; the discipline is to make that follow-up unnecessary.
+
+- **Cross-references:**
+  - [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc) — rule formatting + structure.
+  - [self_improve.mdc](mdc:.cursor/rules/self_improve.mdc) — when to add / modify / deprecate rules.
+  - [AGENTS.md](mdc:AGENTS.md) — the soft-memory companion (workspace facts + user preferences).

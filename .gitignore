@@ -18,7 +18,10 @@ nltk
 chroma
 container.db
 .next-build
-.cursor
+.cursor/*
+!.cursor/rules/
+.cursor/rules/*
+!.cursor/rules/process-discipline.mdc
 .agents
 skills-lock.json
 .codex/

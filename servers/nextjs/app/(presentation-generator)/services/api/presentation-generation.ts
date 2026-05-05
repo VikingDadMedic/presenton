@@ -216,6 +216,7 @@ export class PresentationGenerationApi {
     web_search,
     origin,
     currency,
+    aspect_ratio,
   }: {
     content: string;
     n_slides: number | null;
@@ -229,6 +230,11 @@ export class PresentationGenerationApi {
     web_search?: boolean;
     origin?: string;
     currency?: string;
+    // Forward-compatible: server currently ignores extra fields on /create
+    // and aspect_ratio is plumbed through URL params for editor + export.
+    // Adding it on the body so a future server-side persist lands without
+    // a coordinated client release.
+    aspect_ratio?: "landscape" | "vertical" | "square";
   }) {
     try {
       const response = await fetch(
@@ -249,6 +255,7 @@ export class PresentationGenerationApi {
             web_search,
             origin,
             currency,
+            ...(aspect_ratio ? { aspect_ratio } : {}),
           }),
           cache: "no-cache",
         }

@@ -30,6 +30,14 @@ import {
   TRAVEL_ARC_OPTIONS,
   type TravelArcTemplateId,
 } from "@/lib/travel-arcs";
+import {
+  DEFAULT_EXPORT_ASPECT_RATIO,
+  type ExportAspectRatio,
+} from "@/lib/export-aspect-ratio";
+import {
+  buildOutlineRedirectUrl,
+  buildUploadCreatePayload,
+} from "@/lib/upload-presentation-payload";
 
 interface LoadingState {
   isLoading: boolean;
@@ -79,6 +87,9 @@ const TravelUploadPage = () => {
   const [notes, setNotes] = useState("");
   const [selectedTravelArc, setSelectedTravelArc] = useState<TravelArcTemplateId | null>(
     DEFAULT_TRAVEL_ARC
+  );
+  const [aspectRatio, setAspectRatio] = useState<ExportAspectRatio>(
+    DEFAULT_EXPORT_ASPECT_RATIO
   );
 
   const [loadingState, setLoadingState] = useState<LoadingState>({
@@ -150,10 +161,9 @@ const TravelUploadPage = () => {
       });
 
       trackEvent(MixpanelEvent.Upload_Create_Presentation_API_Call);
-      const createResponse = await PresentationGenerationApi.createPresentation({
+      const createPayload = buildUploadCreatePayload({
         content: config.prompt,
         n_slides: config.slides ? parseInt(config.slides) : null,
-        file_paths: [],
         language: config.language ?? "",
         tone: config.tone,
         verbosity: config.verbosity,
@@ -163,7 +173,11 @@ const TravelUploadPage = () => {
         web_search: !!config.webSearch,
         origin: origin.trim() || undefined,
         currency,
+        aspectRatio,
       });
+      const createResponse = await PresentationGenerationApi.createPresentation(
+        createPayload,
+      );
 
       dispatch(setPresentationId(createResponse.id));
       dispatch(clearOutlines());
@@ -171,7 +185,12 @@ const TravelUploadPage = () => {
         from: pathname,
         to: "/outline",
       });
-      router.push(`/outline?template=${encodeURIComponent(selectedTemplate)}`);
+      router.push(
+        buildOutlineRedirectUrl({
+          template: selectedTemplate,
+          aspectRatio,
+        })
+      );
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Error generating presentation.";
@@ -321,6 +340,53 @@ const TravelUploadPage = () => {
                 )}
               >
                 {arc.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        <div className="border-t border-border" />
+
+        {/* Aspect Ratio */}
+        <fieldset className="p-4 md:p-6 border-0">
+          <legend className="text-base font-normal font-display text-foreground mb-3 block">
+            Aspect Ratio
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                {
+                  value: "landscape" as const,
+                  label: "Landscape",
+                  tooltip: "16:9 — desks, monitors, presentations, slides export",
+                },
+                {
+                  value: "vertical" as const,
+                  label: "Vertical",
+                  tooltip: "9:16 — Reels, Stories, TikTok, vertical screens",
+                },
+                {
+                  value: "square" as const,
+                  label: "Square",
+                  tooltip: "1:1 — feed posts, carousels, email-safe thumbnails",
+                },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                title={option.tooltip}
+                aria-label={`${option.label}: ${option.tooltip}`}
+                data-testid={`aspect-ratio-chip-${option.value}`}
+                onClick={() => setAspectRatio(option.value)}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-xs font-instrument_sans font-medium transition-all",
+                  aspectRatio === option.value
+                    ? "border-primary bg-primary/5 text-primary ring-2 ring-primary/25"
+                    : "border-border bg-card text-foreground hover:border-border hover:bg-muted"
+                )}
+              >
+                {option.label}
               </button>
             ))}
           </div>

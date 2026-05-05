@@ -5,6 +5,7 @@ from typing import Optional
 from fastapi import HTTPException
 from llmai import get_client
 from llmai.shared import JSONSchemaResponse, Message, SystemMessage, UserMessage
+from llmai.shared.configs import AnthropicClientConfig
 from constants.narration import TONE_PROMPT_ADDENDA, normalize_tone_preset
 from models.presentation_layout import SlideLayoutModel
 from models.presentation_outline_model import SlideOutlineModel
@@ -123,14 +124,22 @@ def _normalize_context_value(value: Optional[str], fallback: str) -> str:
     return cleaned or fallback
 
 
-def get_system_prompt(
+def _build_system_prompt_stable_prefix(
     tone: Optional[str] = None,
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
-    response_schema: Optional[dict] = None,
     template: str = "",
     tone_preset: Optional[str] = None,
-):
+) -> str:
+    """The portion of the Call 3 system prompt that does NOT vary per slide.
+
+    Anthropic prompt caching (`cache_control: ephemeral`) hashes the request
+    body up to the cache marker; everything *before* the marker is reused
+    across calls within the same presentation. We split here so the schema
+    (which IS per-slide, since each layout has a different shape) lands in
+    the variable suffix and the cacheable prefix stays stable for the entire
+    Call 3 fan-out of one presentation.
+    """
     markdown_emphasis_rules = (
         "- Strictly use markdown to emphasize important points, by bolding or "
         "italicizing the part of text."
@@ -159,10 +168,6 @@ def get_system_prompt(
         elif verbosity == "text-heavy":
             verbosity_instructions += "Make slide as text-heavy as possible."
 
-    output_fields_instructions = "# Output Fields:\n" + _get_schema_markdown(
-        response_schema
-    )
-
     travel_rules = ""
     if template and template.startswith("travel"):
         travel_rules = (
@@ -176,6 +181,9 @@ def get_system_prompt(
             "- Duration formats: \"3 nights / 4 days\", \"2h 30m flight\".\n"
         )
 
+    # Render the stable section by passing an empty output_fields placeholder.
+    # The variable suffix renders the schema separately and we concat the two
+    # for non-Anthropic providers (preserving the exact pre-caching prompt).
     return SLIDE_CONTENT_SYSTEM_PROMPT.format(
         markdown_emphasis_rules=markdown_emphasis_rules,
         speaker_note_generation_rules=SPEAKER_NOTE_GENERATION_RULES,
@@ -183,8 +191,70 @@ def get_system_prompt(
         tone_instructions=tone_instructions,
         tone_preset_instructions=tone_preset_instructions,
         verbosity_instructions=verbosity_instructions,
-        output_fields_instructions=output_fields_instructions,
+        output_fields_instructions="",
+    ).rstrip()
+
+
+def _build_system_prompt_variable_suffix(
+    response_schema: Optional[dict],
+) -> str:
+    """The per-slide tail of the system prompt — the JSON schema markdown.
+
+    Excluded from the Anthropic cache prefix so each slide's schema flows
+    through normally without forcing a cache miss on the rest of the prompt.
+    """
+    schema_markdown = _get_schema_markdown(response_schema)
+    return f"\n\n# Output Fields:\n{schema_markdown}"
+
+
+def get_system_prompt(
+    tone: Optional[str] = None,
+    verbosity: Optional[str] = None,
+    instructions: Optional[str] = None,
+    response_schema: Optional[dict] = None,
+    template: str = "",
+    tone_preset: Optional[str] = None,
+):
+    """Combined system prompt — used for the SystemMessage payload that
+    non-Anthropic providers actually send. For the Anthropic path, the
+    prompt is reassembled from the same two halves into a structured
+    `system` array via `build_anthropic_cache_extra_body`."""
+    stable_prefix = _build_system_prompt_stable_prefix(
+        tone, verbosity, instructions, template, tone_preset
     )
+    variable_suffix = _build_system_prompt_variable_suffix(response_schema)
+    return stable_prefix + variable_suffix
+
+
+def build_anthropic_cache_extra_body(
+    stable_prefix: str,
+    variable_suffix: str,
+    base_extra_body: Optional[dict] = None,
+) -> dict:
+    """Return an `extra_body` payload that overrides the Anthropic request's
+    string `system` field with a structured list of two TextBlockParam-like
+    dicts: a cache-marked stable prefix, then a variable per-slide suffix.
+
+    The Anthropic Python SDK merges `extra_body` into the request body via
+    `_merge_mappings` (later keys win), so this overrides the explicit
+    `system="..."` string llmai would otherwise send. Result: ~90% prefix
+    re-use savings on Call 3 within a single presentation, since every
+    slide shares the same stable prefix and only the schema-bearing suffix
+    is reprocessed.
+    """
+    merged: dict = dict(base_extra_body or {})
+    merged["system"] = [
+        {
+            "type": "text",
+            "text": stable_prefix,
+            "cache_control": {"type": "ephemeral"},
+        },
+        {
+            "type": "text",
+            "text": variable_suffix,
+        },
+    ]
+    return merged
 
 
 def get_user_prompt(
@@ -325,14 +395,31 @@ async def get_slide_content_from_type_and_outline(
             enriched_context=enriched_context,
         )
 
+        # When the resolved provider is Anthropic, replace the string `system`
+        # field on the wire with a structured list that bears a cache_control
+        # marker on the stable prefix. ~90% prefix reuse for the Call 3 fan-out
+        # of one presentation. No-op for OpenAI / Google / Mercury / Bedrock /
+        # custom-OpenAI-compatible paths.
+        effective_extra_body = extra_body
+        if isinstance(config, AnthropicClientConfig):
+            stable_prefix = _build_system_prompt_stable_prefix(
+                tone, verbosity, instructions, template, tone_preset
+            )
+            variable_suffix = _build_system_prompt_variable_suffix(response_schema)
+            effective_extra_body = build_anthropic_cache_extra_body(
+                stable_prefix=stable_prefix,
+                variable_suffix=variable_suffix,
+                base_extra_body=extra_body,
+            )
+
         for attempt in range(3):
             kwargs = get_generate_kwargs(
                 model=model,
                 messages=messages,
                 response_format=response_format,
             )
-            if extra_body:
-                kwargs["extra_body"] = extra_body
+            if effective_extra_body:
+                kwargs["extra_body"] = effective_extra_body
 
             response = await asyncio.to_thread(client.generate, **kwargs)
             content = extract_structured_content(response.content)

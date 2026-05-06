@@ -27,7 +27,7 @@ dependencies = [
     "psycopg[binary]>=3.2.0",
     "python-pptx>=1.0.2",
     "sqlmodel>=0.0.24",
-    "llmai==0.1.9",
+    "llmai==0.2.2",
 ]
 
 [tool.uv]

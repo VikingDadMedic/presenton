@@ -18,10 +18,12 @@ TripStory does **not** include a built-in scheduler for recap mode. Use cron, Gi
 
 ## Example: Generate Anniversary Recap
 
+All `/api/v1/*` routes require HTTP Basic auth — pass admin credentials via `-u username:password`.
+
 ```bash
-curl -X POST "https://your-host/api/v1/ppt/presentation/recap" \
+curl -u "$ADMIN_USER:$ADMIN_PASS" \
+  -X POST "https://your-host/api/v1/ppt/presentation/recap" \
   -H "Content-Type: application/json" \
-  -H "Cookie: presenton_session=<session-cookie>" \
   -d '{
     "mode": "anniversary",
     "source_presentation_id": "d3000f96-096c-4768-b67b-e99aed029b57"
@@ -44,12 +46,12 @@ Response shape:
 
 ## Monthly Cron Example (Linux)
 
-Run on the first day of each month at 09:00:
+Run on the first day of each month at 09:00. Stash credentials in `~/.tripstory.env` (or inject via your secrets manager) so they don't appear in the crontab.
 
 ```cron
-0 9 1 * * /usr/bin/curl -sS -X POST "https://your-host/api/v1/ppt/presentation/recap" \
+0 9 1 * * /usr/bin/curl -sS -u "${TRIPSTORY_ADMIN_USER}:${TRIPSTORY_ADMIN_PASS}" \
+  -X POST "https://your-host/api/v1/ppt/presentation/recap" \
   -H "Content-Type: application/json" \
-  -H "Cookie: presenton_session=${PRESENTON_SESSION}" \
   -d '{"mode":"next_planning_window","source_presentation_id":"d3000f96-096c-4768-b67b-e99aed029b57"}'
 ```
 
@@ -71,9 +73,9 @@ jobs:
     steps:
       - name: Trigger welcome-home recap
         run: |
-          curl -sS -X POST "${{ secrets.TRIPSTORY_BASE_URL }}/api/v1/ppt/presentation/recap" \
+          curl -sS -u "${{ secrets.TRIPSTORY_ADMIN_USER }}:${{ secrets.TRIPSTORY_ADMIN_PASS }}" \
+            -X POST "${{ secrets.TRIPSTORY_BASE_URL }}/api/v1/ppt/presentation/recap" \
             -H "Content-Type: application/json" \
-            -H "Cookie: presenton_session=${{ secrets.TRIPSTORY_SESSION_COOKIE }}" \
             -d '{"mode":"welcome_home","source_presentation_id":"${{ secrets.TRIP_SOURCE_PRESENTATION_ID }}"}'
 ```
 

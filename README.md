@@ -29,9 +29,9 @@ TripStory generates polished destination showcases, itineraries, deal packages, 
 
 The enrichment pipeline runs before LLM generation. External APIs (Viator, Tavily, Visual Crossing, Unsplash, Pexels, Google Maps, SerpAPI) fetch real hotel prices, flight schedules, Viator bookable experiences, weather forecasts, destination photography, and more. The LLM writes narrative around verified facts. Missing API keys degrade gracefully -- enrichers return empty data, the pipeline continues, and the LLM falls back to its existing behavior.
 
-### What's New (Content Syndication Engine, Phases 0-6)
+### What's New (Content Syndication Engine, Phases 0-6 + Phase 9)
 
-TripStory has graduated from "AI itinerary builder" to a full travel content engine for marketing-grade syndication. Highlights:
+TripStory has graduated from "AI itinerary builder" to a full travel content engine for marketing-grade syndication, and now ships a conversational editing surface on top. Highlights:
 
 - **Agent Profile singleton** -- agency, agent name, contact, booking URL, default UTM tags, and logo live in `userConfig.json`. Edit in Settings -> Agent Profile or via `GET/PATCH /api/v1/ppt/profile`. MCP exposes `get_agent_profile` and `update_agent_profile`.
 - **Brand stamping at export** -- contact-card watermark + auto-injected agent details on PPTX, PDF, HTML, and video exports. PDF export gets an opt-in `lead_magnet: true` cover/back-page wrapper; HTML export gets an `email_safe: true` newsletter variant (single-column, no JS, narration as `<a href>` links).
@@ -42,6 +42,7 @@ TripStory has graduated from "AI itinerary builder" to a full travel content eng
 - **Showcase visibility + public namespace** -- `PATCH /api/v1/ppt/presentation/{id}/visibility` toggles `is_public`; the new `/api/v1/public/*` namespace serves unauthenticated showcase fetches and the public `/showcase/ask` endpoint.
 - **Narration usage budget** -- `GET /api/v1/ppt/narration/usage/budget-remaining` returns the remaining monthly characters; consumed by the campaign UI for the "over budget" warning. Returns `null` budget when `ELEVENLABS_MONTHLY_CHARACTER_BUDGET` is unset.
 - **Four new ordered arcs + five new layouts** -- `travel-series`, `travel-recap`, `travel-deal-flash`, `travel-partner-spotlight` arcs use new `MemoryQuoteLayout`, `SeriesCoverLayout`, `PartnerSpotlightHeroLayout`, `ExperienceCardsLayout`, and `PricingConfiguratorLayout` (interactive in showcase mode).
+- **Conversational editing surface (Phase 9)** -- chat sidebar on `/presentation` with 4 endpoints (`list_chat_conversations`, `get_chat_history`, `send_chat_message`, `stream_chat_message`) and 8 LLM-exposed tools (`getPresentationOutline`, `searchSlides`, `getSlideAtIndex`, `getAvailableLayouts`, `getContentSchemaFromLayoutId`, `generateAssets`, `saveSlide`, `deleteSlide`). `saveSlide` and `deleteSlide` graft onto the shared `apply_slide_edit_with_pipeline` helper so chat-driven edits get full IPA + narration-clear + asset diff + mem0 store parity with direct edits. Per-presentation conversations persist in the new `chat_history_messages` table (alembic head `c7b70d0f31b1`). Per-turn 90s timeout + 5-slides-per-turn budget guardrails are configurable via `CHAT_TURN_TIMEOUT_SECONDS` and `CHAT_MAX_SLIDES_PER_TURN`. Five Mixpanel events (`Chat_Conversation_Started`, `Chat_Message_Sent`, `Chat_Tool_Called`, `Chat_Slide_Saved`, `Chat_Tool_Error`) wired through `lib/chat-mixpanel-events.ts`.
 
 For the phased deliverable manifest, see [`FEATURE-BUILDING.md`](FEATURE-BUILDING.md). For copy-paste curl recipes per creative shape, see [`docs/CREATIVE-RECIPES.md`](docs/CREATIVE-RECIPES.md). For the GTM and stakeholder framing, see [`stakeholder.md`](stakeholder.md).
 
@@ -280,6 +281,13 @@ All enricher keys are optional. Missing keys mean that enricher returns empty da
 |---|---|---|
 | `LITEPARSE_DPI` | `120` | OCR render DPI |
 | `LITEPARSE_NUM_WORKERS` | `1` | Worker count |
+
+### Conversational Editing (Chat)
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `CHAT_TURN_TIMEOUT_SECONDS` | `90` | Hard ceiling per chat turn (`asyncio.wait_for` deadline around the 16-round tool loop) |
+| `CHAT_MAX_SLIDES_PER_TURN` | `5` | Soft cap on `saveSlide` calls per turn — over-budget calls short-circuit to a tool-level error so the LLM keeps control of the turn |
 
 ### Telemetry
 

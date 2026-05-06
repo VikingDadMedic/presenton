@@ -1,7 +1,7 @@
 """added_chat_history_messages_table
 
 Revision ID: c7b70d0f31b1
-Revises: 95b5127e93cd
+Revises: 4b7f8e2c1d9a
 Create Date: 2026-04-26 12:29:49.508761
 
 """

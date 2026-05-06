@@ -47,6 +47,10 @@ RUN \
     uv export --frozen --no-dev --no-emit-project -o /tmp/requirements.txt \
     && uv pip install --system -r /tmp/requirements.txt \
     && uv pip install --system --no-deps .
+# mem0/spaCy BM25 lemmatization loads en_core_web_sm at runtime; without this
+# install the new spaCy probe disables mem0 silently in dev (parity with prod).
+RUN uv pip install --system \
+    "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl"
 
 WORKDIR /app
 COPY nginx.conf /etc/nginx/nginx.conf

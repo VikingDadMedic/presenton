@@ -1,3 +1,5 @@
+ARG IMAGE_SHA=unknown
+
 FROM python:3.11-slim-trixie AS fastapi-builder
 
 WORKDIR /app/servers/fastapi
@@ -67,8 +69,14 @@ WORKDIR /app
 ARG INSTALL_CHROMIUM=true
 ARG INSTALL_TESSERACT=true
 ARG INSTALL_LIBREOFFICE=true
+ARG IMAGE_SHA=unknown
 
 # LiteParse uses Node + @llamaindex/liteparse (same runner as Electron); OCR uses Tesseract.
+# IMAGE_SHA is propagated from the top-level ARG into the runtime ENV so /health
+# can return the source-commit SHA the image was built from. scripts/redeploy-
+# azure.sh asserts the returned image_sha matches the just-built commit, closing
+# the cached-container false-positive (TROUBLESHOOTING.md "Health check returns
+# 200 too quickly after redeploy").
 ENV APP_DATA_DIRECTORY=/app_data \
     TEMP_DIRECTORY=/tmp/presenton \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
@@ -78,7 +86,8 @@ ENV APP_DATA_DIRECTORY=/app_data \
     PRESENTON_APP_ROOT=/app \
     PATH="/opt/venv/bin:${PATH}" \
     NODE_ENV=production \
-    START_OLLAMA=false
+    START_OLLAMA=false \
+    IMAGE_SHA=${IMAGE_SHA}
 
 RUN set -eux; \
     packages="ca-certificates curl nginx fontconfig imagemagick zstd"; \

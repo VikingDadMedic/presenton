@@ -96,15 +96,27 @@ if command -v docker >/dev/null 2>&1; then
 fi
 
 # Step 1: Build via ACR (server-side build, always amd64).
+# Resolve the source-commit SHA so the runtime image's IMAGE_SHA env var matches
+# the deployed code. Step 4 asserts the /health-returned image_sha equals this
+# value, closing the cached-container false-positive gotcha. Falls back to
+# "unknown" only if we're not inside a git repo (e.g., a tarball deploy).
+if command -v git >/dev/null 2>&1 && git rev-parse HEAD >/dev/null 2>&1; then
+  EXPECTED_IMAGE_SHA="$(git rev-parse HEAD)"
+else
+  EXPECTED_IMAGE_SHA="unknown"
+fi
+
 if [[ "$SKIP_BUILD" != "true" ]]; then
-  log_info "Step 1/4: Building ${REMOTE_IMAGE_REF} via az acr build (registry=${ACR_NAME})"
+  log_info "Step 1/4: Building ${REMOTE_IMAGE_REF} via az acr build (registry=${ACR_NAME}, IMAGE_SHA=${EXPECTED_IMAGE_SHA:0:8})"
 
   attempt=1
   while true; do
     if az acr build \
         --registry "$ACR_NAME" \
         --image "${IMAGE_NAME}:${TAG}" \
-        --file Dockerfile .; then
+        --file Dockerfile \
+        --build-arg "IMAGE_SHA=${EXPECTED_IMAGE_SHA}" \
+        .; then
       break
     fi
 
@@ -124,6 +136,7 @@ if [[ "$SKIP_BUILD" != "true" ]]; then
   log_success "ACR build complete: ${REMOTE_IMAGE_REF}"
 else
   log_warn "Skipping build (SKIP_BUILD=true); reusing whatever is currently at ${REMOTE_IMAGE_REF}"
+  log_warn "Cached image's baked-in IMAGE_SHA may not match git HEAD; the post-deploy assertion may fail accordingly."
 fi
 
 # Step 2: Set container image with explicit ACR creds.
@@ -160,18 +173,63 @@ if [[ "$SKIP_HEALTH" == "true" ]]; then
   exit 0
 fi
 
-log_info "Step 4/4: Polling ${HEALTH_URL} until 200 (budget=${MAX_HEALTH_WAIT_SECONDS}s)"
+log_info "Step 4/4: Polling ${HEALTH_URL} until 200 + image_sha matches (budget=${MAX_HEALTH_WAIT_SECONDS}s)"
+if [[ "$EXPECTED_IMAGE_SHA" == "unknown" ]]; then
+  log_warn "  expected_image_sha=unknown (not in a git repo or git rev-parse failed); accepting any image_sha response"
+else
+  log_info "  expected_image_sha=${EXPECTED_IMAGE_SHA:0:8}"
+fi
 
 START=$(date +%s)
 DEADLINE=$((START + MAX_HEALTH_WAIT_SECONDS))
 attempt=1
 last_status="000"
 
+# Extract a JSON field via grep + sed; avoids a hard `jq` dependency on the
+# operator's machine. Pattern matches `"field": "value"` with optional spaces;
+# returns empty string if the field is absent.
+extract_json_field() {
+  local body="$1"
+  local field="$2"
+  printf '%s' "$body" \
+    | grep -o "\"${field}\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" \
+    | head -n 1 \
+    | sed -E "s/\"${field}\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"/\1/"
+}
+
 while true; do
+  RESPONSE_BODY=$(curl -s --max-time 10 "$HEALTH_URL" 2>/dev/null || echo "")
   STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$HEALTH_URL" || echo "000")
+
   if [[ "$STATUS" == "200" ]]; then
     NOW=$(date +%s)
+    REPORTED_IMAGE_SHA=$(extract_json_field "$RESPONSE_BODY" "image_sha")
+    REPORTED_ALEMBIC_HEAD=$(extract_json_field "$RESPONSE_BODY" "alembic_head")
+
+    if [[ "$EXPECTED_IMAGE_SHA" != "unknown" ]] && [[ -n "$REPORTED_IMAGE_SHA" ]] && [[ "$REPORTED_IMAGE_SHA" != "$EXPECTED_IMAGE_SHA" ]]; then
+      log_error "Health returned 200 but image_sha mismatch: reported=${REPORTED_IMAGE_SHA:0:8} expected=${EXPECTED_IMAGE_SHA:0:8}"
+      log_error "This is the cached-container false-positive: az webapp restart returned 200 from the OLD container."
+      log_error "Recovery: force a fresh pull. Two options:"
+      log_error "  1. az webapp config container set --name ${WEBAPP} --resource-group ${RESOURCE_GROUP} --container-image-name ${REMOTE_IMAGE_REF} && az webapp restart --name ${WEBAPP} --resource-group ${RESOURCE_GROUP}"
+      log_error "  2. az webapp stop --name ${WEBAPP} --resource-group ${RESOURCE_GROUP} && sleep 5 && az webapp start --name ${WEBAPP} --resource-group ${RESOURCE_GROUP}"
+      log_error "Then re-run this script."
+      exit 1
+    fi
+
+    if [[ "$EXPECTED_IMAGE_SHA" != "unknown" ]] && [[ -z "$REPORTED_IMAGE_SHA" ]]; then
+      log_warn "Health returned 200 but no image_sha field; older image still deployed (pre-Phase-11.0c.2)."
+      log_warn "  reported_image_sha=(missing) — likely the running container predates the IMAGE_SHA pin."
+      log_warn "  expected_image_sha=${EXPECTED_IMAGE_SHA:0:8}"
+      log_warn "Continuing because the legacy /health shape is still 'OK'; future redeploys will pin correctly."
+    fi
+
     log_success "Healthy after $((NOW - START))s (attempt ${attempt}, status ${STATUS})"
+    if [[ -n "$REPORTED_IMAGE_SHA" ]]; then
+      log_success "  image_sha=${REPORTED_IMAGE_SHA:0:8} (matches expected)"
+    fi
+    if [[ -n "$REPORTED_ALEMBIC_HEAD" ]]; then
+      log_success "  alembic_head=${REPORTED_ALEMBIC_HEAD}"
+    fi
     exit 0
   fi
 

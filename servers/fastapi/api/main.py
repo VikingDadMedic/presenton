@@ -95,13 +95,61 @@ def _maybe_init_sentry() -> bool:
 _maybe_init_sentry()
 
 
+# ---------------------------------------------------------------------------
+# /health version pinning (Phase 11.0c.2)
+# ---------------------------------------------------------------------------
+# Detected once at module load time so the /health handler stays cheap (no
+# disk I/O, no DB query). Both values are stable for the lifetime of the
+# process: IMAGE_SHA is baked into the runtime image at `az acr build` time,
+# alembic_head is read from the migration files shipped in the same image.
+#
+# scripts/redeploy-azure.sh asserts the returned image_sha matches the
+# just-built commit, closing the cached-container false positive
+# (TROUBLESHOOTING.md "Health check returns 200 too quickly after redeploy").
+
+
+def _detect_alembic_head() -> str:
+    """Read the head revision from alembic/versions/ at module load.
+
+    Returns "unknown" on any error (missing alembic.ini, malformed migration
+    file, alembic import failure) so /health stays operational even if the
+    migration directory is corrupt — that's a separate alarm; the health
+    check itself should not 500 on a stale/missing migration tree.
+    """
+    try:
+        from alembic.config import Config
+        from alembic.script import ScriptDirectory
+
+        alembic_ini = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "alembic.ini",
+        )
+        if not os.path.isfile(alembic_ini):
+            return "unknown"
+        cfg = Config(alembic_ini)
+        script_dir = ScriptDirectory.from_config(cfg)
+        head = script_dir.get_current_head()
+        return head or "unknown"
+    except Exception:
+        LOGGER.exception("Failed to detect alembic head; reporting 'unknown'")
+        return "unknown"
+
+
+_HEALTH_IMAGE_SHA = os.getenv("IMAGE_SHA", "unknown")
+_HEALTH_ALEMBIC_HEAD = _detect_alembic_head()
+
+
 app = FastAPI(lifespan=app_lifespan)
 
 
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "image_sha": _HEALTH_IMAGE_SHA,
+        "alembic_head": _HEALTH_ALEMBIC_HEAD,
+    }
 
 
 

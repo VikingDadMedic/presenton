@@ -16,12 +16,13 @@ from models.sql.slide import SlideModel
 from services.icon_finder_service import ICON_FINDER_SERVICE
 from services.image_generation_service import ImageGenerationService
 from services.mem0_presentation_memory_service import MEM0_PRESENTATION_MEMORY_SERVICE
+from services.slide_edit_pipeline import (
+    apply_slide_edit_with_pipeline,
+    clear_slide_with_narration,
+)
 from templates.presentation_layout import SlideLayoutModel
 from utils.asset_directory_utils import get_images_directory
-from utils.process_slides import (
-    process_old_and_new_slides_and_fetch_assets,
-    process_slide_and_fetch_assets,
-)
+from utils.process_slides import process_slide_and_fetch_assets
 
 LOGGER = logging.getLogger(__name__)
 MAX_SCHEMA_ERRORS = 10
@@ -282,37 +283,27 @@ class PresentationChatMemoryLayer:
                     "validation_errors": [],
                 }
 
-            updated_content = copy.deepcopy(content)
-            new_assets = await process_old_and_new_slides_and_fetch_assets(
-                image_generation_service=image_generation_service,
-                old_slide_content=existing_slide.content or {},
-                new_slide_content=updated_content,
-            )
-
-            existing_slide.id = uuid.uuid4()
-            existing_slide.layout = layout_id
             existing_slide.layout_group = self._resolve_layout_group(
                 presentation=presentation,
                 fallback=existing_slide.layout_group,
             )
-            existing_slide.content = updated_content
-            existing_slide.speaker_note = self._extract_speaker_note(updated_content)
-            self._sql_session.add(existing_slide)
-            self._sql_session.add_all(new_assets)
-            await self._sql_session.commit()
 
-            await MEM0_PRESENTATION_MEMORY_SERVICE.store_slide_edit(
-                presentation_id=self._presentation_id,
-                slide_index=target_index,
-                edit_prompt=f"[chat_tool_save_slide_replace] layout_id={layout_id}",
-                edited_slide_content=updated_content,
+            updated_content = copy.deepcopy(content)
+            result = await apply_slide_edit_with_pipeline(
+                sql_session=self._sql_session,
+                slide=existing_slide,
+                presentation=presentation,
+                image_generation_service=image_generation_service,
+                pre_generated_content=updated_content,
+                layout_override=layout,
+                skip_layout_repick=True,
             )
 
             return {
                 "saved": True,
                 "action": "replaced",
                 "message": f"Slide at index {target_index} was replaced successfully.",
-                "slide_id": str(existing_slide.id),
+                "slide_id": str(result.slide.id),
                 "index": target_index,
             }
 
@@ -385,7 +376,8 @@ class PresentationChatMemoryLayer:
                 "index": target_index,
             }
 
-        await self._sql_session.delete(slide)
+        deleted_slide_id = slide.id
+        await clear_slide_with_narration(slide, self._sql_session, commit=False)
 
         slides_result = await self._sql_session.scalars(
             select(SlideModel).where(SlideModel.presentation == self._presentation_id)
@@ -404,7 +396,7 @@ class PresentationChatMemoryLayer:
         return {
             "deleted": True,
             "message": f"Slide at index {target_index} was deleted successfully.",
-            "deleted_slide_id": str(slide.id),
+            "deleted_slide_id": str(deleted_slide_id),
             "index": target_index,
             "shifted_slide_count": shifted_count,
         }

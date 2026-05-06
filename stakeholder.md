@@ -289,6 +289,8 @@ Phases 0-12 of the travel pivot are complete and deployed at `https://presenton-
 - Azure App Service deployment with `/health` monitoring, single-command redeploy script (`scripts/redeploy-azure.sh`), end-to-end smoke harness (`scripts/smoke-narration.sh`)
 - TripStory rebrand (user-visible strings); code identifiers retained as "presenton" intentionally
 - Phase 3 strategic UX features (saved campaign presets, scheduled-recap cron / GitHub Actions generator, bulk recap, recent activity feeds, built-in template categorization, CRM-aware Past trips filter, end-of-campaign hero summary) all live on `feat/ux-ui-improvements`
+- Anthropic prompt caching for Call 3 (~90% prefix-reuse savings on 7+ slide decks) [LIVE — shipped May 2026]
+- Sequential Call 3 streaming parallelization with bounded concurrency + per-slide error isolation (4-8x speedup on the streaming path) [LIVE — shipped May 2026]
 
 ### In flight or planned
 
@@ -297,8 +299,6 @@ Phases 0-12 of the travel pivot are complete and deployed at `https://presenton-
 - TripStory visual asset replacement — logo PNGs in `/public/` not yet rebranded [IN FLIGHT]
 - Booking-grade APIs (Amadeus or Skyscanner for flights, Booking.com or Expedia for hotels) [PLANNED]
 - Interactive map embeds (Mapbox or Google Maps JavaScript) replacing static map images [PLANNED]
-- Anthropic prompt caching for Call 3 (~90% prefix-reuse savings on 7+ slide decks) [PLANNED]
-- Sequential Call 3 streaming parallelization (4-8x speedup on the streaming path) [PLANNED]
 
 ---
 
@@ -325,7 +325,7 @@ Phases 0-12 of the travel pivot are complete and deployed at `https://presenton-
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
-| LLM cost variability on high-traffic deployments | Medium | Per-call model routing already shipped — GPT-5.5 only for Call 1; Mercury 2 for high-volume Calls 2-3. Anthropic prompt caching planned. |
+| LLM cost variability on high-traffic deployments | Medium | Per-call model routing already shipped — GPT-5.5 only for Call 1; Mercury 2 for high-volume Calls 2-3. Anthropic prompt caching shipped (~90% prefix-reuse savings on Call 3 fan-out within a single deck). |
 | Supply API rate limits (Viator, SerpAPI, Tavily) | Medium | Graceful degradation rule prevents pipeline breakage; 7-day Viator destination resolver cache; future: Redis-backed enricher cache layer. |
 | ElevenLabs character costs scaling unpredictably | Medium | Per-slide cap (`ELEVENLABS_MAX_CHARS_PER_SLIDE`) and monthly budget (`ELEVENLABS_MONTHLY_CHARACTER_BUDGET`) enforced from the [`narration_usage_logs`](servers/fastapi/alembic/versions/9d2f4f8429de_add_narration_usage_log.py) table. Usage dashboard surfaces overruns. |
 | Open-source clone risk | Low-medium | Moats compound: enricher integration depth + IPA expertise + 30 layouts + MCP-native design. Network effects from agency CRM adoption add switching cost. |

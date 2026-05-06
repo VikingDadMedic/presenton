@@ -24,6 +24,7 @@ const USE_CASE_LABELS: Record<string, string> = {
     modern: "Pitch deck",
     standard: "Standard",
     swift: "Swift",
+    "pitch-deck": "Pitch deck",
 
     // Reports (neo family rolls up under one label)
     report: "Report",

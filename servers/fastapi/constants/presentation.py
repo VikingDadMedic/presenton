@@ -5,5 +5,6 @@ DEFAULT_TEMPLATES = [
     "travel", "travel-itinerary",
     "travel-reveal", "travel-contrast", "travel-audience", "travel-micro", "travel-local",
     "travel-series", "travel-recap", "travel-deal-flash", "travel-partner-spotlight",
+    "pitch-deck",
 ]
 MAX_NUMBER_OF_SLIDES = 50

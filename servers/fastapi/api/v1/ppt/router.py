@@ -26,6 +26,7 @@ from api.v1.ppt.endpoints.profile import PROFILE_ROUTER
 from api.v1.ppt.endpoints.campaign import CAMPAIGN_ROUTER
 from api.v1.ppt.endpoints.campaign_presets import CAMPAIGN_PRESETS_ROUTER
 from api.v1.ppt.endpoints.activity import ACTIVITY_ROUTER
+from api.v1.ppt.endpoints.chat import CHAT_ROUTER
 
 
 API_V1_PPT_ROUTER = APIRouter(prefix="/api/v1/ppt")
@@ -59,3 +60,4 @@ API_V1_PPT_ROUTER.include_router(PROFILE_ROUTER)
 API_V1_PPT_ROUTER.include_router(CAMPAIGN_ROUTER)
 API_V1_PPT_ROUTER.include_router(CAMPAIGN_PRESETS_ROUTER)
 API_V1_PPT_ROUTER.include_router(ACTIVITY_ROUTER)
+API_V1_PPT_ROUTER.include_router(CHAT_ROUTER)

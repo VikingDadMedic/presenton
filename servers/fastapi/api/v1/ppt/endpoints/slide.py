@@ -8,6 +8,7 @@ import uuid
 from models.sql.presentation import PresentationModel
 from models.sql.slide import SlideModel
 from api.v1.ppt.endpoints.narration import _clear_slide_narration
+from services.auto_ipa_service import augment_speaker_note_with_ipa
 from services.database import get_async_session
 from services.image_generation_service import ImageGenerationService
 from services.mem0_presentation_memory_service import (
@@ -177,6 +178,11 @@ async def edit_slide_field(
     )
 
     new_value = _coerce_type(new_value_str, current_value)
+    if field_path == "__speaker_note__" and isinstance(new_value, str) and new_value.strip():
+        new_value = await augment_speaker_note_with_ipa(
+            new_value,
+            destination=presentation.enriched_data,
+        )
     _set_value_at_path(content, field_path, new_value)
 
     slide.id = uuid.uuid4()

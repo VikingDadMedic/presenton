@@ -914,3 +914,111 @@ def test_clear_slide_with_narration_commit_false_defers_persistence():
     assert session.deleted == [slide]
     assert session.commit_count == 0
 
+
+# -----------------------------------------------------------------------------
+# /slide/edit-field IPA-skip bug fix (Worker-2 finding)
+# -----------------------------------------------------------------------------
+
+
+def test_edit_slide_field_speaker_note_runs_ipa_augmentation():
+    """Regression guard for the latent bug where /slide/edit-field with
+    field_path == "__speaker_note__" was bypassing auto-IPA augmentation.
+    """
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from api.v1.ppt.endpoints.slide import SLIDE_ROUTER
+    from services.database import get_async_session
+
+    enriched = {"destination_name": "Cinque Terre"}
+    presentation = _make_presentation(enriched_data=enriched)
+    slide = _make_slide(presentation.id)
+    session = FakeAsyncSession()
+    session.get = AsyncMock(side_effect=[slide, presentation])
+
+    app = FastAPI()
+    app.include_router(SLIDE_ROUTER, prefix="/api/v1/ppt")
+
+    async def _override_session():
+        yield session
+
+    app.dependency_overrides[get_async_session] = _override_session
+
+    edited_value_mock = AsyncMock(return_value="Walk into Cinque Terre at dawn.")
+    ipa_mock = AsyncMock(
+        return_value=(
+            'Walk into <phoneme alphabet="ipa" '
+            'ph="ˈtʃiŋkwe ˈtɛrre">Cinque Terre</phoneme> at dawn.'
+        )
+    )
+    with patch(
+        "api.v1.ppt.endpoints.slide.get_edited_field_value",
+        edited_value_mock,
+    ), patch(
+        "api.v1.ppt.endpoints.slide.augment_speaker_note_with_ipa",
+        ipa_mock,
+    ), patch(
+        "api.v1.ppt.endpoints.slide._clear_slide_narration"
+    ):
+        client = TestClient(app)
+        response = client.patch(
+            "/api/v1/ppt/slide/edit-field",
+            json={
+                "id": str(slide.id),
+                "field_path": "__speaker_note__",
+                "prompt": "Add atmospheric detail.",
+            },
+        )
+
+    assert response.status_code == 200
+    ipa_mock.assert_awaited_once()
+    ipa_call_kwargs = ipa_mock.call_args.kwargs
+    assert ipa_call_kwargs["destination"] == enriched
+    assert "<phoneme" in slide.speaker_note
+
+
+def test_edit_slide_field_non_speaker_note_does_not_run_ipa():
+    """Editing a non-speaker-note field must not trigger IPA augmentation."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from api.v1.ppt.endpoints.slide import SLIDE_ROUTER
+    from services.database import get_async_session
+
+    presentation = _make_presentation()
+    slide = _make_slide(presentation.id)
+    session = FakeAsyncSession()
+    session.get = AsyncMock(side_effect=[slide, presentation])
+
+    app = FastAPI()
+    app.include_router(SLIDE_ROUTER, prefix="/api/v1/ppt")
+
+    async def _override_session():
+        yield session
+
+    app.dependency_overrides[get_async_session] = _override_session
+
+    edited_value_mock = AsyncMock(return_value="A Brand New Title")
+    ipa_mock = AsyncMock(return_value="should never be called")
+    with patch(
+        "api.v1.ppt.endpoints.slide.get_edited_field_value",
+        edited_value_mock,
+    ), patch(
+        "api.v1.ppt.endpoints.slide.augment_speaker_note_with_ipa",
+        ipa_mock,
+    ), patch(
+        "api.v1.ppt.endpoints.slide._clear_slide_narration"
+    ):
+        client = TestClient(app)
+        response = client.patch(
+            "/api/v1/ppt/slide/edit-field",
+            json={
+                "id": str(slide.id),
+                "field_path": "title",
+                "prompt": "Make it punchier.",
+            },
+        )
+
+    assert response.status_code == 200
+    ipa_mock.assert_not_awaited()
+

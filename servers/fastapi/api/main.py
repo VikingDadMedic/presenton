@@ -1,5 +1,7 @@
+import logging
 import os
 
+import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -13,8 +15,85 @@ from api.v1.mock.router import API_V1_MOCK_ROUTER
 from api.v1.ppt.router import API_V1_PPT_ROUTER
 from api.v1.public.router import API_V1_PUBLIC_ROUTER
 from api.v1.webhook.router import API_V1_WEBHOOK_ROUTER
-from utils.get_env import get_app_data_directory_env
+from utils.get_env import (
+    get_app_data_directory_env,
+    get_sentry_dsn_env,
+    get_sentry_send_default_pii_env,
+    get_sentry_traces_sample_rate_env,
+)
 from utils.path_helpers import get_resource_path
+
+LOGGER = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Sentry initialization (Phase 11.0c.1)
+# ---------------------------------------------------------------------------
+# Production travel/showcase deployment runs without backend observability
+# until SENTRY_DSN is wired through Azure App Service. Until that happens,
+# `sentry_sdk.init` is a no-op (the DSN guard short-circuits) and TripStory
+# behaves identically to the pre-Phase-11 build. Once SENTRY_DSN lands, the
+# 16-round chat tool loop, Anthropic prompt-caching efficacy, mem0 OSS
+# growth, and alembic drift all gain first-class error + perf telemetry.
+#
+# Defaults consciously diverge from upstream Presenton's Sentry pattern:
+#   - SENTRY_TRACES_SAMPLE_RATE defaults to 0.1 (NOT 1.0 — would blow our
+#     Sentry quota on a B2 App Service plan and conflate signal with noise
+#     for a 5-9 RPS travel SaaS).
+#   - SENTRY_SEND_DEFAULT_PII defaults to false (travel agent + named-
+#     client privacy posture — Sentry would otherwise capture cookies and
+#     query strings that may contain client names / booking IDs).
+
+
+def _get_sentry_traces_sample_rate(default: float = 0.1) -> float:
+    raw = get_sentry_traces_sample_rate_env()
+    if raw is None or raw == "":
+        return default
+    try:
+        parsed = float(raw)
+    except (TypeError, ValueError):
+        LOGGER.warning(
+            "SENTRY_TRACES_SAMPLE_RATE=%r is not a float; using default %s",
+            raw,
+            default,
+        )
+        return default
+    if parsed < 0.0 or parsed > 1.0:
+        LOGGER.warning(
+            "SENTRY_TRACES_SAMPLE_RATE=%s out of [0.0, 1.0]; using default %s",
+            parsed,
+            default,
+        )
+        return default
+    return parsed
+
+
+def _get_sentry_send_default_pii(default: bool = False) -> bool:
+    raw = get_sentry_send_default_pii_env()
+    if raw is None or raw == "":
+        return default
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _maybe_init_sentry() -> bool:
+    """Initialize Sentry when SENTRY_DSN is set; otherwise no-op.
+
+    Returns True iff `sentry_sdk.init` was actually called (test hook for
+    `tests/test_sentry_init.py`).
+    """
+    dsn = get_sentry_dsn_env()
+    if not dsn:
+        return False
+    sentry_sdk.init(
+        dsn=dsn,
+        traces_sample_rate=_get_sentry_traces_sample_rate(),
+        send_default_pii=_get_sentry_send_default_pii(),
+    )
+    return True
+
+
+_maybe_init_sentry()
+
 
 app = FastAPI(lifespan=app_lifespan)
 

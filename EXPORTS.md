@@ -418,6 +418,7 @@ TripStory exposes an MCP server at `/mcp/` for AI agent integration. The followi
 | `get_presentation` | `GET /{id}` | Fetch presentation with all slides (JSON export) |
 | `export_presentation` | `POST /export` | Export in PPTX/PDF/HTML/video |
 | `edit_slide_field` | `PATCH /slide/edit-field` | Edit a single field on a slide |
+| `delete_slide` | `DELETE /slide/{slide_id}` | Delete a slide and clear its narration audio (atomic; reuses chat `deleteSlide`'s `clear_slide_with_narration` helper) |
 | `get_enricher_status` | `GET /enrichers/status` | Check which enricher APIs are configured |
 | `list_presentations` | `GET /all` | List all presentations |
 | `templates_list` | `GET /template-management/summary` | List available templates |

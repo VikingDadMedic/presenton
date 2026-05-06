@@ -13,6 +13,7 @@ class FakeMemoryClient:
         self.config = config
         self.add_calls = []
         self.search_calls = []
+        self.delete_all_calls = []
         self.next_search_response = {"results": []}
         FakeMemoryClient.instances.append(self)
 
@@ -44,6 +45,14 @@ class FakeMemoryClient:
             }
         )
         return self.next_search_response
+
+    def delete_all(self, *args, **kwargs):
+        self.delete_all_calls.append(
+            {
+                "user_id": kwargs.get("user_id"),
+            }
+        )
+        return {"ok": True}
 
 
 def _mem0_oss_fresh() -> None:
@@ -288,6 +297,45 @@ class TestMem0PresentationMemoryService:
         assert first is None
         assert second is None
         assert attempts["count"] == 1
+
+    def test_forget_presentation_calls_delete_all_with_scoped_user_id(self):
+        client = FakeMemoryClient.from_config({"vector_store": {}, "embedder": {}})
+
+        with patch(
+            "services.mem0_presentation_memory_service.get_shared_mem0_client",
+            return_value=client,
+        ):
+            service = Mem0PresentationMemoryService()
+            presentation_id = uuid.uuid4()
+            asyncio.run(service.forget_presentation(presentation_id))
+
+        assert len(client.delete_all_calls) == 1
+        assert client.delete_all_calls[0] == {
+            "user_id": f"presentation:{presentation_id}",
+        }
+
+    def test_forget_presentation_swallows_mem0_exceptions(self):
+        client = FakeMemoryClient.from_config({"vector_store": {}, "embedder": {}})
+
+        def _raise(*args, **kwargs):
+            raise RuntimeError("mem0 transient failure")
+
+        client.delete_all = _raise  # type: ignore[assignment]
+
+        with patch(
+            "services.mem0_presentation_memory_service.get_shared_mem0_client",
+            return_value=client,
+        ):
+            service = Mem0PresentationMemoryService()
+            asyncio.run(service.forget_presentation(uuid.uuid4()))
+
+    def test_forget_presentation_skips_when_client_unavailable(self):
+        with patch(
+            "services.mem0_presentation_memory_service.get_shared_mem0_client",
+            return_value=None,
+        ):
+            service = Mem0PresentationMemoryService()
+            asyncio.run(service.forget_presentation(uuid.uuid4()))
 
     def test_runtime_disabled_after_systemexit_in_search(self):
         client = FakeMemoryClient.from_config({"vector_store": {}, "embedder": {}})

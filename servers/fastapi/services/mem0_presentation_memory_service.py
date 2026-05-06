@@ -179,6 +179,43 @@ class Mem0PresentationMemoryService:
         )
         await self._add_message(presentation_id, message)
 
+    async def forget_presentation(self, presentation_id: UUID) -> None:
+        """Purge every mem0 memory scoped to this presentation's namespace.
+
+        Called from delete_presentation so the SQL row delete and the mem0
+        side-store delete stay consistent — without this, mem0 leaks the
+        embedding rows for every deleted presentation forever (they remain
+        searchable under the same scoped user_id even though no slides exist
+        anymore).
+
+        Mirrors the swallow-and-log pattern of _add_message: errors are
+        logged but never raised so a mem0 outage cannot block the SQL
+        delete from completing.
+        """
+        client = await self._get_client()
+        if client is None:
+            return
+
+        scoped_user_id = self._scope_user_id(presentation_id)
+
+        def _delete_all():
+            return client.delete_all(user_id=scoped_user_id)
+
+        try:
+            await asyncio.to_thread(_delete_all)
+        except BaseException as exc:
+            if not self._is_nonfatal_mem0_error(exc):
+                raise
+            if isinstance(exc, SystemExit):
+                self._disable_runtime(
+                    "mem0 runtime failed while deleting memories", exc=exc
+                )
+                return
+            LOGGER.exception(
+                "Failed to delete mem0 memories for presentation_id=%s",
+                presentation_id,
+            )
+
     async def retrieve_context(self, presentation_id: UUID, query: str) -> str:
         client = await self._get_client()
         if client is None:

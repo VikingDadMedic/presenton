@@ -605,6 +605,11 @@ async def delete_presentation(
     await sql_session.delete(presentation)
     await sql_session.commit()
 
+    try:
+        await MEM0_PRESENTATION_MEMORY_SERVICE.forget_presentation(id)
+    except Exception:
+        traceback.print_exc()
+
 
 @PRESENTATION_ROUTER.post("/create", response_model=PresentationModel)
 async def create_presentation(

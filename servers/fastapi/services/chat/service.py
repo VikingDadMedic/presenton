@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 import uuid
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
@@ -36,6 +37,19 @@ from utils.llm_utils import (
 LOGGER = logging.getLogger(__name__)
 MAX_TOOL_ROUNDS = 16
 
+# Per-turn wall-clock cap. The 16-round tool loop can chain LLM streaming +
+# tool execution unbounded; this enforces a hard ceiling so a runaway turn
+# can't silently hold the SSE connection open. Tunable via env var for ops
+# escalation; defaults to 90s (Phase 9.5 plan). Tests override via env var.
+CHAT_TURN_TIMEOUT_SECONDS_ENV = "CHAT_TURN_TIMEOUT_SECONDS"
+DEFAULT_CHAT_TURN_TIMEOUT_SECONDS = 90.0
+
+# Per-turn saveSlide budget. The 6th attempt is rejected as a tool-level
+# error so the LLM gets the result and can recover gracefully (rather than
+# breaking the whole turn). Tunable via env var.
+MAX_SLIDES_PER_TURN_ENV = "CHAT_MAX_SLIDES_PER_TURN"
+DEFAULT_MAX_SLIDES_PER_TURN = 5
+
 
 @dataclass(frozen=True)
 class ChatTurnResult:
@@ -44,8 +58,28 @@ class ChatTurnResult:
     tool_calls: list[str]
 
 
-ChatStreamEventType = Literal["chunk", "complete", "status", "trace"]
+ChatStreamEventType = Literal["chunk", "complete", "status", "trace", "error"]
 ChatStreamEventValue = str | ChatTurnResult | dict[str, Any]
+
+
+def _read_env_float(name: str, default: float) -> float:
+    raw = os.getenv(name)
+    if not raw:
+        return default
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return default
+
+
+def _read_env_int(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if not raw:
+        return default
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return default
 
 
 class PresentationChatService:
@@ -79,10 +113,115 @@ class PresentationChatService:
         yield "status", "Reading deck context"
         conversation_id, messages = await self._prepare_turn_context(user_message)
 
+        timeout_seconds = _read_env_float(
+            CHAT_TURN_TIMEOUT_SECONDS_ENV, DEFAULT_CHAT_TURN_TIMEOUT_SECONDS
+        )
+
+        # Producer/consumer queue lets us bound the entire tool loop with a
+        # single deadline (asyncio.wait_for on each queue.get() with the
+        # remaining budget). A direct asyncio.wait_for around an async
+        # generator wouldn't work because the generator yields incrementally.
+        final_state: dict[str, Any] = {
+            "response_text": None,
+            "called_tools": [],
+        }
+        loop = asyncio.get_event_loop()
+        queue: asyncio.Queue[Any] = asyncio.Queue()
+        sentinel: object = object()
+
+        async def producer() -> None:
+            try:
+                async for event in self._iterate_tool_loop_events(
+                    messages, final_state
+                ):
+                    await queue.put(event)
+            except BaseException as exc:  # noqa: BLE001
+                await queue.put(("__exception__", exc))
+            finally:
+                await queue.put(sentinel)
+
+        producer_task = asyncio.create_task(producer())
+        deadline = loop.time() + timeout_seconds
+        timed_out = False
+        producer_exc: BaseException | None = None
+
+        try:
+            while True:
+                remaining = deadline - loop.time()
+                if remaining <= 0:
+                    timed_out = True
+                    break
+                try:
+                    item = await asyncio.wait_for(queue.get(), timeout=remaining)
+                except asyncio.TimeoutError:
+                    timed_out = True
+                    break
+                if item is sentinel:
+                    break
+                if (
+                    isinstance(item, tuple)
+                    and len(item) == 2
+                    and item[0] == "__exception__"
+                ):
+                    producer_exc = item[1]
+                    break
+                yield item
+        finally:
+            if not producer_task.done():
+                producer_task.cancel()
+                try:
+                    await producer_task
+                except (asyncio.CancelledError, BaseException):
+                    pass
+
+        if producer_exc is not None:
+            if isinstance(producer_exc, HTTPException):
+                raise producer_exc
+            raise producer_exc
+
+        if timed_out:
+            LOGGER.warning(
+                "Chat turn exceeded %.1fs timeout; emitting error frame",
+                timeout_seconds,
+            )
+            yield "error", "Chat turn exceeded 90s timeout"
+            return
+
+        response_text = final_state.get("response_text") or (
+            "I could not generate a response for that request."
+        )
+        called_tools = final_state.get("called_tools") or []
+
+        yield "status", "Saving chat"
+        result = await self._persist_turn(
+            conversation_id=conversation_id,
+            user_message=user_message,
+            response_text=response_text,
+            tool_calls=called_tools,
+        )
+        yield "complete", result
+
+    async def _iterate_tool_loop_events(
+        self,
+        messages: list[Message],
+        final_state: dict[str, Any],
+    ) -> AsyncGenerator[tuple[ChatStreamEventType, ChatStreamEventValue], None]:
+        """Tool-call loop body extracted from ``stream_reply`` so the parent
+        can wrap it in a wall-clock-aware producer/consumer.
+
+        ``final_state`` is mutated to expose the final ``response_text`` and
+        accumulated ``called_tools`` once the loop terminates normally.
+        """
+
         client = get_client(config=get_llm_config())
         model = get_model()
         tools = self._tools.get_tool_definitions()
         tools.append(WebSearchTool())
+
+        max_slides_per_turn = _read_env_int(
+            MAX_SLIDES_PER_TURN_ENV, DEFAULT_MAX_SLIDES_PER_TURN
+        )
+        save_slide_count = 0
 
         called_tools: list[str] = []
         last_tool_results: list[dict[str, Any]] = []
@@ -154,7 +293,25 @@ class PresentationChatService:
                         "status": "start",
                         "message": self._tool_start_message(tool_call.name),
                     }
-                    tool_result = await self._tools.execute_tool_call(tool_call)
+                    is_save_slide = tool_call.name == "saveSlide"
+                    if is_save_slide and save_slide_count >= max_slides_per_turn:
+                        # Refuse the over-budget call as a tool-level error so
+                        # the LLM keeps control of the turn and can stop or
+                        # apologize, rather than the service breaking.
+                        tool_result = {
+                            "ok": False,
+                            "tool": "saveSlide",
+                            "error": (
+                                "saveSlide budget exhausted: "
+                                f"{max_slides_per_turn} slides per turn "
+                                f"(env {MAX_SLIDES_PER_TURN_ENV}). "
+                                "Stop saving more slides this turn."
+                            ),
+                        }
+                    else:
+                        if is_save_slide:
+                            save_slide_count += 1
+                        tool_result = await self._tools.execute_tool_call(tool_call)
                     last_tool_results.append(tool_result)
                     yield "trace", {
                         "kind": "tool_call",
@@ -202,18 +359,10 @@ class PresentationChatService:
                 response_text = self._build_tool_limit_fallback(last_tool_results)
             yield "chunk", response_text
 
-        final_response_text = response_text or "I could not generate a response for that request."
-        if response_text is None:
-            yield "chunk", final_response_text
-
-        yield "status", "Saving chat"
-        result = await self._persist_turn(
-            conversation_id=conversation_id,
-            user_message=user_message,
-            response_text=final_response_text,
-            tool_calls=called_tools,
+        final_state["response_text"] = (
+            response_text or "I could not generate a response for that request."
         )
-        yield "complete", result
+        final_state["called_tools"] = called_tools
 
     async def _prepare_turn_context(
         self, user_message: str

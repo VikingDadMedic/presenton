@@ -112,6 +112,8 @@ async def chat_message_stream(
                     yield SSEStatusResponse(status=value).to_string()
                 elif event_type == "trace" and isinstance(value, dict):
                     yield SSETraceResponse(trace=value).to_string()
+                elif event_type == "error" and isinstance(value, str):
+                    yield SSEErrorResponse(detail=value).to_string()
                 elif event_type == "complete" and isinstance(value, ChatTurnResult):
                     result = value
                     complete_payload = ChatMessageResponse(

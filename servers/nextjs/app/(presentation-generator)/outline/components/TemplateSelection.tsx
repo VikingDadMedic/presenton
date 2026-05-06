@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useCallback, memo } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { TemplateLayoutsWithSettings } from "@/app/presentation-templates/utils";
+import { HIDDEN_TEMPLATE_IDS, TemplateLayoutsWithSettings } from "@/app/presentation-templates/utils";
 import { templates } from "@/app/presentation-templates";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,7 @@ import CreateCustomTemplate from "../../(dashboard)/templates/components/CreateC
 import { CustomTemplateCard } from "./CustomTemplateCard";
 import {
   TemplatePreviewStage,
-  LayoutsBadge,
+  UseCaseBadge,
   InbuiltTemplatePreview,
 } from "../../components/TemplatePreviewComponents";
 
@@ -39,7 +39,7 @@ const BuiltInTemplateCard = memo(function BuiltInTemplateCard({
       onClick={handleClick}
     >
       <TemplatePreviewStage>
-        <LayoutsBadge count={template.layouts.length} />
+        <UseCaseBadge templateId={template.id} />
         <InbuiltTemplatePreview layouts={template.layouts} templateId={template.id} isOutline={true} />
       </TemplatePreviewStage>
       <div className="flex items-center justify-between px-6 py-5 bg-card border-t border-border relative z-40">
@@ -140,8 +140,6 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = memo(function Templa
       </div>
     );
   }, [customLoading, customTemplates, handleCustomSelect, selectedCustomId]);
-
-  const HIDDEN_TEMPLATE_IDS = new Set(["code", "education", "product-overview"]);
 
   const builtInTemplateCards = useMemo(
     () =>

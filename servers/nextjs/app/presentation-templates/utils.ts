@@ -79,6 +79,14 @@ export interface TemplateGroupSettings {
     description: string;
     ordered: boolean;
     default: boolean;
+    aspectFit?: "landscape" | "vertical" | "square";
+    /**
+     * Optional category label used to sub-group built-in templates on the
+     * Head Starts panel. Currently one of: "Business", "Travel", "Report",
+     * "Code", "Education". Falls back to "Other" when undefined so that
+     * templates added before the category migration still render.
+     */
+    category?: string;
 }
 
 // Template with settings
@@ -89,3 +97,12 @@ export interface TemplateLayoutsWithSettings {
     settings: TemplateGroupSettings;
     layouts: TemplateWithData[];
 }
+
+/**
+ * Built-in template IDs hidden in Head Starts + outline pickers for v1 scope.
+ */
+export const HIDDEN_TEMPLATE_IDS = new Set([
+    "code",
+    "education",
+    "product-overview",
+]);

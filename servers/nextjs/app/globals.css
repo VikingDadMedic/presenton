@@ -390,6 +390,40 @@ strong {
   scrollbar-width: none;
 }
 
+/* ---------- Chat markdown rendering (Phase 9.4) ---------- */
+
+.chat-markdown {
+  @apply prose prose-slate max-w-none;
+}
+
+.chat-markdown :where(p, ul, ol, pre, blockquote) {
+  margin-bottom: 0.75rem;
+}
+
+.chat-markdown
+  :where(
+    p:last-child,
+    ul:last-child,
+    ol:last-child,
+    pre:last-child,
+    blockquote:last-child
+  ) {
+  margin-bottom: 0;
+}
+
+.chat-markdown :where(ul, ol) {
+  padding-left: 1.25rem;
+}
+
+/* `bg-muted` rather than hardcoded #F5F5F5 so dark mode flips automatically. */
+.chat-markdown :where(code) {
+  @apply rounded bg-muted px-1 py-0.5 text-[0.85em];
+}
+
+.chat-markdown :where(pre) {
+  @apply overflow-x-auto rounded-lg bg-muted p-3;
+}
+
 /* ---------- Input number arrows ---------- */
 
 input[type="number"]::-webkit-inner-spin-button,
@@ -542,6 +576,34 @@ thead {
     width: 200%;
     height: 200%;
     opacity: 1;
+  }
+}
+
+/* ---------- Status badge animations (Phase 2) ---------- */
+/*
+ * Shake (used for `failed` status badge) is not shipped by tailwindcss-animate
+ * so it lives here. Pulse and zoom-in animations are provided by Tailwind /
+ * tailwindcss-animate already (`animate-pulse`, `animate-in zoom-in-95`).
+ *
+ * `motion-reduce` on the parent disables motion for users who prefer reduced
+ * motion. motion-icons-react already respects this internally.
+ */
+
+@keyframes status-badge-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-2px); }
+  40% { transform: translateX(2px); }
+  60% { transform: translateX(-1.5px); }
+  80% { transform: translateX(1.5px); }
+}
+
+.animate-status-shake {
+  animation: status-badge-shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-status-shake {
+    animation: none;
   }
 }
 

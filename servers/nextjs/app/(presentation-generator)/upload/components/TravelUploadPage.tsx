@@ -25,6 +25,19 @@ import { OverlayLoader } from "@/components/ui/overlay-loader";
 import Wrapper from "@/components/Wrapper";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { cn } from "@/lib/utils";
+import {
+  DEFAULT_TRAVEL_ARC,
+  TRAVEL_ARC_OPTIONS,
+  type TravelArcTemplateId,
+} from "@/lib/travel-arcs";
+import {
+  DEFAULT_EXPORT_ASPECT_RATIO,
+  type ExportAspectRatio,
+} from "@/lib/export-aspect-ratio";
+import {
+  buildOutlineRedirectUrl,
+  buildUploadCreatePayload,
+} from "@/lib/upload-presentation-payload";
 
 interface LoadingState {
   isLoading: boolean;
@@ -58,73 +71,6 @@ const INTEREST_OPTIONS = [
   "Wellness",
 ] as const;
 
-type TravelArcTemplateId =
-  | "travel-itinerary"
-  | "travel-reveal"
-  | "travel-contrast"
-  | "travel-audience"
-  | "travel-micro"
-  | "travel-local"
-  | "travel-series"
-  | "travel-recap"
-  | "travel-deal-flash"
-  | "travel-partner-spotlight";
-
-const DEFAULT_TRAVEL_ARC: TravelArcTemplateId = "travel-itinerary";
-
-const TRAVEL_ARC_OPTIONS: Array<{
-  value: TravelArcTemplateId;
-  label: string;
-  tooltip?: string;
-}> = [
-  { value: "travel-itinerary", label: "Itinerary" },
-  {
-    value: "travel-reveal",
-    label: "Reveal",
-    tooltip: "Builds anticipation with a destination-first reveal flow.",
-  },
-  {
-    value: "travel-contrast",
-    label: "Contrast",
-    tooltip: "Highlights trade-offs and before/after moments.",
-  },
-  {
-    value: "travel-audience",
-    label: "Audience",
-    tooltip: "Tailors pacing for solo, couple, or family travelers.",
-  },
-  {
-    value: "travel-micro",
-    label: "Micro",
-    tooltip: "Focuses on a short, high-impact micro-adventure.",
-  },
-  {
-    value: "travel-local",
-    label: "Local",
-    tooltip: "Frames the trip through a local's perspective.",
-  },
-  {
-    value: "travel-series",
-    label: "Series",
-    tooltip: "Compares multiple destinations in one coherent decision deck.",
-  },
-  {
-    value: "travel-recap",
-    label: "Recap",
-    tooltip: "Turns a past trip into a memory-led re-engagement story.",
-  },
-  {
-    value: "travel-deal-flash",
-    label: "Deal Flash",
-    tooltip: "Pushes urgency with countdown offer framing and inclusions.",
-  },
-  {
-    value: "travel-partner-spotlight",
-    label: "Partner",
-    tooltip: "Highlights a hotel, airline, or DMO co-marketing partner.",
-  },
-];
-
 const TravelUploadPage = () => {
   const router = useRouter();
   const pathname = usePathname();
@@ -141,6 +87,9 @@ const TravelUploadPage = () => {
   const [notes, setNotes] = useState("");
   const [selectedTravelArc, setSelectedTravelArc] = useState<TravelArcTemplateId | null>(
     DEFAULT_TRAVEL_ARC
+  );
+  const [aspectRatio, setAspectRatio] = useState<ExportAspectRatio>(
+    DEFAULT_EXPORT_ASPECT_RATIO
   );
 
   const [loadingState, setLoadingState] = useState<LoadingState>({
@@ -212,10 +161,9 @@ const TravelUploadPage = () => {
       });
 
       trackEvent(MixpanelEvent.Upload_Create_Presentation_API_Call);
-      const createResponse = await PresentationGenerationApi.createPresentation({
+      const createPayload = buildUploadCreatePayload({
         content: config.prompt,
         n_slides: config.slides ? parseInt(config.slides) : null,
-        file_paths: [],
         language: config.language ?? "",
         tone: config.tone,
         verbosity: config.verbosity,
@@ -225,7 +173,11 @@ const TravelUploadPage = () => {
         web_search: !!config.webSearch,
         origin: origin.trim() || undefined,
         currency,
+        aspectRatio,
       });
+      const createResponse = await PresentationGenerationApi.createPresentation(
+        createPayload,
+      );
 
       dispatch(setPresentationId(createResponse.id));
       dispatch(clearOutlines());
@@ -233,7 +185,12 @@ const TravelUploadPage = () => {
         from: pathname,
         to: "/outline",
       });
-      router.push(`/outline?template=${encodeURIComponent(selectedTemplate)}`);
+      router.push(
+        buildOutlineRedirectUrl({
+          template: selectedTemplate,
+          aspectRatio,
+        })
+      );
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Error generating presentation.";
@@ -373,6 +330,7 @@ const TravelUploadPage = () => {
                 type="button"
                 title={arc.tooltip}
                 aria-label={arc.tooltip ? `${arc.label}: ${arc.tooltip}` : arc.label}
+                data-testid={`travel-arc-chip-${arc.value}`}
                 onClick={() => setSelectedTravelArc(arc.value)}
                 className={cn(
                   "rounded-full border px-3 py-1.5 text-xs font-instrument_sans font-medium transition-all",
@@ -382,6 +340,53 @@ const TravelUploadPage = () => {
                 )}
               >
                 {arc.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        <div className="border-t border-border" />
+
+        {/* Aspect Ratio */}
+        <fieldset className="p-4 md:p-6 border-0">
+          <legend className="text-base font-normal font-display text-foreground mb-3 block">
+            Aspect Ratio
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                {
+                  value: "landscape" as const,
+                  label: "Landscape",
+                  tooltip: "16:9 — desks, monitors, presentations, slides export",
+                },
+                {
+                  value: "vertical" as const,
+                  label: "Vertical",
+                  tooltip: "9:16 — Reels, Stories, TikTok, vertical screens",
+                },
+                {
+                  value: "square" as const,
+                  label: "Square",
+                  tooltip: "1:1 — feed posts, carousels, email-safe thumbnails",
+                },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                title={option.tooltip}
+                aria-label={`${option.label}: ${option.tooltip}`}
+                data-testid={`aspect-ratio-chip-${option.value}`}
+                onClick={() => setAspectRatio(option.value)}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-xs font-instrument_sans font-medium transition-all",
+                  aspectRatio === option.value
+                    ? "border-primary bg-primary/5 text-primary ring-2 ring-primary/25"
+                    : "border-border bg-card text-foreground hover:border-border hover:bg-muted"
+                )}
+              >
+                {option.label}
               </button>
             ))}
           </div>

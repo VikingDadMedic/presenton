@@ -6,7 +6,7 @@ import os
 import random
 import shutil
 import traceback
-from typing import Annotated, Dict, List, Literal, Optional, Tuple
+from typing import Annotated, Dict, List, Literal, Optional, Tuple, Union
 import dirtyjson
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Path
 from fastapi.responses import StreamingResponse
@@ -77,6 +77,11 @@ from utils.llm_calls.generate_presentation_structure import (
 from utils.llm_calls.generate_slide_content import (
     get_slide_content_from_type_and_outline,
 )
+from utils.call3_concurrency import (
+    Call3SlideResult,
+    OrderedSlideEmitter,
+    parse_content_model_concurrency,
+)
 from utils.ppt_utils import (
     select_toc_or_list_slide_layout_index,
 )
@@ -116,6 +121,14 @@ class RecapPresentationRequest(BaseModel):
     source_presentation_id: Optional[uuid.UUID] = Field(
         default=None,
         description="Existing presentation id to derive recap context from",
+    )
+    source_presentation_ids: Optional[List[uuid.UUID]] = Field(
+        default=None,
+        description=(
+            "Multiple existing presentation ids to derive recap context from. "
+            "When set, the handler runs one recap per source serially and returns "
+            "BulkRecapPresentationResponse instead of RecapPresentationResponse."
+        ),
     )
     source_json: Optional[dict] = Field(
         default=None,
@@ -187,9 +200,18 @@ class RecapPresentationRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_source_input(self):
-        if self.source_presentation_id is None and not self.source_json:
+        sources_provided = sum(
+            1
+            for value in (
+                self.source_presentation_id,
+                self.source_json,
+                self.source_presentation_ids,
+            )
+            if value
+        )
+        if sources_provided == 0:
             raise ValueError(
-                "Either source_presentation_id or source_json is required"
+                "One of source_presentation_id, source_json, or source_presentation_ids is required"
             )
         return self
 
@@ -197,6 +219,16 @@ class RecapPresentationRequest(BaseModel):
 class RecapPresentationResponse(PresentationPathAndEditPath):
     mode: RecapMode
     source_presentation_id: Optional[uuid.UUID] = None
+
+
+class BulkRecapPresentationResponse(BaseModel):
+    """
+    Response shape returned when `source_presentation_ids` is provided on the
+    recap request. The recaps run serially (Azure App Service B2 RAM
+    constraint — no parallelism).
+    """
+
+    recaps: List[RecapPresentationResponse] = Field(default_factory=list)
 
 
 _RECAP_MODE_DEFAULTS: Dict[RecapMode, Dict[str, object]] = {
@@ -798,13 +830,11 @@ async def stream_presentation(
             }),
         ).to_string()
 
-        enriched_instructions = presentation.instructions or ""
-        if presentation.enriched_context:
-            enriched_instructions = (
-                f"{enriched_instructions}\n\n{presentation.enriched_context}"
-                if enriched_instructions
-                else presentation.enriched_context
-            )
+        # Issue E (RESOLVED): enriched_context flows through the USER prompt
+        # for both Call 1 and Call 3. Instructions stays user-supplied only —
+        # do not splice enriched_context into it. See main-workflow.md
+        # Section 6, item E for the full migration note.
+        base_instructions = presentation.instructions or ""
         try:
             agent_profile = get_agent_profile()
         except Exception:
@@ -817,83 +847,170 @@ async def stream_presentation(
             event="response",
             data=json.dumps({"type": "chunk", "chunk": '{ "slides": [ '}),
         ).to_string()
-        for i, slide_layout_index in enumerate(structure.slides):
-            slide_layout = layout.slides[slide_layout_index]
-            slide_instructions = build_agent_profile_slide_instructions(
-                enriched_instructions,
-                slide_layout.id,
-                agent_profile,
-            )
 
-            try:
-                slide_content = await get_slide_content_from_type_and_outline(
-                    slide_layout,
-                    outline.slides[i],
-                    presentation.language,
-                    presentation.tone,
-                    presentation.verbosity,
-                    slide_instructions,
-                    template=layout.name,
-                    previous_slide_title=outline_titles[i - 1] if i > 0 else None,
-                    next_slide_title=(
-                        outline_titles[i + 1] if i + 1 < len(outline_titles) else None
-                    ),
-                    presentation_synopsis=presentation_synopsis,
-                    tone_preset=resolved_narration_tone,
-                    destination_context=presentation.enriched_data,
+        # Phase C.2: bounded-concurrency parallel Call 3 with per-slide error
+        # isolation and in-order SSE emission. The producer fires N tasks
+        # gated by a semaphore; the consumer drains a result queue and feeds
+        # an OrderedSlideEmitter so the SSE stream still emits slide-by-slide.
+        # CONTENT_MODEL_CONCURRENCY env var (default 4, max 12) gates the
+        # parallel-fan-out width.
+        concurrency = parse_content_model_concurrency(
+            os.getenv("CONTENT_MODEL_CONCURRENCY")
+        )
+        total_slides = len(structure.slides)
+        emitter = OrderedSlideEmitter[dict](total=total_slides)
+        result_queue: asyncio.Queue = asyncio.Queue()
+        semaphore = asyncio.Semaphore(concurrency)
+
+        async def _generate_one_slide(slide_index: int, layout_idx: int) -> None:
+            # `async with semaphore` enforces the bounded-concurrency cap.
+            async with semaphore:
+                slide_layout = layout.slides[layout_idx]
+                slide_instructions = build_agent_profile_slide_instructions(
+                    base_instructions,
+                    slide_layout.id,
+                    agent_profile,
                 )
-            except HTTPException as e:
-                yield SSEErrorResponse(detail=e.detail).to_string()
-                return
-
-            if presentation.enriched_data:
                 try:
-                    from enrichers.overlay import apply_enricher_overlays
-                    slide_content = apply_enricher_overlays(slide_content, slide_layout.id, presentation.enriched_data)
-                except Exception as overlay_err:
-                    import logging
-                    logging.getLogger(__name__).warning(
-                        f"Enricher overlay failed for slide {i} (continuing without overlay): {overlay_err}"
-                    )
-            slide_content = apply_agent_profile_overlays(
-                slide_content,
-                slide_layout.id,
-                agent_profile,
-            )
-
-            slide = SlideModel(
-                presentation=id,
-                layout_group=layout.name,
-                layout=slide_layout.id,
-                index=i,
-                speaker_note=slide_content.get("__speaker_note__", ""),
-                narration_tone=resolved_narration_tone,
-                content=slide_content,
-            )
-            slides.append(slide)
-
-            # This will mutate slide and add placeholder assets
-            process_slide_add_placeholder_assets(slide)
-
-            # This will mutate slide - start task immediately so it runs in parallel with next slide LLM generation
-            async_assets_generation_tasks.append(
-                asyncio.create_task(
-                    process_slide_and_fetch_assets(
-                        image_generation_service,
-                        slide,
-                        outline_image_urls=(
-                            image_urls_for_slides[i]
-                            if i < len(image_urls_for_slides)
+                    slide_content = await get_slide_content_from_type_and_outline(
+                        slide_layout,
+                        outline.slides[slide_index],
+                        presentation.language,
+                        presentation.tone,
+                        presentation.verbosity,
+                        slide_instructions,
+                        template=layout.name,
+                        previous_slide_title=(
+                            outline_titles[slide_index - 1]
+                            if slide_index > 0
                             else None
                         ),
+                        next_slide_title=(
+                            outline_titles[slide_index + 1]
+                            if slide_index + 1 < len(outline_titles)
+                            else None
+                        ),
+                        presentation_synopsis=presentation_synopsis,
+                        tone_preset=resolved_narration_tone,
+                        destination_context=presentation.enriched_data,
+                        enriched_context=presentation.enriched_context,
                     )
-                )
-            )
+                    await result_queue.put(
+                        Call3SlideResult(
+                            index=slide_index,
+                            status="ok",
+                            payload=slide_content,
+                        )
+                    )
+                except HTTPException as exc:
+                    await result_queue.put(
+                        Call3SlideResult(
+                            index=slide_index,
+                            status="error",
+                            payload=str(exc.detail),
+                        )
+                    )
+                except Exception as exc:
+                    await result_queue.put(
+                        Call3SlideResult(
+                            index=slide_index,
+                            status="error",
+                            payload=str(exc),
+                        )
+                    )
 
-            yield SSEResponse(
-                event="response",
-                data=json.dumps({"type": "chunk", "chunk": slide.model_dump_json()}),
-            ).to_string()
+        producer_tasks = [
+            asyncio.create_task(_generate_one_slide(i, layout_idx))
+            for i, layout_idx in enumerate(structure.slides)
+        ]
+
+        try:
+            while not emitter.is_complete:
+                result = await result_queue.get()
+                for ready in emitter.add(result):
+                    if ready.status == "error":
+                        # Per-slide failure isolation: emit a structured SSE
+                        # error event in the slide's slot and continue. The
+                        # slot stays empty in the slides list so downstream
+                        # code (slides[i] indexing) must NOT assume each
+                        # index is populated; we maintain ordering via the
+                        # emitter and only append successful slides.
+                        yield SSEErrorResponse(
+                            detail=(
+                                f"Slide {ready.index} generation failed: "
+                                f"{ready.payload}"
+                            )
+                        ).to_string()
+                        continue
+
+                    slide_index = ready.index
+                    slide_content = ready.payload
+                    slide_layout = layout.slides[structure.slides[slide_index]]
+
+                    if presentation.enriched_data:
+                        try:
+                            from enrichers.overlay import apply_enricher_overlays
+                            slide_content = apply_enricher_overlays(
+                                slide_content,
+                                slide_layout.id,
+                                presentation.enriched_data,
+                            )
+                        except Exception as overlay_err:
+                            import logging
+                            logging.getLogger(__name__).warning(
+                                f"Enricher overlay failed for slide "
+                                f"{slide_index} (continuing without "
+                                f"overlay): {overlay_err}"
+                            )
+                    slide_content = apply_agent_profile_overlays(
+                        slide_content,
+                        slide_layout.id,
+                        agent_profile,
+                    )
+
+                    slide = SlideModel(
+                        presentation=id,
+                        layout_group=layout.name,
+                        layout=slide_layout.id,
+                        index=slide_index,
+                        speaker_note=slide_content.get("__speaker_note__", ""),
+                        narration_tone=resolved_narration_tone,
+                        content=slide_content,
+                    )
+                    slides.append(slide)
+                    process_slide_add_placeholder_assets(slide)
+                    async_assets_generation_tasks.append(
+                        asyncio.create_task(
+                            process_slide_and_fetch_assets(
+                                image_generation_service,
+                                slide,
+                                outline_image_urls=(
+                                    image_urls_for_slides[slide_index]
+                                    if slide_index < len(image_urls_for_slides)
+                                    else None
+                                ),
+                            )
+                        )
+                    )
+
+                    yield SSEResponse(
+                        event="response",
+                        data=json.dumps(
+                            {"type": "chunk", "chunk": slide.model_dump_json()}
+                        ),
+                    ).to_string()
+        finally:
+            # If the consumer exits early (e.g. client disconnect) we still
+            # need to drain the producer tasks to avoid orphaned coroutines.
+            await asyncio.gather(*producer_tasks, return_exceptions=True)
+
+        # The slides list is appended in completion order, but each slide
+        # carries its true index. Sort to produce a deterministic order
+        # for downstream DB writes (which historically expected ascending
+        # index). Failed slides are absent from the list — the resulting
+        # presentation has gaps at those indices, which is consistent with
+        # how a sequential fail-fast loop used to truncate.
+        slides.sort(key=lambda s: s.index)
 
         yield SSEResponse(
             event="response",
@@ -1169,11 +1286,15 @@ async def check_if_api_request_is_valid(
     return (presentation_id,)
 
 
-@PRESENTATION_ROUTER.post("/recap", response_model=RecapPresentationResponse)
-async def generate_recap_presentation(
+async def _generate_single_recap(
     request: RecapPresentationRequest,
-    sql_session: AsyncSession = Depends(get_async_session),
-):
+    sql_session: AsyncSession,
+) -> RecapPresentationResponse:
+    """
+    Generate a single recap. Used both by the single-source endpoint path AND
+    by the bulk loop (one per source id, serial — Azure App Service B2 RAM
+    constraint precludes parallel runs).
+    """
     source_context, source_language, source_origin, source_currency = (
         await _resolve_recap_source_context(request, sql_session)
     )
@@ -1191,7 +1312,9 @@ async def generate_recap_presentation(
         recap_generation_request, presentation_id, None, sql_session
     )
 
-    generated_presentation = await sql_session.get(PresentationModel, response.presentation_id)
+    generated_presentation = await sql_session.get(
+        PresentationModel, response.presentation_id
+    )
     if generated_presentation:
         generated_presentation.narration_tone = recap_generation_request.narration_tone
         resolved_voice_id = _resolve_recap_voice_id(
@@ -1207,6 +1330,28 @@ async def generate_recap_presentation(
         mode=request.mode,
         source_presentation_id=request.source_presentation_id,
     )
+
+
+@PRESENTATION_ROUTER.post(
+    "/recap",
+    response_model=Union[RecapPresentationResponse, BulkRecapPresentationResponse],
+)
+async def generate_recap_presentation(
+    request: RecapPresentationRequest,
+    sql_session: AsyncSession = Depends(get_async_session),
+):
+    if request.source_presentation_ids:
+        recaps: List[RecapPresentationResponse] = []
+        for source_id in request.source_presentation_ids:
+            per_source_payload = request.model_dump(exclude_unset=False)
+            per_source_payload["source_presentation_id"] = source_id
+            per_source_payload["source_presentation_ids"] = None
+            per_source_request = RecapPresentationRequest(**per_source_payload)
+            recap = await _generate_single_recap(per_source_request, sql_session)
+            recaps.append(recap)
+        return BulkRecapPresentationResponse(recaps=recaps)
+
+    return await _generate_single_recap(request, sql_session)
 
 
 def _build_export_options_from_request(
@@ -1527,13 +1672,10 @@ async def generate_presentation_handler(
             presentation.title,
         )
 
-        enriched_instructions = request.instructions or ""
-        if enriched_context_for_model:
-            enriched_instructions = (
-                f"{enriched_instructions}\n\n{enriched_context_for_model}"
-                if enriched_instructions
-                else enriched_context_for_model
-            )
+        # Issue E (RESOLVED): enriched_context lives in the USER prompt.
+        # Instructions stays user-supplied only and is not concatenated with
+        # enriched_context. See main-workflow.md Section 6 item E.
+        base_instructions = request.instructions or ""
         try:
             agent_profile = get_agent_profile()
         except Exception:
@@ -1551,7 +1693,7 @@ async def generate_presentation_handler(
                     request.tone.value,
                     request.verbosity.value,
                     build_agent_profile_slide_instructions(
-                        enriched_instructions,
+                        base_instructions,
                         slide_layouts[i].id,
                         agent_profile,
                     ),
@@ -1563,6 +1705,7 @@ async def generate_presentation_handler(
                     presentation_synopsis=presentation_synopsis,
                     tone_preset=resolved_narration_tone,
                     destination_context=enriched_data_for_model,
+                    enriched_context=enriched_context_for_model,
                 )
                 for i in range(start, end)
             ]

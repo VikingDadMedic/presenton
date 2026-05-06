@@ -14,6 +14,11 @@ from api.v1.ppt.endpoints.presentation import PRESENTATION_ROUTER, generate_pres
 from models.generate_presentation_request import GeneratePresentationRequest
 from models.presentation_and_path import PresentationPathAndEditPath
 from services.database import get_async_session
+from utils.llm_calls.generate_slide_content import (
+    get_messages as get_slide_content_messages,
+    get_system_prompt as get_slide_content_system_prompt,
+    get_user_prompt as get_slide_content_user_prompt,
+)
 
 
 class FakeAsyncSession:
@@ -257,6 +262,82 @@ class TestPresentationGenerationAPI:
         assert called_request.narration_tone == "travel_companion"
         assert "next planning window" in (called_request.instructions or "").lower()
         assert "source context" in called_request.content.lower()
+
+    # ----- main-workflow.md Section 6 issue E (RESOLVED) -----
+    # Issue E was: enriched_context lived in the USER prompt for Call 1
+    # (generate_presentation_outlines) but the SYSTEM prompt for Call 3
+    # (generate_slide_content), via a caller-side concatenation
+    # `instructions = instructions + enriched_context` in /stream and /generate.
+    # Resolution: enriched_context now flows through Call 3's USER prompt
+    # under a "Verified Context" section. The caller passes it as a separate
+    # kwarg and never splices it into instructions. These tests guard that
+    # contract so the canonical site doesn't drift again.
+
+    def test_call3_user_prompt_carries_enriched_context_block(self):
+        prompt = get_slide_content_user_prompt(
+            outline="Day 1: Kyoto temple walk",
+            language="English",
+            previous_slide_title="Welcome",
+            next_slide_title="Day 2",
+            presentation_synopsis="A Kyoto cultural week",
+            enriched_context="HOTEL_RATE: $280/night. FLIGHT: NRT->KIX 90min.",
+        )
+        assert "Verified Context" in prompt
+        assert "HOTEL_RATE: $280/night" in prompt
+        assert "FLIGHT: NRT->KIX 90min" in prompt
+
+    def test_call3_user_prompt_omits_block_when_no_enriched_context(self):
+        prompt = get_slide_content_user_prompt(
+            outline="Generic outline",
+            language="English",
+        )
+        assert "Verified Context" not in prompt
+
+    def test_call3_system_prompt_does_not_contain_enriched_context(self):
+        # The enriched_context payload should NEVER reach the system prompt.
+        # If a future caller regresses by splicing enriched_context into
+        # `instructions`, this guard does not fire (system prompt would
+        # legitimately contain instructions text). It DOES catch the bug
+        # we're fixing today: get_system_prompt has no enriched_context
+        # parameter, and instructions stays user-supplied only.
+        system_prompt = get_slide_content_system_prompt(
+            tone="luxury",
+            verbosity="standard",
+            instructions="Speak in present tense.",
+            response_schema={"type": "object"},
+            template="travel-itinerary",
+        )
+        assert "Verified Context" not in system_prompt
+
+    def test_call3_get_messages_routes_enriched_context_to_user_message_only(self):
+        messages = get_slide_content_messages(
+            outline="Day 3 in Lisbon",
+            language="English",
+            tone="adventurous",
+            verbosity="standard",
+            instructions="Keep voice conversational.",
+            response_schema={"type": "object"},
+            template="travel-itinerary",
+            previous_slide_title="Day 2 in Lisbon",
+            next_slide_title="Day 4 in Lisbon",
+            presentation_synopsis="A 5-day Lisbon trip",
+            tone_preset="travel_companion",
+            enriched_context="LISBON_VISA: 90-day Schengen. CURRENCY: EUR.",
+        )
+        assert len(messages) == 2
+        system_message, user_message = messages
+        # Each LLM message has a `content` attribute carrying the rendered text.
+        system_text = getattr(system_message, "content", "") or ""
+        user_text = getattr(user_message, "content", "") or ""
+        assert "LISBON_VISA" not in system_text, (
+            "enriched_context must NOT appear in the system prompt"
+        )
+        assert "LISBON_VISA" in user_text, (
+            "enriched_context must appear in the user prompt under Verified Context"
+        )
+        # User instructions still flow through the system prompt — they're
+        # not enriched data.
+        assert "Keep voice conversational." in system_text
 
     def test_recap_endpoint_source_presentation_id_uses_db_context(self, client):
         source_presentation_id = uuid.uuid4()

@@ -1,5 +1,7 @@
 {
     "description": "Build curiosity before the reveal: contrast, then destination hero, sensory immersion, cuisine, logistics, and booking",
     "ordered": true,
-    "default": false
+    "default": false,
+    "category": "Travel",
+    "aspectFit": "vertical"
 }

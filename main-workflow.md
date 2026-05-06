@@ -101,7 +101,7 @@ Structure content: inspiration -> logistics -> conversion.
 **Search web for current travel advisories, visa requirements, pricing**
 ```
 
-> **ISSUE**: This prompt says "travel content creator" for ALL templates, not just travel.
+> ~~**ISSUE**: This prompt says "travel content creator" for ALL templates, not just travel.~~ Resolved May 2026 — see Section 6.A.
 
 **User Prompt**:
 ```
@@ -180,7 +180,7 @@ Select layout index for each of {n_slides} slides.
   - Content: SlideOutlineModel(content='# Market Analysis...')
 ```
 
-> **ISSUE**: Uses Pydantic `__str__` representation, not raw content.
+> **ISSUE**: Uses Pydantic `__str__` representation, not raw content. (Issue F — unresolved; tracked in Phase 11 backlog.)
 
 **Response Schema**:
 ```json
@@ -191,7 +191,7 @@ Select layout index for each of {n_slides} slides.
 
 **Post-processing**: Out-of-bounds indices are replaced with random valid indices.
 
-> **ISSUE**: Call 2 only sees layout names/descriptions, NOT the JSON schemas. It can't make schema-aware decisions (e.g., "this outline has metrics data, layout 5 has a metrics schema").
+> ~~**ISSUE**: Call 2 only sees layout names/descriptions, NOT the JSON schemas. It can't make schema-aware decisions (e.g., "this outline has metrics data, layout 5 has a metrics schema").~~ Resolved May 2026 — see Section 6.C (markdown `Fields:` projection now ships per-layout shape hints to the LLM).
 
 ---
 
@@ -330,10 +330,10 @@ flowchart LR
 
 | Data | Call 1 (Outlines) | Call 2 (Structure) | Call 3 (Content) | Post-Call 3 |
 |------|------|------|------|------|
-| `enriched_context` (markdown) | Injected as `additional_context` in **user prompt** under "Additional Information" | Not injected | Injected as `instructions` in **system prompt** under "# User Instructions" | -- |
+| `enriched_context` (markdown) | Injected as `additional_context` in **user prompt** under `Context:` | Not injected | Injected as `enriched_context` kwarg in **user prompt** under `# Verified Context (from enrichment pipeline):` | -- |
 | `enriched_data` (raw JSON) | Not used | Not used | Not used directly | **Overlay**: `to_slide_data()` deep-merges factual fields (prices, ratings, times) onto LLM output |
 
-> **ISSUE**: enriched_context is injected in two different positions across calls: user prompt (Call 1) vs. system prompt (Call 3). This inconsistency means the LLM treats the same data differently in each call.
+> **RESOLVED (May 2026)**: enriched_context is now injected into the **user prompt** for both Call 1 and Call 3 (Section 6 issue E). System prompt stays stable across slides — precondition for Anthropic prompt caching of the Call 3 prefix.
 
 ---
 
@@ -394,54 +394,63 @@ flowchart TD
 
 ## 6. Key Findings for Refactoring
 
-### A. System Prompt is Travel-Hardcoded
+### A. System Prompt is Travel-Hardcoded (RESOLVED — May 2026)
 
 **File**: `utils/llm_calls/generate_presentation_outlines.py`
 
-The Call 1 system prompt says "You are an expert travel content creator and destination specialist" regardless of template. Non-travel presentations (general, modern, standard) get travel-specific instructions like "Emphasize sensory destination details" and "Search web for current travel advisories."
+**Original drift**: the Call 1 system prompt said "You are an expert travel content creator and destination specialist" regardless of template, and non-travel presentations (general, modern, standard) received travel-specific instructions like "Emphasize sensory destination details" and "Search web for current travel advisories."
 
-**Impact**: Non-travel presentations receive irrelevant travel guidance, potentially degrading quality for generic content.
+**Canonical resolution**: `get_system_prompt(template: str = "")` now gates the entire travel persona block behind `if template and template.startswith("travel")`. Non-travel templates receive only the generic outline-generation guidance; the travel block is appended only for travel-template runs. The function signature was updated and `generate_ppt_outline` now passes the template name through.
 
-**Fix**: Condition the system prompt persona and guidelines on the template group. Pass `template_name` to `generate_ppt_outline`.
+### B. Call 3 is Sequential in Streaming Path (RESOLVED — May 2026)
 
-### B. Call 3 is Sequential in Streaming Path
+**File**: `api/v1/ppt/endpoints/presentation.py` `stream_presentation`; helper `utils/call3_concurrency.py`.
 
-**File**: `api/v1/ppt/endpoints/presentation.py`, lines 340-387
+**Original drift**: the streaming path used a plain `for` loop with `await` per slide. Each Call 3 LLM request blocked until the response arrived before the next slide began. With 8 slides and ~5-10s per LLM call, this meant 40-80 seconds of sequential LLM time. The `/generate` path already batched 10 slides in parallel via `asyncio.gather`, taking only 5-10 seconds total.
 
-The streaming path uses a plain `for` loop with `await` per slide. Each Call 3 LLM request blocks until the response arrives before the next slide begins. With 8 slides and ~5-10s per LLM call, this means 40-80 seconds of sequential LLM time.
+**Canonical resolution**: commit `c1a69c60` introduced a producer/consumer pattern. The producer fires N concurrent `get_slide_content_from_type_and_outline` tasks gated by `asyncio.Semaphore(CONTENT_MODEL_CONCURRENCY)` (default 4, max 12, set via `CONTENT_MODEL_CONCURRENCY` env var); the consumer drains a result queue through `OrderedSlideEmitter` which buffers out-of-order completions and emits SSE chunks in slide-index order. Per-slide LLM failures yield a structured `SSEErrorResponse` for that slot but the stream completes for surviving slides — fail-fast behavior is gone. Real-world speedup matches the documented 4-8x estimate.
 
-The `/generate` path already batches 10 slides in parallel via `asyncio.gather`, taking only 5-10 seconds total. The streaming path can't directly parallelize (SSE must send slides in order), but it could fire multiple LLM calls ahead and buffer, or use a producer-consumer pattern.
+### C. Call 2 Doesn't See JSON Schemas (RESOLVED — May 2026)
 
-**Impact**: Streaming path is 4-8x slower than it needs to be for the LLM portion.
+**File**: `utils/llm_calls/generate_presentation_structure.py`, `templates/presentation_layout.py`.
 
-### C. Call 2 Doesn't See JSON Schemas
+**Original drift**: Call 2's structure-generation prompt only shipped layout names + natural-language descriptions (`layout.to_string()` with no schema flag). The LLM could match by theme but couldn't reason about field shapes — which layouts have 4-image grids vs single-hero, which have pricing tiers, which have arrays of partner_logos with min/max length constraints. Layout assignment was probabilistic where it should have been deterministic.
 
-**File**: `utils/llm_calls/generate_presentation_structure.py`
+**Canonical resolution**:
 
-The structure generation prompt only shows the LLM layout names and natural-language descriptions (via `layout.to_string()`). It does NOT include the JSON schema for each layout. This means the LLM can't reason about which layouts have chart fields, which have image grids, which have pricing tiers, etc.
+- `PresentationLayoutModel.to_string()` now accepts an optional `include_schemas: bool = False` flag. Default `False` preserves the legacy name+description rendering for any caller that wants the lighter prompt.
+- New `_summarize_schema_fields(json_schema, max_fields=12)` helper produces a compact one-line-per-field summary — `field_name*: type (of items_type, len min-max)` — capped at 12 fields per layout to bound the prompt token budget. Required fields get a `*` marker; arrays include `len min-max` hints; anyOf/null variants resolve to a primitive type.
+- `get_messages` (the default outline-driven Call 2 path) and `get_messages_for_slides_markdown` (the slides-markdown path) both call `presentation_layout.to_string(include_schemas=True)`. The slides-markdown path previously called `to_string(with_schema=True)` which was a latent TypeError waiting to fire — now harmonized to `include_schemas=True`.
+- The Call 2 system prompt has a new "Schema-shape compatibility" rule block telling the LLM to read each layout's `Fields:` line and reject layouts whose required fields the outline doesn't supply data for (no 4-image-grid for a 1-image outline, no `len 3-5` partner_logos array for a 1-partner outline, no chart layout when content has no numeric data).
 
-**Impact**: Layout assignment is based on name/description matching rather than structural compatibility. The LLM might assign a "metrics" outline to a layout that has no metrics fields.
+**Test guards**: `tests/test_call2_layout.py` adds 12 assertions covering the field-summary helper edge cases (required marker, array length hints, max_fields cap, anyOf walk, missing-properties graceful degradation), the to_string `include_schemas` flag, the Call 2 prompt's schema inclusion, the system-prompt shape-aware steering copy, and the no-fit fallback (legacy layouts with empty schemas still render via name+description).
 
-**Fix**: Include a summary of each layout's schema fields (field names + types) in the prompt, or include the full JSON schema.
+**Unblocks**: Recipes 8 (visa+safety explainer) and 9 (package comparison) in `docs/CREATIVE-RECIPES.md`, which previously relied on probabilistic layout selection because the un-ordered `travel` template surface had to choose layouts purely from name/description matching.
 
-### D. `ordered` Flag is Broken in Frontend
+### D. `ordered` Flag is Broken in Frontend (RESOLVED — May 2026)
 
-**File**: `outline/hooks/usePresentationGeneration.ts`, line 131
+**File**: `outline/hooks/usePresentationGeneration.ts` (built-in template branch).
 
-The `usePresentationGeneration` hook hardcodes `ordered: false` when building the layout payload for `/prepare`. The `selectedTemplate.settings.ordered` value (which is `true` for travel-itinerary) is never read or passed.
+**Original drift**: the `usePresentationGeneration` hook hardcoded `ordered: false` when building the layout payload for `/prepare`. The `selectedTemplate.settings.ordered` value (which is `true` for travel-itinerary and the 9 other ordered narrative arcs) was never read or passed, so the fixed narrative sequence (hero → highlights → day → accommodation → flights → pricing → CTA) fell through to LLM-based layout assignment like any other template.
 
-**Impact**: The travel-itinerary template's fixed narrative sequence (hero -> highlights -> day -> accommodation -> flights -> pricing -> CTA) is never enforced. It falls through to LLM-based layout assignment like any other template.
+**Canonical resolution**: the built-in template path now reads `ordered: selectedTemplate.settings?.ordered ?? false` and forwards it to the `/prepare` payload. The custom-template branch keeps `ordered: false` (custom decks have no settings.json `ordered` flag). Travel-itinerary and the other 9 ordered arcs (`travel-reveal`, `travel-contrast`, `travel-audience`, `travel-micro`, `travel-local`, `travel-series`, `travel-recap`, `travel-deal-flash`, `travel-partner-spotlight`) now correctly skip Call 2 in production.
 
-**Fix**: Read `selectedTemplate.settings?.ordered ?? false` and pass it in the layout object.
+### E. Enriched Context Injection Inconsistency (RESOLVED — May 2026)
 
-### E. Enriched Context Injection Inconsistency
+**Files**: `generate_presentation_outlines.py` (Call 1), `generate_slide_content.py` (Call 3), `api/v1/ppt/endpoints/presentation.py` (callers).
 
-**Files**: `generate_presentation_outlines.py` (Call 1), `generate_slide_content.py` (Call 3)
+**Original drift**: enriched context lived in the **user prompt** for Call 1 (under `Context:`) but the **system prompt** for Call 3 (under `# User Instructions`, via a caller-side `instructions = instructions + enriched_context` splice in both `/stream` and `/generate`). This meant the LLM treated the same enricher data with different authority levels across calls and the variable per-presentation context polluted what should have been a stable cache prefix.
 
-In Call 1, enriched context goes into the **user prompt** as "Additional Information."  
-In Call 3, enriched context goes into the **system prompt** as "# User Instructions."
+**Canonical resolution**:
 
-This means the LLM treats the same enricher data with different authority levels across calls. System prompt content is generally weighted more heavily by LLMs than user message content.
+- Enriched context flows through the **user prompt** for both Call 1 and Call 3. Call 3's user prompt now has a dedicated `# Verified Context (from enrichment pipeline):` section (mirroring Call 1's `Context:` block).
+- `get_slide_content_from_type_and_outline` (and `get_messages` / `get_user_prompt` underneath it) take a separate `enriched_context` kwarg.
+- `/stream` and `/generate` pass `presentation.enriched_context` (or `enriched_context_for_model`) as that kwarg and **no longer splice it into `instructions`**. `instructions` stays user-supplied only.
+- Side benefit: system prompt is now stable across slides for a given presentation, which is the precondition for Anthropic prompt caching of Call 3's stable prefix (Phase C.1 in the Phase 7 roadmap).
+
+**Test guards**: `tests/test_presentation_generation_api.py` adds four assertions covering the contract (user-prompt routing, system-prompt absence, get_messages allocation, opt-out when no enrichment is available). These guards fire if a future commit re-introduces the splice.
+
+**Pipeline duplication note**: enrichment runs in two places by design — `/prepare` (which persists `enriched_context` + `enriched_data` on the `presentations` row, read by `/stream` without re-running) and `/generate` (one-shot path that skips `/prepare`). Neither path duplicates work within a single presentation.
 
 ### F. Outline `to_string()` Uses Pydantic `__str__`
 

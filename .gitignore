@@ -18,7 +18,10 @@ nltk
 chroma
 container.db
 .next-build
-.cursor
+.cursor/*
+!.cursor/rules/
+.cursor/rules/*
+!.cursor/rules/process-discipline.mdc
 .agents
 skills-lock.json
 .codex/
@@ -52,4 +55,10 @@ node_modules/
 
 # Task files
 # tasks.json
-# tasks/ 
+# tasks/
+
+# Build / packaging artifacts (Phase 10.3 graft from upstream e9de3f58)
+servers/fastapi/build/
+servers/fastapi/dist/
+servers/fastapi/fastembed_cache/
+servers/fastapi/*.egg-info/

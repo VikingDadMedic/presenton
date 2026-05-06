@@ -1,5 +1,7 @@
 {
     "description": "Co-marketing partner arc for hotel, airline, or DMO spotlights with branded hero, product detail, and booking CTA",
     "ordered": true,
-    "default": false
+    "default": false,
+    "category": "Travel",
+    "aspectFit": "landscape"
 }

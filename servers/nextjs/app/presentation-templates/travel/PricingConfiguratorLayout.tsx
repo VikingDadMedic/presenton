@@ -2,6 +2,8 @@
 
 import React, { useMemo, useState } from 'react'
 import * as z from "zod";
+import { buildShowcaseConfiguratorTierChangedPayload } from '@/lib/showcase-mixpanel';
+import { trackEvent, MixpanelEvent } from '@/utils/mixpanel';
 import TravelFonts from './TravelFonts';
 
 export const layoutId = 'travel-pricing-configurator'
@@ -336,7 +338,20 @@ const PricingConfiguratorInteractive: React.FC<{
                                 <button
                                     key={t.name}
                                     type="button"
-                                    onClick={() => setTierIdx(i)}
+                                    onClick={() => {
+                                        if (i === tierIdx) return;
+                                        const oldTier = tiers[tierIdx]?.name ?? '';
+                                        setTierIdx(i);
+                                        trackEvent(
+                                            MixpanelEvent.Showcase_Configurator_Tier_Changed,
+                                            buildShowcaseConfiguratorTierChangedPayload({
+                                                layoutId,
+                                                oldTier,
+                                                newTier: t.name,
+                                                tierCount: tiers.length,
+                                            })
+                                        );
+                                    }}
                                     className="flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all"
                                     style={{
                                         background: active ? 'var(--primary-color,#2563eb)' : 'var(--card-color,#f9fafb)',

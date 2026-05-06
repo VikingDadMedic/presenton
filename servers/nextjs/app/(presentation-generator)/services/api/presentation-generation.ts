@@ -45,6 +45,18 @@ export interface CampaignVariantConfig {
   [key: string]: unknown;
 }
 
+export interface CampaignVariantPresetPayload extends CampaignVariantConfig {
+  id: string;
+  label: string;
+  description?: string | null;
+  bundle_id?: string | null;
+  created_at?: string;
+}
+
+export interface CampaignPresetsResponse {
+  presets: CampaignVariantPresetPayload[];
+}
+
 export interface CampaignGenerateRequest {
   content: string;
   variants: CampaignVariantConfig[];
@@ -123,6 +135,23 @@ export interface NarrationBudgetRemainingResponse {
   remaining: number | null;
 }
 
+export type ActivityKind = "campaign" | "recap";
+
+export interface ActivityItem {
+  kind: ActivityKind;
+  id: string;
+  title: string;
+  status?: string | null;
+  presentation_id?: string | null;
+  edit_path?: string | null;
+  updated_at?: string | null;
+  extra?: Record<string, unknown> | null;
+}
+
+export interface ActivityFeedResponse {
+  activities: ActivityItem[];
+}
+
 export class PresentationGenerationApi {
   static async uploadDoc(documents: File[]) {
     const formData = new FormData();
@@ -187,6 +216,7 @@ export class PresentationGenerationApi {
     web_search,
     origin,
     currency,
+    aspect_ratio,
   }: {
     content: string;
     n_slides: number | null;
@@ -200,6 +230,11 @@ export class PresentationGenerationApi {
     web_search?: boolean;
     origin?: string;
     currency?: string;
+    // Forward-compatible: server currently ignores extra fields on /create
+    // and aspect_ratio is plumbed through URL params for editor + export.
+    // Adding it on the body so a future server-side persist lands without
+    // a coordinated client release.
+    aspect_ratio?: "landscape" | "vertical" | "square";
   }) {
     try {
       const response = await fetch(
@@ -220,6 +255,7 @@ export class PresentationGenerationApi {
             web_search,
             origin,
             currency,
+            ...(aspect_ratio ? { aspect_ratio } : {}),
           }),
           cache: "no-cache",
         }
@@ -828,6 +864,56 @@ export class PresentationGenerationApi {
       response,
       "Failed to update agent profile"
     ) as Promise<AgentProfilePayload>;
+  }
+
+  static async getCampaignPresets(signal?: AbortSignal) {
+    const response = await fetch(getApiUrl(`/api/v1/ppt/campaign-presets`), {
+      method: "GET",
+      headers: getHeader(),
+      cache: "no-cache",
+      signal,
+    });
+    return ApiResponseHandler.handleResponse(
+      response,
+      "Failed to load campaign presets"
+    ) as Promise<CampaignPresetsResponse>;
+  }
+
+  static async updateCampaignPresets(presets: CampaignVariantPresetPayload[]) {
+    const response = await fetch(getApiUrl(`/api/v1/ppt/campaign-presets`), {
+      method: "PATCH",
+      headers: getHeader(),
+      body: JSON.stringify({ presets }),
+      cache: "no-cache",
+    });
+    return ApiResponseHandler.handleResponse(
+      response,
+      "Failed to update campaign presets"
+    ) as Promise<CampaignPresetsResponse>;
+  }
+
+  static async getActivityFeed(
+    type: ActivityKind,
+    limit = 5,
+    signal?: AbortSignal,
+  ) {
+    const params = new URLSearchParams({
+      type,
+      limit: String(limit),
+    });
+    const response = await fetch(
+      getApiUrl(`/api/v1/ppt/activity?${params.toString()}`),
+      {
+        method: "GET",
+        headers: getHeader(),
+        cache: "no-cache",
+        signal,
+      },
+    );
+    return ApiResponseHandler.handleResponse(
+      response,
+      "Failed to load recent activity"
+    ) as Promise<ActivityFeedResponse>;
   }
 
 }

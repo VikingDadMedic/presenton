@@ -1,6 +1,6 @@
 # FEATURE-BUILDING.md -- TripStory Content Syndication Engine
 
-## Status: Phases 0-6 Planned (Apr 2026, none implemented)
+## Status: Phases 0-6 Shipped (May 2026) — all carve-outs closed; Phase 1 showcase Mixpanel events landed in commit `20cca156`
 
 This document is the source of truth for turning TripStory from "AI itinerary builder" into "AI travel content engine for marketing-grade syndication." It is the companion forward-looking master plan to [REFACTOR-PIVOT.MD](REFACTOR-PIVOT.MD) (the travel pivot, Phases 0-12 done) and [FEAT-EXPANSION.md](FEAT-EXPANSION.md) (the enrichment pipeline, Phases A-E done).
 

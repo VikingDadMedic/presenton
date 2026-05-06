@@ -12,6 +12,7 @@ from sqlmodel import SQLModel
 from models.sql.async_presentation_generation_status import (
     AsyncPresentationGenerationTaskModel,
 )
+from models.sql.chat_history_message import ChatHistoryMessageModel
 from models.sql.image_asset import ImageAsset
 from models.sql.key_value import KeyValueSqlModel
 from models.sql.narration_usage_log import NarrationUsageLog
@@ -90,6 +91,7 @@ async def create_db_and_tables():
                         TemplateModel.__table__,
                         WebhookSubscription.__table__,
                         AsyncPresentationGenerationTaskModel.__table__,
+                        ChatHistoryMessageModel.__table__,
                     ],
                 )
             )

@@ -1,8 +1,9 @@
 "use client";
 import React, { memo, useMemo } from "react";
-import { Loader2 } from "lucide-react";
 import { TemplateWithData } from "@/app/presentation-templates/utils";
 import { CompiledLayout } from "@/app/hooks/compileLayout";
+import { getUseCaseLabel } from "@/app/presentation-templates/use-case-taxonomy";
+import { AnimatedLoader } from "@/components/ui/animated-loader";
 
 
 
@@ -20,10 +21,10 @@ export function TemplatePreviewStage({ children }: { children: React.ReactNode }
     );
 }
 
-export const LayoutsBadge = memo(function LayoutsBadge({ count }: { count: number }) {
+export const UseCaseBadge = memo(function UseCaseBadge({ templateId }: { templateId: string }) {
     return (
         <span className="text-xs font-display absolute top-3.5 left-4 z-40 inline-flex items-center rounded-full bg-[#333333] px-3 py-1 font-semibold text-white">
-            Layouts-{count}
+            {getUseCaseLabel(templateId)}
         </span>
     );
 });
@@ -107,7 +108,7 @@ export const CustomTemplatePreview = memo(function CustomTemplatePreview({
                         key={`${templateId}-loading-${index}`}
                         className="relative w-full aspect-video flex items-center justify-center"
                     >
-                        <Loader2 className="h-4 w-4 animate-spin text-slate-300" />
+                        <AnimatedLoader size={16} className="text-slate-300" />
                     </div>
                 ))
             ) : (

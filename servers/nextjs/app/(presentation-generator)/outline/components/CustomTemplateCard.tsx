@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { CustomTemplates, useCustomTemplatePreview } from "@/app/hooks/useCustomTemplates";
 import {
     TemplatePreviewStage,
-    LayoutsBadge,
+    UseCaseBadge,
     CustomTemplatePreview,
 } from "../../components/TemplatePreviewComponents";
 
@@ -32,7 +32,7 @@ export const CustomTemplateCard = memo(function CustomTemplateCard({
             onClick={() => onSelectTemplate(template.id)}
         >
             <TemplatePreviewStage>
-                <LayoutsBadge count={template.layoutCount} />
+                <UseCaseBadge templateId={`custom-${template.id}`} />
                 <CustomTemplatePreview
                     previewLayouts={previewLayouts}
                     loading={loading}

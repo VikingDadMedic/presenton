@@ -131,6 +131,17 @@ export enum MixpanelEvent {
   Narration_Video_Job_Started = 'Narration Video Job Started',
   Narration_Video_Job_Completed = 'Narration Video Job Completed',
   Narration_Video_Job_Failed = 'Narration Video Job Failed',
+
+  Showcase_View_Loaded = 'Showcase View Loaded',
+  Showcase_Public_Toggle = 'Showcase Public Toggle',
+  Showcase_Ask_Submitted = 'Showcase Ask Submitted',
+  Showcase_Configurator_Tier_Changed = 'Showcase Configurator Tier Changed',
+
+  Chat_Conversation_Started = 'Chat Conversation Started',
+  Chat_Message_Sent = 'Chat Message Sent',
+  Chat_Tool_Called = 'Chat Tool Called',
+  Chat_Slide_Saved = 'Chat Slide Saved',
+  Chat_Tool_Error = 'Chat Tool Error',
 }
 
 export type MixpanelProps = Record<string, unknown>;

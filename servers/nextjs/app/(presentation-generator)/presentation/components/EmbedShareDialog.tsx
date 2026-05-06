@@ -10,6 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Copy, ExternalLink } from "lucide-react";
 import { MotionIcon } from "motion-icons-react";
+import { buildShowcasePublicTogglePayload } from "@/lib/showcase-mixpanel";
+import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 
 interface EmbedShareDialogProps {
   open: boolean;
@@ -142,6 +144,15 @@ export default function EmbedShareDialog({
         throw new Error(`Failed to update visibility (${res.status})`);
       }
       setIsPublic(nextValue);
+      if (presentationId) {
+        trackEvent(
+          MixpanelEvent.Showcase_Public_Toggle,
+          buildShowcasePublicTogglePayload({
+            presentationId,
+            isPublic: nextValue,
+          })
+        );
+      }
     } catch (err) {
       setVisibilityError(err instanceof Error ? err.message : String(err));
     } finally {

@@ -11,6 +11,7 @@ from constants.llm import (
 from enums.llm_provider import LLMProvider
 from utils.get_env import (
     get_anthropic_model_env,
+    get_azure_openai_model_env,
     get_codex_model_env,
     get_custom_model_env,
     get_google_api_key_env,
@@ -19,6 +20,7 @@ from utils.get_env import (
     get_ollama_model_env,
     get_openai_api_key_env,
     get_openai_model_env,
+    get_vertex_model_env,
 )
 
 
@@ -70,10 +72,14 @@ def get_model():
         return get_custom_model_env()
     elif selected_llm == LLMProvider.CODEX:
         return get_codex_model_env() or DEFAULT_CODEX_MODEL
+    elif selected_llm == LLMProvider.VERTEX:
+        return get_vertex_model_env() or DEFAULT_GOOGLE_MODEL
+    elif selected_llm == LLMProvider.AZURE:
+        return get_azure_openai_model_env() or DEFAULT_OPENAI_MODEL
     else:
         raise HTTPException(
             status_code=500,
-            detail=f"Invalid LLM provider. Please select one of: openai, google, anthropic, ollama, custom, codex",
+            detail=f"Invalid LLM provider. Please select one of: openai, google, anthropic, ollama, custom, codex, vertex, azure",
         )
 
 

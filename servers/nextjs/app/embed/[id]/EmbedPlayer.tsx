@@ -7,6 +7,8 @@ import {
   getExportDimensions,
   resolveExportAspectRatio,
 } from "@/lib/export-aspect-ratio";
+import { buildShowcaseViewLoadedPayload } from "@/lib/showcase-mixpanel";
+import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
 import { fetchShowcasePresentation } from "./showcaseApi";
 
 interface SlideData {
@@ -59,9 +61,14 @@ export default function EmbedPlayer({
   const [autoPlay, setAutoPlay] = useState(effectiveInitialAutoPlay);
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const dimensions = useMemo(
-    () => getExportDimensions(resolveExportAspectRatio(aspectRatio)),
+  const viewTrackedRef = useRef(false);
+  const resolvedAspectRatio = useMemo(
+    () => resolveExportAspectRatio(aspectRatio),
     [aspectRatio]
+  );
+  const dimensions = useMemo(
+    () => getExportDimensions(resolvedAspectRatio),
+    [resolvedAspectRatio]
   );
 
   useEffect(() => {
@@ -71,12 +78,14 @@ export default function EmbedPlayer({
         let res: Response;
         let publicStatus: number | undefined;
         let privateStatus: number | undefined;
+        let publicPathSucceeded = false;
 
         if (isShowcase) {
           const result = await fetchShowcasePresentation(presentationId);
           res = result.response;
           publicStatus = result.publicStatus;
           privateStatus = result.privateStatus;
+          publicPathSucceeded = res.ok && publicStatus === 200;
         } else {
           res = await fetch(`/api/v1/ppt/presentation/${presentationId}`);
         }
@@ -96,6 +105,30 @@ export default function EmbedPlayer({
         if (!res.ok) throw new Error(`Failed to load: ${res.status}`);
         const json = await res.json();
         setData(json);
+
+        if (!viewTrackedRef.current) {
+          viewTrackedRef.current = true;
+          // is_public: a successful fetch from the public endpoint implies the
+          // presentation was already toggled public; otherwise read from the
+          // authenticated response, falling back to null when the field is
+          // absent (e.g. older API responses).
+          const isPublicValue =
+            publicPathSucceeded
+              ? true
+              : typeof json?.is_public === "boolean"
+                ? Boolean(json.is_public)
+                : null;
+          trackEvent(
+            MixpanelEvent.Showcase_View_Loaded,
+            buildShowcaseViewLoadedPayload({
+              presentationId,
+              mode,
+              aspectRatio: resolvedAspectRatio,
+              slideCount: Array.isArray(json?.slides) ? json.slides.length : 0,
+              isPublic: isPublicValue,
+            })
+          );
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
       } finally {
@@ -103,7 +136,7 @@ export default function EmbedPlayer({
       }
     }
     load();
-  }, [isShowcase, presentationId]);
+  }, [isShowcase, mode, presentationId, resolvedAspectRatio]);
 
   useEffect(() => {
     if (!data?.theme?.data?.colors || !wrapperRef.current) return;

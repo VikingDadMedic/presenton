@@ -217,7 +217,19 @@ import TitleDescriptionSixChartsGridLayout, { Schema as TitleDescriptionSixChart
 import TitleDescriptionSixChartsFourMetricsLayout, { Schema as TitleDescriptionSixChartsFourMetricsSchema, layoutId as TitleDescriptionSixChartsFourMetricsId, layoutName as TitleDescriptionSixChartsFourMetricsName, layoutDescription as TitleDescriptionSixChartsFourMetricsDesc } from './neo-swift/TitleDescriptionSixChartsFourMetrics';
 import TitleDescriptionFourChartsSixBulletsLayout, { Schema as TitleDescriptionFourChartsSixBulletsSchema, layoutId as TitleDescriptionFourChartsSixBulletsId, layoutName as TitleDescriptionFourChartsSixBulletsName, layoutDescription as TitleDescriptionFourChartsSixBulletsDesc } from './neo-swift/TitleDescriptionFourChartsSixBullets';
 
-
+// Pitch deck templates
+import PitchDeckCenteredCoverWithFooterMeta, { Schema as PitchDeckCenteredCoverWithFooterMetaSchema, slideLayoutId as PitchDeckCenteredCoverWithFooterMetaId, slideLayoutName as PitchDeckCenteredCoverWithFooterMetaName, slideLayoutDescription as PitchDeckCenteredCoverWithFooterMetaDesc } from "./pitch-deck/CenteredCoverWithFooterMeta";
+import PitchDeckFullWidthStatement, { Schema as PitchDeckFullWidthStatementSchema, slideLayoutId as PitchDeckFullWidthStatementId, slideLayoutName as PitchDeckFullWidthStatementName, slideLayoutDescription as PitchDeckFullWidthStatementDesc } from "./pitch-deck/FullWidthStatement";
+import PitchDeckMediaAndTextSplit, { Schema as PitchDeckMediaAndTextSplitSchema, slideLayoutId as PitchDeckMediaAndTextSplitId, slideLayoutName as PitchDeckMediaAndTextSplitName, slideLayoutDescription as PitchDeckMediaAndTextSplitDesc } from "./pitch-deck/MediaAndTextSplit";
+import PitchDeckTextAndChartSplit, { Schema as PitchDeckTextAndChartSplitSchema, slideLayoutId as PitchDeckTextAndChartSplitId, slideLayoutName as PitchDeckTextAndChartSplitName, slideLayoutDescription as PitchDeckTextAndChartSplitDesc } from "./pitch-deck/TextAndChartSplit";
+import PitchDeckCardsWithChartSplit, { Schema as PitchDeckCardsWithChartSplitSchema, slideLayoutId as PitchDeckCardsWithChartSplitId, slideLayoutName as PitchDeckCardsWithChartSplitName, slideLayoutDescription as PitchDeckCardsWithChartSplitDesc } from "./pitch-deck/CardsWithChartSplit";
+import PitchDeckAdaptiveValueCardGrid, { Schema as PitchDeckAdaptiveValueCardGridSchema, slideLayoutId as PitchDeckAdaptiveValueCardGridId, slideLayoutName as PitchDeckAdaptiveValueCardGridName, slideLayoutDescription as PitchDeckAdaptiveValueCardGridDesc } from "./pitch-deck/AdaptiveValueCardGrid";
+import PitchDeckAdaptiveMediaCardGrid, { Schema as PitchDeckAdaptiveMediaCardGridSchema, slideLayoutId as PitchDeckAdaptiveMediaCardGridId, slideLayoutName as PitchDeckAdaptiveMediaCardGridName, slideLayoutDescription as PitchDeckAdaptiveMediaCardGridDesc } from "./pitch-deck/AdaptiveMediaCardGrid";
+import PitchDeckHeadlineWithDetailColumns, { Schema as PitchDeckHeadlineWithDetailColumnsSchema, slideLayoutId as PitchDeckHeadlineWithDetailColumnsId, slideLayoutName as PitchDeckHeadlineWithDetailColumnsName, slideLayoutDescription as PitchDeckHeadlineWithDetailColumnsDesc } from "./pitch-deck/HeadlineWithDetailColumns";
+import PitchDeckNumberedMultiColumnOverview, { Schema as PitchDeckNumberedMultiColumnOverviewSchema, slideLayoutId as PitchDeckNumberedMultiColumnOverviewId, slideLayoutName as PitchDeckNumberedMultiColumnOverviewName, slideLayoutDescription as PitchDeckNumberedMultiColumnOverviewDesc } from "./pitch-deck/NumberedMultiColumnOverview";
+import PitchDeckPanelListWithMedia, { Schema as PitchDeckPanelListWithMediaSchema, slideLayoutId as PitchDeckPanelListWithMediaId, slideLayoutName as PitchDeckPanelListWithMediaName, slideLayoutDescription as PitchDeckPanelListWithMediaDesc } from "./pitch-deck/PanelListWithMedia";
+import PitchDeckHorizontalTimeline, { Schema as PitchDeckHorizontalTimelineSchema, slideLayoutId as PitchDeckHorizontalTimelineId, slideLayoutName as PitchDeckHorizontalTimelineName, slideLayoutDescription as PitchDeckHorizontalTimelineDesc } from "./pitch-deck/HorizontalTimeline";
+import PitchDeckOverlappingCircleCards, { Schema as PitchDeckOverlappingCircleCardsSchema, slideLayoutId as PitchDeckOverlappingCircleCardsId, slideLayoutName as PitchDeckOverlappingCircleCardsName, slideLayoutDescription as PitchDeckOverlappingCircleCardsDesc } from "./pitch-deck/OverlappingCircleCards";
 
 
 
@@ -238,6 +250,7 @@ import productOverviewSettings from "./ProductOverview/settings.json";
 import reportSettings from "./Report/settings.json";
 import travelSettings from "./travel/settings.json";
 import travelItinerarySettings from "./travel-itinerary/settings.json";
+import pitchDeckSettings from "./pitch-deck/settings.json";
 
 // Travel templates
 import DestinationHeroLayout, { Schema as DestinationHeroSchema, layoutId as DestinationHeroId, layoutName as DestinationHeroName, layoutDescription as DestinationHeroDesc } from "./travel/DestinationHeroLayout";
@@ -653,6 +666,22 @@ export const travelPartnerSpotlightTemplates: TemplateWithData[] = [
     createTemplateEntry(BookingCTALayout, BookingCTASchema, BookingCTAId, BookingCTAName, BookingCTADesc, "travel-partner-spotlight", "BookingCTALayout"),
 ];
 
+// Pitch deck templates (upstream cherry-pick 57d1f9c3 -- satisfies Phase 8 X.2)
+export const pitchDeckTemplates: TemplateWithData[] = [
+    createTemplateEntry(PitchDeckCenteredCoverWithFooterMeta, PitchDeckCenteredCoverWithFooterMetaSchema, PitchDeckCenteredCoverWithFooterMetaId, PitchDeckCenteredCoverWithFooterMetaName, PitchDeckCenteredCoverWithFooterMetaDesc, "pitch-deck", "CenteredCoverWithFooterMeta"),
+    createTemplateEntry(PitchDeckFullWidthStatement, PitchDeckFullWidthStatementSchema, PitchDeckFullWidthStatementId, PitchDeckFullWidthStatementName, PitchDeckFullWidthStatementDesc, "pitch-deck", "FullWidthStatement"),
+    createTemplateEntry(PitchDeckMediaAndTextSplit, PitchDeckMediaAndTextSplitSchema, PitchDeckMediaAndTextSplitId, PitchDeckMediaAndTextSplitName, PitchDeckMediaAndTextSplitDesc, "pitch-deck", "MediaAndTextSplit"),
+    createTemplateEntry(PitchDeckTextAndChartSplit, PitchDeckTextAndChartSplitSchema, PitchDeckTextAndChartSplitId, PitchDeckTextAndChartSplitName, PitchDeckTextAndChartSplitDesc, "pitch-deck", "TextAndChartSplit"),
+    createTemplateEntry(PitchDeckCardsWithChartSplit, PitchDeckCardsWithChartSplitSchema, PitchDeckCardsWithChartSplitId, PitchDeckCardsWithChartSplitName, PitchDeckCardsWithChartSplitDesc, "pitch-deck", "CardsWithChartSplit"),
+    createTemplateEntry(PitchDeckAdaptiveValueCardGrid, PitchDeckAdaptiveValueCardGridSchema, PitchDeckAdaptiveValueCardGridId, PitchDeckAdaptiveValueCardGridName, PitchDeckAdaptiveValueCardGridDesc, "pitch-deck", "AdaptiveValueCardGrid"),
+    createTemplateEntry(PitchDeckAdaptiveMediaCardGrid, PitchDeckAdaptiveMediaCardGridSchema, PitchDeckAdaptiveMediaCardGridId, PitchDeckAdaptiveMediaCardGridName, PitchDeckAdaptiveMediaCardGridDesc, "pitch-deck", "AdaptiveMediaCardGrid"),
+    createTemplateEntry(PitchDeckHeadlineWithDetailColumns, PitchDeckHeadlineWithDetailColumnsSchema, PitchDeckHeadlineWithDetailColumnsId, PitchDeckHeadlineWithDetailColumnsName, PitchDeckHeadlineWithDetailColumnsDesc, "pitch-deck", "HeadlineWithDetailColumns"),
+    createTemplateEntry(PitchDeckNumberedMultiColumnOverview, PitchDeckNumberedMultiColumnOverviewSchema, PitchDeckNumberedMultiColumnOverviewId, PitchDeckNumberedMultiColumnOverviewName, PitchDeckNumberedMultiColumnOverviewDesc, "pitch-deck", "NumberedMultiColumnOverview"),
+    createTemplateEntry(PitchDeckPanelListWithMedia, PitchDeckPanelListWithMediaSchema, PitchDeckPanelListWithMediaId, PitchDeckPanelListWithMediaName, PitchDeckPanelListWithMediaDesc, "pitch-deck", "PanelListWithMedia"),
+    createTemplateEntry(PitchDeckHorizontalTimeline, PitchDeckHorizontalTimelineSchema, PitchDeckHorizontalTimelineId, PitchDeckHorizontalTimelineName, PitchDeckHorizontalTimelineDesc, "pitch-deck", "HorizontalTimeline"),
+    createTemplateEntry(PitchDeckOverlappingCircleCards, PitchDeckOverlappingCircleCardsSchema, PitchDeckOverlappingCircleCardsId, PitchDeckOverlappingCircleCardsName, PitchDeckOverlappingCircleCardsDesc, "pitch-deck", "OverlappingCircleCards"),
+];
+
 // TODO: Step 4: Combine all templates into a single array For UseCases (like the ones below)
 // All templates combined
 export const allLayouts: TemplateWithData[] = [
@@ -679,6 +708,7 @@ export const allLayouts: TemplateWithData[] = [
     ...travelRecapTemplates,
     ...travelDealFlashTemplates,
     ...travelPartnerSpotlightTemplates,
+    ...pitchDeckTemplates,
 ];
 
 
@@ -845,6 +875,13 @@ export const templates: TemplateLayoutsWithSettings[] = [
         description: travelPartnerSpotlightSettings.description,
         settings: travelPartnerSpotlightSettings as TemplateGroupSettings,
         layouts: travelPartnerSpotlightTemplates,
+    },
+    {
+        id: "pitch-deck",
+        name: "Pitch Deck",
+        description: pitchDeckSettings.description,
+        settings: pitchDeckSettings as TemplateGroupSettings,
+        layouts: pitchDeckTemplates,
     },
 ];
 

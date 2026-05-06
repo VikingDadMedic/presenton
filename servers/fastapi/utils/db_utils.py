@@ -117,3 +117,29 @@ def group_by_period(column, period: str, database_url: str):
     trunc_granularity = "month" if normalized_period == "month" else "day"
     output_pattern = "YYYY-MM" if normalized_period == "month" else "YYYY-MM-DD"
     return func.to_char(func.date_trunc(trunc_granularity, column), output_pattern)
+
+
+def to_sync_sqlalchemy_url(database_url: str) -> str:
+    """Strip async driver prefixes for Alembic and other sync SQLAlchemy engines.
+
+    PostgreSQL URLs use ``postgresql+psycopg://`` (psycopg3) so migrations do not
+    depend on psycopg2, which is not installed when using asyncpg at runtime.
+
+    MySQL URLs use ``mysql+pymysql://`` so Alembic does not require ``mysqlclient``
+    (the default for plain ``mysql://``); PyMySQL is already pulled in by aiomysql.
+    """
+    if database_url.startswith("sqlite+aiosqlite:///"):
+        return "sqlite:///" + database_url[len("sqlite+aiosqlite:///") :]
+    if database_url.startswith("postgresql+asyncpg://"):
+        rest = database_url[len("postgresql+asyncpg://") :]
+        return f"postgresql+psycopg://{rest}"
+    if database_url.startswith("mysql+aiomysql://"):
+        rest = database_url[len("mysql+aiomysql://") :]
+        return f"mysql+pymysql://{rest}"
+    if database_url.startswith("postgresql://"):
+        rest = database_url[len("postgresql://") :]
+        return f"postgresql+psycopg://{rest}"
+    if database_url.startswith("mysql://"):
+        rest = database_url[len("mysql://") :]
+        return f"mysql+pymysql://{rest}"
+    return database_url

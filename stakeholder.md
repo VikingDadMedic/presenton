@@ -1,7 +1,7 @@
 # TripStory — Stakeholder Briefing
 
 > A single-source briefing on what TripStory is, what's shipped, why it's defensible, who buys it, and what's next.
-> Last updated: May 2026. Companion docs: [README.md](README.md), [VISION.md](VISION.md), [REFACTOR-PIVOT.MD](REFACTOR-PIVOT.MD), [FEAT-EXPANSION.md](FEAT-EXPANSION.md), [FEATURE-BUILDING.md](FEATURE-BUILDING.md), [EXPORTS.md](EXPORTS.md), [main-workflow.md](main-workflow.md), [DEPLOYMENT.md](DEPLOYMENT.md), [docs/CREATIVE-RECIPES.md](docs/CREATIVE-RECIPES.md), [docs/RECAP-CRON-RECIPES.md](docs/RECAP-CRON-RECIPES.md).
+> Last updated: May 3, 2026. Companion docs: [README.md](README.md), [VISION.md](VISION.md), [REFACTOR-PIVOT.MD](REFACTOR-PIVOT.MD), [FEAT-EXPANSION.md](FEAT-EXPANSION.md), [FEATURE-BUILDING.md](FEATURE-BUILDING.md), [EXPORTS.md](EXPORTS.md), [main-workflow.md](main-workflow.md), [DEPLOYMENT.md](DEPLOYMENT.md), [docs/CREATIVE-RECIPES.md](docs/CREATIVE-RECIPES.md), [docs/RECAP-CRON-RECIPES.md](docs/RECAP-CRON-RECIPES.md).
 
 ---
 
@@ -128,12 +128,17 @@ Itinerary scheduler distributes activities across trip days with category divers
 | Campaign generator | `POST /api/v1/ppt/campaign/generate` | Async multi-variant creative generation from one brief + status polling |
 | Recap mode | `POST /api/v1/ppt/presentation/recap` | Post-trip lifecycle content (`welcome_home`, `anniversary`, `next_planning_window`) |
 | Multi-aspect export | `export_options.aspect_ratio` | Landscape/vertical/square output for PPTX/PDF/HTML/video routes |
+| Saved campaign presets | `lib/campaign-presets.ts` + `/api/v1/ppt/campaign-presets` | Persist multi-variant bundles per agent for quick re-use across campaigns |
+| Schedule-this-recap | `ScheduleRecapModal.tsx` + [`docs/RECAP-CRON-RECIPES.md`](docs/RECAP-CRON-RECIPES.md) | Generate cron / GitHub Actions snippets to automate post-trip recap delivery |
+| Bulk recap | `source_presentation_ids` on `/presentation/recap` | Generate recap decks across multiple past trips in one click |
+| Recent activity panels | `/api/v1/ppt/activity` + `<RecentActivityCard>` | Surface last 5 campaigns / recaps in dashboard sidebars with click-through |
+| End-of-campaign hero summary | `CampaignPage.tsx` hero summary | Replace row-list with a celebratory artifact grid + Send-to-client `mailto:` when all variants complete |
 
 Async video export at `/api/export-as-video` returns `{ jobId, statusUrl }` immediately; status reports `progressPct`, `currentFrame`, `totalFrames`. File-backed job store with 24-hour reaper.
 
 ### E. AI Agent Integration (MCP) [LIVE]
 
-MCP server at `/mcp/` exposes **19 tools** auto-registered from the FastAPI OpenAPI spec, including `generate_presentation`, `get_presentation`, `export_presentation`, `edit_slide_field`, `get_enricher_status`, `list_presentations`, `templates_list`, `bulk_generate_narration`, `narration_estimate`, `get_narration_voices`, `get_narration_status`, `get_embed_url`, `export_json`, `generate_async`, `generate_campaign`, `get_campaign_status`, `generate_recap`, `get_agent_profile`, and `update_agent_profile`. Works in Cursor, Claude Desktop, n8n, and any MCP-compliant agent. See [EXPORTS.md Section 9](EXPORTS.md#9-mcp-integration) for the canonical tool table.
+MCP server at `/mcp/` exposes **26 tools** auto-registered from the FastAPI OpenAPI spec, including `generate_presentation`, `get_presentation`, `export_presentation`, `edit_slide_field`, `get_enricher_status`, `list_presentations`, `templates_list`, `bulk_generate_narration`, `narration_estimate`, `get_narration_voices`, `get_narration_status`, `get_embed_url`, `export_json`, `generate_async`, `generate_campaign`, `get_campaign_status`, `generate_recap`, `get_agent_profile`, `update_agent_profile`, `get_campaign_presets`, `update_campaign_presets`, `get_activity_feed`, and the four chat tools `list_chat_conversations`, `get_chat_history`, `send_chat_message`, `stream_chat_message`. Works in Cursor, Claude Desktop, n8n, and any MCP-compliant agent. See [EXPORTS.md Section 9](EXPORTS.md#9-mcp-integration) for the canonical tool table.
 
 ### F. Editing & Customization [LIVE]
 
@@ -146,6 +151,7 @@ MCP server at `/mcp/` exposes **19 tools** auto-registered from the FastAPI Open
 | Chart data editor | Dialog-based table for Recharts data arrays |
 | Drag-reorder | @dnd-kit for slides + outlines |
 | Undo/redo | 30-state history |
+| Conversational editing (chat sidebar) | Per-presentation chat thread with 8 LLM-exposed tools (`saveSlide` / `deleteSlide` route through the same `apply_slide_edit_with_pipeline` helper as direct edits — IPA + narration-clear + asset diff + mem0 store on every chat-driven write); 90s per-turn timeout + `CHAT_MAX_SLIDES_PER_TURN=5` budget guard against runaway tool loops |
 | Template groups | 14+ groups: general, modern, swift, neo-* variants, code, education, product-overview, report, travel + 10 travel narrative arcs |
 | Custom templates | Upload `.pptx`/`.ppt`/`.pptm`/`.odp` → AI conversion to React + Zod entry; UUID-prefixed groups compiled at runtime via `@babel/standalone` |
 
@@ -276,11 +282,15 @@ Phases 0-12 of the travel pivot are complete and deployed at `https://presenton-
 - All 6 export formats wired to the UI export dropdown
 - Showcase mode + Pricing Configurator widget + AI Q&A hotspot (with `is_public`-gated public sharing)
 - ElevenLabs narration with usage tracking, monthly budgets, IPA augmentation
-- MCP server at `/mcp/` with 19 tools (see [EXPORTS.md Section 9](EXPORTS.md#9-mcp-integration))
+- MCP server at `/mcp/` with 26 tools (see [EXPORTS.md Section 9](EXPORTS.md#9-mcp-integration))
+- Conversational editing surface — chat sidebar on `/presentation`, 4 chat endpoints + 8 LLM-exposed tools, `saveSlide` and `deleteSlide` grafted onto the shared `apply_slide_edit_with_pipeline` helper so chat-driven edits get full IPA + narration-clear + asset diff + mem0 store parity with direct edits
 - Eggshell Bright Tech theme system (4-theme registry)
 - Async video export job pipeline with file-backed status store and progress polling
 - Azure App Service deployment with `/health` monitoring, single-command redeploy script (`scripts/redeploy-azure.sh`), end-to-end smoke harness (`scripts/smoke-narration.sh`)
 - TripStory rebrand (user-visible strings); code identifiers retained as "presenton" intentionally
+- Phase 3 strategic UX features (saved campaign presets, scheduled-recap cron / GitHub Actions generator, bulk recap, recent activity feeds, built-in template categorization, CRM-aware Past trips filter, end-of-campaign hero summary) all live on `feat/ux-ui-improvements`
+- Anthropic prompt caching for Call 3 (~90% prefix-reuse savings on 7+ slide decks) [LIVE — shipped May 2026]
+- Sequential Call 3 streaming parallelization with bounded concurrency + per-slide error isolation (4-8x speedup on the streaming path) [LIVE — shipped May 2026]
 
 ### In flight or planned
 
@@ -289,8 +299,6 @@ Phases 0-12 of the travel pivot are complete and deployed at `https://presenton-
 - TripStory visual asset replacement — logo PNGs in `/public/` not yet rebranded [IN FLIGHT]
 - Booking-grade APIs (Amadeus or Skyscanner for flights, Booking.com or Expedia for hotels) [PLANNED]
 - Interactive map embeds (Mapbox or Google Maps JavaScript) replacing static map images [PLANNED]
-- Anthropic prompt caching for Call 3 (~90% prefix-reuse savings on 7+ slide decks) [PLANNED]
-- Sequential Call 3 streaming parallelization (4-8x speedup on the streaming path) [PLANNED]
 
 ---
 
@@ -303,6 +311,7 @@ Phases 0-12 of the travel pivot are complete and deployed at `https://presenton-
 - Marketing site launch (`servers/marketing/`) with public landing, features, pricing, embedded product demos via the existing `/embed/{id}` route
 - Multi-tenant architecture (PostgreSQL via `DATABASE_URL` already supported; row-level scoping needed)
 - QR codes on exported decks pointing to interactive embed view
+- `presentations.recap_mode` column migration so recap activity feeds can use exact mode filtering instead of title-substring heuristics
 
 #### Q4 2026
 
@@ -310,12 +319,13 @@ Phases 0-12 of the travel pivot are complete and deployed at `https://presenton-
 - Interactive map embeds with route polylines and click-to-navigate markers
 - Multi-currency live pricing
 - Agency white-label option (custom domain, custom branding, isolated tenant)
+- Built-in recap scheduler with backend persistence (replacing the current localStorage-only cron/GitHub Actions recipe helper)
 
 ### Risks and mitigations
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
-| LLM cost variability on high-traffic deployments | Medium | Per-call model routing already shipped — GPT-5.5 only for Call 1; Mercury 2 for high-volume Calls 2-3. Anthropic prompt caching planned. |
+| LLM cost variability on high-traffic deployments | Medium | Per-call model routing already shipped — GPT-5.5 only for Call 1; Mercury 2 for high-volume Calls 2-3. Anthropic prompt caching shipped (~90% prefix-reuse savings on Call 3 fan-out within a single deck). |
 | Supply API rate limits (Viator, SerpAPI, Tavily) | Medium | Graceful degradation rule prevents pipeline breakage; 7-day Viator destination resolver cache; future: Redis-backed enricher cache layer. |
 | ElevenLabs character costs scaling unpredictably | Medium | Per-slide cap (`ELEVENLABS_MAX_CHARS_PER_SLIDE`) and monthly budget (`ELEVENLABS_MONTHLY_CHARACTER_BUDGET`) enforced from the [`narration_usage_logs`](servers/fastapi/alembic/versions/9d2f4f8429de_add_narration_usage_log.py) table. Usage dashboard surfaces overruns. |
 | Open-source clone risk | Low-medium | Moats compound: enricher integration depth + IPA expertise + 30 layouts + MCP-native design. Network effects from agency CRM adoption add switching cost. |

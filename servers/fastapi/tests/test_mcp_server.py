@@ -27,6 +27,28 @@ def _collect_operation_ids(spec: dict) -> list[str]:
     return operation_ids
 
 
+EXPECTED_MCP_TOOL_COUNT = 27
+
+EXPECTED_OPERATION_IDS = {
+    "generate_campaign",
+    "get_campaign_status",
+    "generate_recap",
+    "get_agent_profile",
+    "update_agent_profile",
+    "get_campaign_presets",
+    "update_campaign_presets",
+    "get_activity_feed",
+    "get_narration_voices",
+    "bulk_generate_narration",
+    "narration_estimate",
+    "list_chat_conversations",
+    "get_chat_history",
+    "send_chat_message",
+    "stream_chat_message",
+    "delete_slide",
+}
+
+
 def test_openapi_operation_ids_are_unique_and_include_required_tools():
     spec = _load_openapi_spec()
     operation_ids = _collect_operation_ids(spec)
@@ -35,18 +57,12 @@ def test_openapi_operation_ids_are_unique_and_include_required_tools():
     assert len(operation_ids) == len(set(operation_ids)), (
         "openai_spec.json contains duplicate operationIds"
     )
+    assert len(operation_ids) == EXPECTED_MCP_TOOL_COUNT, (
+        f"Expected {EXPECTED_MCP_TOOL_COUNT} operationIds in openai_spec.json "
+        f"but found {len(operation_ids)}: {sorted(operation_ids)}"
+    )
 
-    expected_operation_ids = {
-        "generate_campaign",
-        "get_campaign_status",
-        "generate_recap",
-        "get_agent_profile",
-        "update_agent_profile",
-        "get_narration_voices",
-        "bulk_generate_narration",
-        "narration_estimate",
-    }
-    missing = expected_operation_ids - set(operation_ids)
+    missing = EXPECTED_OPERATION_IDS - set(operation_ids)
     assert not missing, f"Missing expected operationIds in OpenAPI spec: {sorted(missing)}"
 
 
@@ -69,23 +85,18 @@ async def test_fastmcp_registers_expected_openapi_tools():
     tool_names = {tool.name for tool in tools}
     assert tool_names, "Expected FastMCP to register at least one tool"
 
+    assert len(tool_names) == EXPECTED_MCP_TOOL_COUNT, (
+        f"Expected FastMCP to register {EXPECTED_MCP_TOOL_COUNT} tools "
+        f"but registered {len(tool_names)}: {sorted(tool_names)}"
+    )
+
     missing_operation_tools = operation_ids - tool_names
     assert not missing_operation_tools, (
         "FastMCP did not register tools for operationIds: "
         f"{sorted(missing_operation_tools)}"
     )
 
-    expected_operation_ids = {
-        "generate_campaign",
-        "get_campaign_status",
-        "generate_recap",
-        "get_agent_profile",
-        "update_agent_profile",
-        "get_narration_voices",
-        "bulk_generate_narration",
-        "narration_estimate",
-    }
-    missing_expected_tools = expected_operation_ids - tool_names
+    missing_expected_tools = EXPECTED_OPERATION_IDS - tool_names
     assert not missing_expected_tools, (
         "FastMCP missing expected tools: "
         f"{sorted(missing_expected_tools)}"

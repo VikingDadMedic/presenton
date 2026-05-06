@@ -8,6 +8,7 @@ import PresentationMode from "./PresentationMode";
 import SidePanel from "./SidePanel";
 import SlideContent from "./SlideContent";
 import SlideSkeleton from "./SlideSkeleton";
+import Chat from "./Chat";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
@@ -219,6 +220,13 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
               )}
             </div>
           </div>
+        </div>
+        <div className="w-full max-w-[370px] h-full shrink-0 self-start sticky top-0">
+          <Chat
+            presentationId={presentation_id}
+            currentSlide={selectedSlide}
+            onPresentationChanged={fetchUserSlides}
+          />
         </div>
       </div>
     </div>

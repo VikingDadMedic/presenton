@@ -1,5 +1,7 @@
 {
     "description": "Told through a local's perspective: character intro, their perfect day, food picks, ambient experience, insider tips, booking",
     "ordered": true,
-    "default": false
+    "default": false,
+    "category": "Travel",
+    "aspectFit": "landscape"
 }

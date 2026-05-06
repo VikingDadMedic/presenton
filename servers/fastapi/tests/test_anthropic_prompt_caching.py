@@ -1,7 +1,9 @@
-"""Phase C.1 test guard: Anthropic prompt caching for Call 3.
+"""Phase C.1 + Phase 11.3 test guard: Anthropic prompt caching for Calls 3 & 4.
 
-These tests verify the caching contract produced by
-`utils/llm_calls/generate_slide_content.py`:
+These tests verify the caching contract produced by the shared helper at
+`utils/llm_calls/anthropic_caching.py` plus the per-call-site stable
+prefix / variable suffix builders in `generate_slide_content.py` (Call 3)
+and `edit_slide.py` (Call 4):
 
 - The system prompt splits cleanly into a stable prefix + variable suffix.
 - `build_anthropic_cache_extra_body` produces a structured `system` payload
@@ -9,13 +11,14 @@ These tests verify the caching contract produced by
 - The base extra_body (e.g. `reasoning_effort` for Mercury) is preserved.
 - The combined `get_system_prompt` is byte-identical to prefix + suffix
   so non-Anthropic providers are unchanged.
-- The cacheable prefix does NOT depend on per-slide schema content.
+- The cacheable prefix does NOT depend on per-call variable content
+  (per-slide schema for Call 3, per-edit memory_context for Call 4).
 """
 
+from utils.llm_calls.anthropic_caching import build_anthropic_cache_extra_body
 from utils.llm_calls.generate_slide_content import (
     _build_system_prompt_stable_prefix,
     _build_system_prompt_variable_suffix,
-    build_anthropic_cache_extra_body,
     get_system_prompt,
 )
 

@@ -226,7 +226,7 @@ Why ACR build instead of local Docker build:
 
 App Service caches the previous image. `az webapp restart` forces it to pull `presenton:latest` again. The first pull for a changed image takes 1-3 minutes (only changed layers are downloaded). Full cold pull from scratch takes ~20 minutes.
 
-**Migration call-out (current Alembic head: `4b7f8e2c1d9a`):**
+**Migration call-out (current Alembic head: `c7b70d0f31b1`):**
 
 If you run migrations manually outside container startup, apply Alembic head after deploy:
 
@@ -242,8 +242,9 @@ Revisions in chronological order:
 | `6b8a7a3b8d1f` | Narration columns on `slides` / `presentations` |
 | `9d2f4f8429de` | `narration_usage_logs` table (drives the monthly budget guardrail and the `/usage/summary` dashboard) |
 | `4b7f8e2c1d9a` | `presentations.is_public` boolean (powers Showcase Mode + the `/api/v1/public/*` namespace) |
+| `c7b70d0f31b1` | `chat_history_messages` table + 3 indexes (Phase 9 conversational editing surface; FK `presentations.id` ON DELETE CASCADE) |
 
-Keeping `MIGRATE_DATABASE_ON_STARTUP=true` in App Service also applies all three on boot. After this deploy, `4b7f8e2c1d9a` MUST be present before Showcase / public viewer / campaign visibility flags work in production.
+Keeping `MIGRATE_DATABASE_ON_STARTUP=true` in App Service also applies all four on boot. After this deploy, `c7b70d0f31b1` MUST be present before chat conversations persist in production (the head also implies `4b7f8e2c1d9a` for Showcase / public viewer / campaign visibility flags).
 
 **Step 3: Verify**
 

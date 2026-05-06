@@ -59,6 +59,9 @@ class PresentationModel(SQLModel, table=True):
     narration_pronunciation_dictionary_id: Optional[str] = Field(
         sa_column=Column(String(length=64), nullable=True), default=None
     )
+    recap_mode: Optional[str] = Field(
+        sa_column=Column(String(length=32), nullable=True), default=None
+    )
 
     def get_new_presentation(self):
         return PresentationModel(
@@ -85,6 +88,7 @@ class PresentationModel(SQLModel, table=True):
             narration_tone=self.narration_tone,
             narration_model_id=self.narration_model_id,
             narration_pronunciation_dictionary_id=self.narration_pronunciation_dictionary_id,
+            recap_mode=self.recap_mode,
         )
 
     def get_presentation_outline(self):

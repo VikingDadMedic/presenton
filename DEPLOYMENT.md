@@ -236,7 +236,7 @@ Why ACR build instead of local Docker build:
 
 App Service caches the previous image. `az webapp restart` forces it to pull `presenton:latest` again. The first pull for a changed image takes 1-3 minutes (only changed layers are downloaded). Full cold pull from scratch takes ~20 minutes.
 
-**Migration call-out (current Alembic head: `c7b70d0f31b1`):**
+**Migration call-out (current Alembic head: `e2b1f4d9a6c3`):**
 
 If you run migrations manually outside container startup, apply Alembic head after deploy:
 
@@ -253,8 +253,9 @@ Revisions in chronological order:
 | `9d2f4f8429de` | `narration_usage_logs` table (drives the monthly budget guardrail and the `/usage/summary` dashboard) |
 | `4b7f8e2c1d9a` | `presentations.is_public` boolean (powers Showcase Mode + the `/api/v1/public/*` namespace) |
 | `c7b70d0f31b1` | `chat_history_messages` table + 3 indexes (Phase 9 conversational editing surface; FK `presentations.id` ON DELETE CASCADE) |
+| `e2b1f4d9a6c3` | `presentations.recap_mode` VARCHAR(32) nullable (Phase 11.2b — Q3 multi-tenant prereq; activity feed prefers this column over title-substring matching) |
 
-Keeping `MIGRATE_DATABASE_ON_STARTUP=true` in App Service also applies all four on boot. After this deploy, `c7b70d0f31b1` MUST be present before chat conversations persist in production (the head also implies `4b7f8e2c1d9a` for Showcase / public viewer / campaign visibility flags).
+Keeping `MIGRATE_DATABASE_ON_STARTUP=true` in App Service also applies all five on boot. After this deploy, `e2b1f4d9a6c3` MUST be present before recap presentations persist their canonical mode column in production. The head also implies all prior revisions (Showcase / chat / narration).
 
 **Step 3: Verify**
 
@@ -376,6 +377,26 @@ The Phase 0-6 work is opt-in via existing env vars; no new mandatory env vars. W
 
 - `ELEVENLABS_MONTHLY_CHARACTER_BUDGET` (already documented above) -- when set, gates the monthly synthesis budget AND populates the campaign cost preview's "over budget" banner.
 - `APP_DATA_DIRECTORY` (already documented as `/app_data`) -- now also hosts `campaign-jobs/{id}.json` files in addition to `video-jobs/`.
+
+---
+
+## MCP server (Phase 11.4)
+
+`mcp_server.py` runs alongside the FastAPI app (port 8001 by default) and registers the 27 OpenAPI operationIds as MCP tools via `FastMCP.from_openapi`. Auth on the loopback path is now closed end-to-end:
+
+- The OpenAPI spec declares `securitySchemes.basicAuth` (`type: http`, `scheme: basic`) with a top-level `security: [{ basicAuth: [] }]` requirement so MCP clients consuming the spec generate Basic-auth-aware bindings.
+- The loopback `httpx.AsyncClient` is wrapped with `MCPLoopbackAuth` (`servers/fastapi/mcp_server.py`). On every outbound loopback call the shim resolves the Authorization header in this order:
+  1. Header already on the outbound request (caller wins).
+  2. Inbound MCP request via `fastmcp.server.dependencies.get_http_headers(include={"authorization"})` — the canonical path; the MCP client authenticates once, every loopback call inherits.
+  3. `MCP_LOOPBACK_AUTH=basic:<user>:<pass>` env-var fallback — for service-to-service smoke probes and background tasks where no inbound MCP request context exists.
+  4. No header (loopback proceeds unauthenticated; FastAPI middleware 401s it on a configured deployment — fail-closed).
+
+### Optional MCP env var
+
+- `MCP_LOOPBACK_AUTH` (NEW): `basic:<user>:<pass>` — pre-encoded into a Basic Authorization header at startup and used as the fallback when no inbound MCP request carries auth. Leave UNSET in production unless you need service-to-service MCP calls without a logged-in user (e.g., scheduled smoke probes).
+  - Provision via `az webapp config appsettings set --settings MCP_LOOPBACK_AUTH="basic:smoke-bot:<password>"` followed by `az webapp restart`.
+  - When unset, the previous behavior is preserved exactly: loopback requests fail closed at the FastAPI middleware unless an inbound MCP request supplies its own Authorization header.
+  - Wrong scheme prefix (anything other than `basic:`) or malformed payload (no `:` between user and pass) returns None at startup and is treated as if unset — defensive so a typo can't take the MCP server down.
 
 ---
 

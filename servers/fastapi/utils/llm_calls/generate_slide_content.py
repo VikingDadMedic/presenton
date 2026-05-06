@@ -5,11 +5,14 @@ from typing import Optional
 from fastapi import HTTPException
 from llmai import get_client
 from llmai.shared import JSONSchemaResponse, Message, SystemMessage, UserMessage
-from llmai.shared.configs import AnthropicClientConfig
 from constants.narration import TONE_PROMPT_ADDENDA, normalize_tone_preset
 from models.presentation_layout import SlideLayoutModel
 from models.presentation_outline_model import SlideOutlineModel
 from services.auto_ipa_service import augment_speaker_note_with_ipa
+from utils.llm_calls.anthropic_caching import (
+    build_anthropic_cache_extra_body,
+    is_anthropic_provider,
+)
 from utils.llm_config import get_content_model_config, has_content_model_override
 from utils.llm_client_error_handler import handle_llm_client_exceptions
 from utils.llm_utils import extract_structured_content, get_generate_kwargs
@@ -226,37 +229,6 @@ def get_system_prompt(
     return stable_prefix + variable_suffix
 
 
-def build_anthropic_cache_extra_body(
-    stable_prefix: str,
-    variable_suffix: str,
-    base_extra_body: Optional[dict] = None,
-) -> dict:
-    """Return an `extra_body` payload that overrides the Anthropic request's
-    string `system` field with a structured list of two TextBlockParam-like
-    dicts: a cache-marked stable prefix, then a variable per-slide suffix.
-
-    The Anthropic Python SDK merges `extra_body` into the request body via
-    `_merge_mappings` (later keys win), so this overrides the explicit
-    `system="..."` string llmai would otherwise send. Result: ~90% prefix
-    re-use savings on Call 3 within a single presentation, since every
-    slide shares the same stable prefix and only the schema-bearing suffix
-    is reprocessed.
-    """
-    merged: dict = dict(base_extra_body or {})
-    merged["system"] = [
-        {
-            "type": "text",
-            "text": stable_prefix,
-            "cache_control": {"type": "ephemeral"},
-        },
-        {
-            "type": "text",
-            "text": variable_suffix,
-        },
-    ]
-    return merged
-
-
 def get_user_prompt(
     outline: str,
     language: Optional[str],
@@ -401,7 +373,7 @@ async def get_slide_content_from_type_and_outline(
         # of one presentation. No-op for OpenAI / Google / Mercury / Bedrock /
         # custom-OpenAI-compatible paths.
         effective_extra_body = extra_body
-        if isinstance(config, AnthropicClientConfig):
+        if is_anthropic_provider(config):
             stable_prefix = _build_system_prompt_stable_prefix(
                 tone, verbosity, instructions, template, tone_preset
             )

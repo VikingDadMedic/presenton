@@ -8,6 +8,10 @@ from constants.narration import TONE_PROMPT_ADDENDA, normalize_tone_preset
 from models.presentation_layout import SlideLayoutModel
 from models.sql.slide import SlideModel
 from services.auto_ipa_service import augment_speaker_note_with_ipa
+from utils.llm_calls.anthropic_caching import (
+    build_anthropic_cache_extra_body,
+    is_anthropic_provider,
+)
 from utils.llm_config import get_content_model_config, has_content_model_override
 from utils.llm_client_error_handler import handle_llm_client_exceptions
 from utils.llm_utils import extract_structured_content, get_generate_kwargs
@@ -59,22 +63,26 @@ def _normalize_context_value(value: Optional[str], fallback: str) -> str:
     return cleaned or fallback
 
 
-def get_system_prompt(
+def _build_system_prompt_stable_prefix(
     tone: Optional[str] = None,
     verbosity: Optional[str] = None,
     instructions: Optional[str] = None,
-    memory_context: Optional[str] = None,
     template: str = "",
     tone_preset: Optional[str] = None,
-):
-    memory_block = (
-        "\n    # Retrieved Presentation Memory Context\n"
-        f"    {memory_context}\n"
-        "    - Use this context only if it is relevant to the user prompt.\n"
-        "    - Prefer this context over assumptions when resolving ambiguity.\n"
-        if memory_context
-        else ""
-    )
+) -> str:
+    """The portion of the Call 4 system prompt that does NOT vary per edit.
+
+    Anthropic prompt caching (`cache_control: ephemeral`) hashes the
+    request body up to the cache marker; everything *before* the marker is
+    re-used across calls within the same presentation. We split here so
+    `memory_context` (which IS per-edit, since mem0 retrieval is keyed on
+    the edit prompt) lands in the variable suffix and the cacheable prefix
+    stays stable for an entire chat-driven saveSlide cluster.
+
+    Stable across edits within one presentation: presentation-level config
+    (instructions / tone / verbosity), template (drives travel-specific
+    rules), and tone_preset (drives narration tone addenda).
+    """
     normalized_tone_preset = normalize_tone_preset(tone_preset)
     tone_preset_block = ""
     if normalized_tone_preset:
@@ -106,11 +114,50 @@ def get_system_prompt(
     {SPEAKER_NOTE_GENERATION_RULES}
     {"- When editing travel slides, maintain consistent pricing format, date format, and destination naming." if template and template.startswith("travel") else ""}
     {"- Preserve travel-specific data accuracy (flight times, distances, ratings) unless explicitly asked to change." if template and template.startswith("travel") else ""}
-    {tone_preset_block}
+    {tone_preset_block}"""
+
+
+def _build_system_prompt_variable_suffix(
+    memory_context: Optional[str] = None,
+) -> str:
+    """The per-edit tail of the Call 4 system prompt — memory_context plus
+    the closing emphasis line. Excluded from the Anthropic cache prefix so
+    each edit's mem0 retrieval flows through normally without forcing a
+    cache miss on the rest of the prompt.
+    """
+    memory_block = (
+        "\n    # Retrieved Presentation Memory Context\n"
+        f"    {memory_context}\n"
+        "    - Use this context only if it is relevant to the user prompt.\n"
+        "    - Prefer this context over assumptions when resolving ambiguity.\n"
+        if memory_context
+        else ""
+    )
+    return f"""
     {memory_block}
 
     **Go through all notes and steps and make sure they are followed, including mentioned constraints**
     """
+
+
+def get_system_prompt(
+    tone: Optional[str] = None,
+    verbosity: Optional[str] = None,
+    instructions: Optional[str] = None,
+    memory_context: Optional[str] = None,
+    template: str = "",
+    tone_preset: Optional[str] = None,
+):
+    """Combined system prompt — used for the SystemMessage payload that
+    non-Anthropic providers actually send. For the Anthropic path, the
+    prompt is reassembled from the same two halves into a structured
+    `system` array via `build_anthropic_cache_extra_body`.
+    """
+    stable_prefix = _build_system_prompt_stable_prefix(
+        tone, verbosity, instructions, template, tone_preset
+    )
+    variable_suffix = _build_system_prompt_variable_suffix(memory_context)
+    return stable_prefix + variable_suffix
 
 
 def get_user_prompt(
@@ -251,14 +298,35 @@ async def get_edited_slide_content(
             tone_preset,
         )
 
+        # When the resolved provider is Anthropic, replace the string
+        # `system` field on the wire with a structured list that bears a
+        # cache_control marker on the stable prefix (presentation-level
+        # config + template-aware rules + tone preset). The variable
+        # suffix carries memory_context, which is per-edit (mem0 query is
+        # keyed on the edit prompt). Result: ~90% prefix re-use savings on
+        # chat saveSlide bursts within a single presentation. No-op for
+        # OpenAI / Google / Mercury / Bedrock / custom-OpenAI-compatible
+        # paths.
+        effective_extra_body = extra_body
+        if is_anthropic_provider(config):
+            stable_prefix = _build_system_prompt_stable_prefix(
+                tone, verbosity, instructions, template, tone_preset
+            )
+            variable_suffix = _build_system_prompt_variable_suffix(memory_context)
+            effective_extra_body = build_anthropic_cache_extra_body(
+                stable_prefix=stable_prefix,
+                variable_suffix=variable_suffix,
+                base_extra_body=extra_body,
+            )
+
         for attempt in range(3):
             kwargs = get_generate_kwargs(
                 model=model,
                 messages=messages,
                 response_format=response_format,
             )
-            if extra_body:
-                kwargs["extra_body"] = extra_body
+            if effective_extra_body:
+                kwargs["extra_body"] = effective_extra_body
 
             response = await asyncio.to_thread(client.generate, **kwargs)
             content = extract_structured_content(response.content)

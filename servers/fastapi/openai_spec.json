@@ -1573,6 +1573,14 @@
           "message": { "type": "string", "nullable": true }
         }
       }
+    },
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Phase 11.4 — admin Basic auth. Matches the SessionAuthMiddleware contract: when AUTH_USERNAME / AUTH_PASSWORD_HASH are configured on the FastAPI app, every operationId in this spec is gated behind either a `presenton_session` cookie OR an `Authorization: Basic <base64(user:pass)>` header. The MCP server (mcp_server.py) forwards the inbound MCP request's Authorization header into its loopback httpx client so MCP-callable tools auth-round-trip end-to-end."
+      }
     }
-  }
+  },
+  "security": [{ "basicAuth": [] }]
 }

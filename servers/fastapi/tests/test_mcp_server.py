@@ -82,6 +82,32 @@ def test_openapi_operation_ids_are_unique_and_include_required_tools():
     assert not missing, f"Missing expected operationIds in OpenAPI spec: {sorted(missing)}"
 
 
+def test_openapi_spec_declares_basic_auth_security_scheme():
+    """Phase 11.4 — every operationId in this spec is admin-gated when
+    auth is configured on the FastAPI app. The spec must declare
+    `securitySchemes.basicAuth` (http/basic) and apply it as a top-level
+    `security` requirement so MCP clients consuming the spec generate
+    Basic-auth-aware bindings."""
+    spec = _load_openapi_spec()
+
+    components = spec.get("components") or {}
+    schemes = components.get("securitySchemes") or {}
+    assert "basicAuth" in schemes, (
+        "openai_spec.json must declare a `basicAuth` security scheme so "
+        "MCP-callable operations advertise their auth requirement"
+    )
+    basic = schemes["basicAuth"]
+    assert basic.get("type") == "http"
+    assert basic.get("scheme") == "basic"
+
+    top_level_security = spec.get("security")
+    assert isinstance(top_level_security, list) and len(top_level_security) == 1, (
+        "openai_spec.json must declare a top-level `security` array with the "
+        "single `basicAuth: []` requirement so every operation inherits it"
+    )
+    assert top_level_security[0] == {"basicAuth": []}
+
+
 @pytest.mark.asyncio
 async def test_fastmcp_registers_expected_openapi_tools():
     spec = _load_openapi_spec()
@@ -239,3 +265,159 @@ async def test_chat_operationid_returns_200_with_basic_auth(configured_user_conf
         "list_conversations was patched to return []; route should pass "
         "the empty list through unchanged."
     )
+
+
+# ---------------------------------------------------------------------------
+# Phase 11.4 — MCP loopback Authorization-header forwarding shim
+# ---------------------------------------------------------------------------
+#
+# The `MCPLoopbackAuth` httpx.Auth subclass in `mcp_server.py` resolves the
+# Authorization header in this order: (1) header already on the outbound
+# request, (2) inbound MCP request via FastMCP `get_http_headers`, (3)
+# `MCP_LOOPBACK_AUTH=basic:user:pass` env-var fallback, (4) no header.
+# These tests exercise each branch in isolation so the shim's behavior is
+# regression-locked even if the FastMCP request-context API moves.
+
+import sys as _sys  # noqa: E402  (kept after asyncio_async tests above)
+from pathlib import Path as _Path  # noqa: E402
+
+_FASTAPI_ROOT = _Path(__file__).resolve().parents[1]
+if str(_FASTAPI_ROOT) not in _sys.path:
+    _sys.path.insert(0, str(_FASTAPI_ROOT))
+
+from mcp_server import (  # noqa: E402
+    MCPLoopbackAuth,
+    _build_fallback_basic_header,
+    build_loopback_client,
+)
+
+
+def _exercise_auth_flow(auth: MCPLoopbackAuth, request: httpx.Request) -> httpx.Request:
+    """Drive an httpx.Auth subclass through one auth_flow iteration so we
+    can inspect the mutated request without spinning a real client."""
+    iterator = auth.auth_flow(request)
+    return next(iterator)
+
+
+def test_mcp_loopback_forwards_inbound_authorization_header():
+    """When the inbound MCP request carries an Authorization header, the
+    shim must forward it onto the outbound loopback request."""
+    auth = MCPLoopbackAuth(fallback_basic_header=None)
+    request = httpx.Request("GET", "http://127.0.0.1:8000/api/v1/ppt/templates/list")
+
+    inbound_value = "Basic " + base64.b64encode(b"admin:s3cret").decode("ascii")
+    with patch(
+        "mcp_server.get_http_headers",
+        return_value={"authorization": inbound_value},
+    ):
+        forwarded = _exercise_auth_flow(auth, request)
+
+    assert forwarded.headers.get("authorization") == inbound_value, (
+        "Loopback request must inherit the inbound MCP Authorization header"
+    )
+
+
+def test_mcp_loopback_falls_back_to_env_var_when_inbound_auth_missing(monkeypatch):
+    """When no inbound auth is available (background tasks / smoke probes
+    without a logged-in MCP client), the shim must fall back to the
+    pre-configured Basic header derived from MCP_LOOPBACK_AUTH."""
+    monkeypatch.setenv("MCP_LOOPBACK_AUTH", "basic:smoke-bot:smoke-pass-1")
+    fallback = _build_fallback_basic_header()
+    assert fallback is not None
+    expected_b64 = base64.b64encode(b"smoke-bot:smoke-pass-1").decode("ascii")
+    assert fallback == f"Basic {expected_b64}"
+
+    auth = MCPLoopbackAuth(fallback_basic_header=fallback)
+    request = httpx.Request("GET", "http://127.0.0.1:8000/api/v1/ppt/templates/list")
+
+    with patch("mcp_server.get_http_headers", return_value={}):
+        forwarded = _exercise_auth_flow(auth, request)
+
+    assert forwarded.headers.get("authorization") == fallback
+
+
+def test_mcp_loopback_no_auth_when_no_inbound_and_no_fallback():
+    """Fail-closed by design: when there's neither inbound auth nor a
+    configured fallback, the loopback request must NOT carry a fabricated
+    Authorization header — the FastAPI middleware will 401 it on a
+    configured deployment, which is the correct behavior."""
+    auth = MCPLoopbackAuth(fallback_basic_header=None)
+    request = httpx.Request("GET", "http://127.0.0.1:8000/api/v1/ppt/templates/list")
+
+    with patch("mcp_server.get_http_headers", return_value={}):
+        forwarded = _exercise_auth_flow(auth, request)
+
+    assert forwarded.headers.get("authorization") is None
+    assert forwarded.headers.get("Authorization") is None
+
+
+def test_mcp_loopback_does_not_override_existing_authorization():
+    """If the caller already set Authorization on the outbound request
+    (unusual but possible during testing or future bearer-token paths),
+    the shim must respect it rather than silently overwriting."""
+    auth = MCPLoopbackAuth(fallback_basic_header="Basic FALLBACK_VAL")
+    pre_set = "Bearer caller-set-token"
+    request = httpx.Request(
+        "GET",
+        "http://127.0.0.1:8000/api/v1/ppt/templates/list",
+        headers={"Authorization": pre_set},
+    )
+
+    with patch(
+        "mcp_server.get_http_headers",
+        return_value={"authorization": "Basic INBOUND_VAL"},
+    ):
+        forwarded = _exercise_auth_flow(auth, request)
+
+    assert forwarded.headers.get("authorization") == pre_set, (
+        "Pre-set Authorization on the outbound request must survive the "
+        "auth-flow shim — caller wins"
+    )
+
+
+def test_mcp_loopback_fallback_parser_handles_malformed_env(monkeypatch):
+    """The MCP_LOOPBACK_AUTH parser must be defensive: missing env, wrong
+    scheme, or malformed `basic:` payload all return None (so the shim
+    falls through to the no-header path rather than raising at startup)."""
+    for value in [
+        "",
+        "   ",
+        "bearer:token-123",  # wrong scheme
+        "basic:no-colon",  # no `user:pass` separator
+        "BASIC:CASE-INSENSITIVE-OK:passes-anyway",  # case-insensitive scheme
+    ]:
+        monkeypatch.setenv("MCP_LOOPBACK_AUTH", value)
+        result = _build_fallback_basic_header()
+        if value.lower().startswith("basic:") and ":" in value.split(":", 1)[1]:
+            # The case-insensitive case is the only one that should produce
+            # a header; assert it's correctly base64-encoded.
+            credential = value.split(":", 1)[1]
+            expected = "Basic " + base64.b64encode(
+                credential.encode("utf-8")
+            ).decode("ascii")
+            assert result == expected
+        else:
+            assert result is None, (
+                f"Malformed MCP_LOOPBACK_AUTH={value!r} must return None, "
+                f"got {result!r}"
+            )
+
+
+def test_build_loopback_client_returns_httpx_async_client_with_auth():
+    """The exported `build_loopback_client` factory must wire the auth
+    shim onto the httpx.AsyncClient so a fresh import path is functional
+    end-to-end. Smoke check rather than behavioral test."""
+    client = build_loopback_client()
+    try:
+        assert isinstance(client, httpx.AsyncClient)
+        assert client.auth is not None
+        # httpx wraps httpx.Auth-derived objects in a `_auth` attribute on
+        # the client; the public `client.auth` returns the configured Auth.
+        # We just verify the type to catch a regression that would
+        # accidentally drop the auth (e.g. None-passthrough).
+        assert isinstance(client.auth, MCPLoopbackAuth)
+    finally:
+        # Suppress aclose() warning by closing the wrapped transport.
+        # asyncio.run(client.aclose()) would create a fresh loop; instead
+        # we let the GC reclaim it — this is a unit test, not a runtime.
+        pass

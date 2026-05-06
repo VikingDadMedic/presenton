@@ -10,9 +10,17 @@ import SlideContent from "./SlideContent";
 import SlideSkeleton from "./SlideSkeleton";
 import Chat from "./Chat";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { useIsMobile } from "@/lib/use-is-mobile";
 import { usePathname, useRouter } from "next/navigation";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, MessageCircle } from "lucide-react";
 import {
   usePresentationStreaming,
   usePresentationData,
@@ -35,7 +43,9 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   const [selectedSlide, setSelectedSlide] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [error, setError] = useState(false);
+  const [isChatSheetOpen, setIsChatSheetOpen] = useState(false);
   const router = useRouter();
+  const isMobile = useIsMobile();
 
 
 
@@ -221,13 +231,56 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             </div>
           </div>
         </div>
-        <div className="w-full max-w-[370px] h-full shrink-0 self-start sticky top-0">
-          <Chat
-            presentationId={presentation_id}
-            currentSlide={selectedSlide}
-            onPresentationChanged={fetchUserSlides}
-          />
-        </div>
+        {/* Phase 11.0b.5 mobile drawer skeleton: 3rd column at md: and above
+            (existing layout); collapses into a right-side <Sheet> below md:
+            with a floating Chat toggle button. Full mobile UX polish (gesture
+            dismissal, keyboard-avoidance for the composer, responsive typography
+            inside Chat itself) lives on the Phase 11.x deferred batch. */}
+        {isMobile ? (
+          <Sheet open={isChatSheetOpen} onOpenChange={setIsChatSheetOpen}>
+            <SheetTrigger asChild>
+              <Button
+                type="button"
+                size="icon"
+                variant="default"
+                aria-label="Open chat assistant"
+                className="fixed bottom-4 right-4 z-40 h-12 w-12 rounded-full shadow-lg md:hidden"
+                onClick={() => {
+                  trackEvent(MixpanelEvent.PresentationPage_Chat_Sheet_Opened, {
+                    presentation_id,
+                    selected_slide: selectedSlide,
+                  });
+                }}
+              >
+                <MessageCircle className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent
+              side="right"
+              className="w-full p-0 sm:max-w-[420px]"
+            >
+              <SheetTitle className="sr-only">Chat assistant</SheetTitle>
+              <SheetDescription className="sr-only">
+                Edit slides and ask questions about this presentation.
+              </SheetDescription>
+              <div className="h-full w-full">
+                <Chat
+                  presentationId={presentation_id}
+                  currentSlide={selectedSlide}
+                  onPresentationChanged={fetchUserSlides}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <div className="w-full max-w-[370px] h-full shrink-0 self-start sticky top-0 hidden md:block">
+            <Chat
+              presentationId={presentation_id}
+              currentSlide={selectedSlide}
+              onPresentationChanged={fetchUserSlides}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

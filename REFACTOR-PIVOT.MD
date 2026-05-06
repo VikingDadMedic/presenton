@@ -50,7 +50,7 @@ The existing pipeline is domain-agnostic by design: Zod schemas define what goes
 - Removed deprecated `@types/puppeteer`
 
 ### Phase 1 -- Travel Template Group
-**26 layouts** in `servers/nextjs/app/presentation-templates/travel/`:
+**26 initial layouts** in `servers/nextjs/app/presentation-templates/travel/` (later extended to 30 in [FEATURE-BUILDING.md](FEATURE-BUILDING.md) Phase 5 with `MemoryQuoteLayout`, `SeriesCoverLayout`, `PartnerSpotlightHeroLayout`, and `PricingConfiguratorLayout`):
 
 | Layout | File | Purpose |
 |--------|------|---------|
@@ -81,7 +81,7 @@ The existing pipeline is domain-agnostic by design: Zod schemas define what goes
 | Connectivity Card | `ConnectivityCardLayout.tsx` | SIM/eSIM, power outlets, Wi-Fi availability |
 | Experience Cards | `ExperienceCardsLayout.tsx` | Bookable Viator experience cards with pricing/availability |
 
-**Ordered narrative arcs** (6 template groups, each `ordered: true`):
+**Ordered narrative arcs** (6 initial template groups, each `ordered: true`; later extended to 10 — see [AGENTS.md](AGENTS.md)):
 - `travel-itinerary`: Hero -> Highlights -> Day Card (repeated) -> Accommodation -> Flights -> Pricing -> CTA
 - `travel-reveal`: Emotional discovery arc (mood board -> day/night -> highlights -> itinerary -> booking)
 - `travel-contrast`: Before/after and comparison-driven narrative

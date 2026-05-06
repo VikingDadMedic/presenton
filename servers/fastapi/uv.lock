@@ -2281,6 +2281,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/fa/eb/d875669993b762556ae8b2efd86219943b4c0864d22204d622a9aee3052b/sentry_sdk-2.58.0-py2.py3-none-any.whl", hash = "sha256:688d1c704ddecf382ea3326f21a67453d4caa95592d722b7c780a36a9d23109e", size = 460919, upload-time = "2026-04-13T17:23:24.675Z" },
 ]
 
+[package.optional-dependencies]
+fastapi = [
+    { name = "fastapi" },
+]
+
 [[package]]
 name = "setuptools"
 version = "82.0.1"
@@ -2575,6 +2580,7 @@ dependencies = [
     { name = "pdfplumber" },
     { name = "psycopg", extra = ["binary"] },
     { name = "python-pptx" },
+    { name = "sentry-sdk", extra = ["fastapi"] },
     { name = "sqlmodel" },
 ]
 
@@ -2599,6 +2605,7 @@ requires-dist = [
     { name = "pdfplumber", specifier = ">=0.11.7" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2.0" },
     { name = "python-pptx", specifier = ">=1.0.2" },
+    { name = "sentry-sdk", extras = ["fastapi"], specifier = ">=2.58.0" },
     { name = "sqlmodel", specifier = ">=0.0.24" },
 ]
 

@@ -2,7 +2,14 @@ FROM python:3.12-slim-trixie
 
 WORKDIR /app
 
+ARG IMAGE_SHA=unknown
+
 # LiteParse (Node + @llamaindex/liteparse) for document extraction; OCR via Tesseract.
+# IMAGE_SHA is propagated into the runtime ENV so /health can return the
+# source-commit SHA the image was built from (Phase 11.0c.2). For
+# Dockerfile.dev this defaults to "unknown" since dev images are typically
+# rebuilt on every change without a clean SHA pin; pass --build-arg
+# IMAGE_SHA=$(git rev-parse HEAD) to override.
 ENV APP_DATA_DIRECTORY=/app_data \
     TEMP_DIRECTORY=/tmp/presenton \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
@@ -13,7 +20,8 @@ ENV APP_DATA_DIRECTORY=/app_data \
     EXPORT_PACKAGE_ROOT=/app/presentation-export \
     EXPORT_RUNTIME_DIR=/app/presentation-export \
     BUILT_PYTHON_MODULE_PATH=/app/presentation-export/py/convert-linux-x64 \
-    PRESENTON_APP_ROOT=/app
+    PRESENTON_APP_ROOT=/app \
+    IMAGE_SHA=${IMAGE_SHA}
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates curl unzip \

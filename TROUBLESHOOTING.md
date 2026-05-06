@@ -20,6 +20,7 @@ This is the runbook to consult **first** when something breaks. Architecture and
 | `Waiting for selector [data-speaker-note] failed` in HTML or video export | Puppeteer hitting `pdf-maker` route without auth cookie | See [Puppeteer auth on export routes](#puppeteer-auth-on-export-routes) |
 | `Site is blocked due to multiple, consecutive cold start failures` | App Service backoff after repeated startup failures | See [Site is in Blocked state](#site-is-in-blocked-state) |
 | Bulk narration response shows `total_character_count: 0` | ElevenLabs response missing `x-character-count` header | See [Narration usage reports zero characters](#narration-usage-reports-zero-characters) |
+| `[OK] Healthy after 1s` immediately after `redeploy-azure.sh` restart | Soft restart serving stale container during overlap | See [Health check returns 200 too quickly after redeploy](#health-check-returns-200-too-quickly-after-redeploy) |
 
 ---
 
@@ -141,6 +142,52 @@ az webapp config appsettings set \
 ```
 
 Then `az webapp restart`. Subsequent restarts reuse the cached image layers and warm up in 30-90 s.
+
+---
+
+## Health check returns 200 too quickly after redeploy
+
+**Symptom**
+
+```
+[INFO] Polling /health for up to 600s ...
+[OK] Healthy after 1s
+```
+
+in the `scripts/redeploy-azure.sh` log immediately after `az webapp restart`. The deploy script declares success but the running container is actually still the previous image — new code, env vars, or migration head is not live.
+
+**Root cause**
+
+`az webapp restart` is a *soft* restart on App Service. During the swap window, the old container instance can keep accepting traffic (and answering `/health` 200) while the new container is still pulling layers or warming up. `redeploy-azure.sh` polled `/health`, hit 200 instantly from the old container, and exited "OK" — a textbook cached-container false positive. We hit this in the Phase 10 wrap-up; recovery required a manual `az webapp stop && start`.
+
+**Preferred fix (Phase 11.0c.2 — version-pinned `/health`)**
+
+Pin every image with the source commit SHA at build time and assert it post-deploy:
+
+1. Add `ARG IMAGE_SHA=unknown` + `ENV IMAGE_SHA=${IMAGE_SHA}` to `Dockerfile` and `Dockerfile.dev`.
+2. Pass it through at build: `az acr build --build-arg IMAGE_SHA=$(git rev-parse HEAD) ...` (already wired in `scripts/redeploy-azure.sh`).
+3. `/health` returns `{"status":"ok","image_sha":"<sha>","alembic_head":"<rev>"}`. The deploy script compares the returned `image_sha` against `git rev-parse HEAD` and fails fast on mismatch.
+
+Once this lands, a stale container will return the OLD SHA and `redeploy-azure.sh` will reject the deploy (instead of declaring success). Cross-link: the App Service container-restart subtlety is also called out in [AGENTS.md](AGENTS.md) line 39.
+
+**Fallback workaround (without `image_sha`)**
+
+If you need to force a fresh pull on the current deploy script:
+
+```bash
+# Option A: re-set the container reference (forces App Service to re-resolve the image)
+az webapp config container set \
+  --name presenton-app --resource-group presenton-rg \
+  --container-image-name presentonacr.azurecr.io/presenton:latest
+az webapp restart --name presenton-app --resource-group presenton-rg
+
+# Option B (more invasive): hard stop + start clears the runtime state entirely
+az webapp stop --name presenton-app --resource-group presenton-rg
+sleep 5
+az webapp start --name presenton-app --resource-group presenton-rg
+```
+
+After either option, re-poll `/health` until 200 *and* (when the version-pin lands) verify `image_sha` matches the just-built commit.
 
 ---
 

@@ -152,6 +152,16 @@ Operational guidance:
 | `WEBSITES_CONTAINER_START_TIME_LIMIT` | `180` | Seconds before App Service kills slow-starting container |
 | `DISABLE_ANONYMOUS_TRACKING` | `true` | Disables Mixpanel telemetry |
 
+### Observability (Sentry — Phase 11.0c.1)
+
+| Variable | Recommended Production Value | Purpose |
+|----------|-----------------------------|---------|
+| `SENTRY_DSN` | (project-specific URL) | Enables `sentry_sdk.init` at FastAPI boot. **Production should set this** — without it the chat tool loop, Anthropic prompt caching, mem0 OSS growth, and alembic drift all run blind. |
+| `SENTRY_TRACES_SAMPLE_RATE` | `0.1` | Fraction of requests to capture as performance traces. Default is `0.1`; do NOT set to `1.0` on B2 (would conflate signal with noise and burn through Sentry quota). |
+| `SENTRY_SEND_DEFAULT_PII` | `false` | Sentry's automatic PII capture (cookies, query strings) is disabled by default. Travel-agent / named-client privacy posture; flip to `true` only on staging environments where you're chasing a hard-to-repro bug. |
+
+When `SENTRY_DSN` is unset (or empty), `sentry_sdk.init` is not called and TripStory behaves identically to the pre-Phase-11 build. Adding the DSN at any point — including post-deploy — is sufficient; the next container restart picks it up. Bad / out-of-range `SENTRY_TRACES_SAMPLE_RATE` values are ignored with a WARNING log; the production default sticks.
+
 ### Updating Environment Variables
 
 ```bash

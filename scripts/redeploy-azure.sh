@@ -27,6 +27,15 @@
 #   BUILD_RETRY_DELAY         default: 120 (seconds)
 #   SKIP_BUILD                default: false   (true skips az acr build)
 #   SKIP_HEALTH               default: false   (true skips the health poll)
+#   SKIP_SMOKE                default: false   (true skips post-deploy
+#                                              smoke-post-deploy.sh; useful
+#                                              when smoke env vars
+#                                              PRESENTATION_ID/ADMIN_*
+#                                              aren't available locally)
+#
+# If SKIP_SMOKE is unset and PRESENTATION_ID/ADMIN_USER/ADMIN_PASS are
+# defined, scripts/smoke-post-deploy.sh runs after the /health 200 check
+# and any failure fails the whole deploy.
 #
 
 set -euo pipefail
@@ -42,6 +51,7 @@ MAX_BUILD_RETRIES="${MAX_BUILD_RETRIES:-3}"
 BUILD_RETRY_DELAY="${BUILD_RETRY_DELAY:-120}"
 SKIP_BUILD="${SKIP_BUILD:-false}"
 SKIP_HEALTH="${SKIP_HEALTH:-false}"
+SKIP_SMOKE="${SKIP_SMOKE:-false}"
 
 REGISTRY_HOST="${ACR_NAME}.azurecr.io"
 LOCAL_IMAGE_REF="${REGISTRY_HOST}/${IMAGE_NAME}:${TAG}"
@@ -96,15 +106,27 @@ if command -v docker >/dev/null 2>&1; then
 fi
 
 # Step 1: Build via ACR (server-side build, always amd64).
+# Resolve the source-commit SHA so the runtime image's IMAGE_SHA env var matches
+# the deployed code. Step 4 asserts the /health-returned image_sha equals this
+# value, closing the cached-container false-positive gotcha. Falls back to
+# "unknown" only if we're not inside a git repo (e.g., a tarball deploy).
+if command -v git >/dev/null 2>&1 && git rev-parse HEAD >/dev/null 2>&1; then
+  EXPECTED_IMAGE_SHA="$(git rev-parse HEAD)"
+else
+  EXPECTED_IMAGE_SHA="unknown"
+fi
+
 if [[ "$SKIP_BUILD" != "true" ]]; then
-  log_info "Step 1/4: Building ${REMOTE_IMAGE_REF} via az acr build (registry=${ACR_NAME})"
+  log_info "Step 1/4: Building ${REMOTE_IMAGE_REF} via az acr build (registry=${ACR_NAME}, IMAGE_SHA=${EXPECTED_IMAGE_SHA:0:8})"
 
   attempt=1
   while true; do
     if az acr build \
         --registry "$ACR_NAME" \
         --image "${IMAGE_NAME}:${TAG}" \
-        --file Dockerfile .; then
+        --file Dockerfile \
+        --build-arg "IMAGE_SHA=${EXPECTED_IMAGE_SHA}" \
+        .; then
       break
     fi
 
@@ -124,6 +146,7 @@ if [[ "$SKIP_BUILD" != "true" ]]; then
   log_success "ACR build complete: ${REMOTE_IMAGE_REF}"
 else
   log_warn "Skipping build (SKIP_BUILD=true); reusing whatever is currently at ${REMOTE_IMAGE_REF}"
+  log_warn "Cached image's baked-in IMAGE_SHA may not match git HEAD; the post-deploy assertion may fail accordingly."
 fi
 
 # Step 2: Set container image with explicit ACR creds.
@@ -160,19 +183,64 @@ if [[ "$SKIP_HEALTH" == "true" ]]; then
   exit 0
 fi
 
-log_info "Step 4/4: Polling ${HEALTH_URL} until 200 (budget=${MAX_HEALTH_WAIT_SECONDS}s)"
+log_info "Step 4/4: Polling ${HEALTH_URL} until 200 + image_sha matches (budget=${MAX_HEALTH_WAIT_SECONDS}s)"
+if [[ "$EXPECTED_IMAGE_SHA" == "unknown" ]]; then
+  log_warn "  expected_image_sha=unknown (not in a git repo or git rev-parse failed); accepting any image_sha response"
+else
+  log_info "  expected_image_sha=${EXPECTED_IMAGE_SHA:0:8}"
+fi
 
 START=$(date +%s)
 DEADLINE=$((START + MAX_HEALTH_WAIT_SECONDS))
 attempt=1
 last_status="000"
 
+# Extract a JSON field via grep + sed; avoids a hard `jq` dependency on the
+# operator's machine. Pattern matches `"field": "value"` with optional spaces;
+# returns empty string if the field is absent.
+extract_json_field() {
+  local body="$1"
+  local field="$2"
+  printf '%s' "$body" \
+    | grep -o "\"${field}\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" \
+    | head -n 1 \
+    | sed -E "s/\"${field}\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"/\1/"
+}
+
 while true; do
+  RESPONSE_BODY=$(curl -s --max-time 10 "$HEALTH_URL" 2>/dev/null || echo "")
   STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$HEALTH_URL" || echo "000")
+
   if [[ "$STATUS" == "200" ]]; then
     NOW=$(date +%s)
+    REPORTED_IMAGE_SHA=$(extract_json_field "$RESPONSE_BODY" "image_sha")
+    REPORTED_ALEMBIC_HEAD=$(extract_json_field "$RESPONSE_BODY" "alembic_head")
+
+    if [[ "$EXPECTED_IMAGE_SHA" != "unknown" ]] && [[ -n "$REPORTED_IMAGE_SHA" ]] && [[ "$REPORTED_IMAGE_SHA" != "$EXPECTED_IMAGE_SHA" ]]; then
+      log_error "Health returned 200 but image_sha mismatch: reported=${REPORTED_IMAGE_SHA:0:8} expected=${EXPECTED_IMAGE_SHA:0:8}"
+      log_error "This is the cached-container false-positive: az webapp restart returned 200 from the OLD container."
+      log_error "Recovery: force a fresh pull. Two options:"
+      log_error "  1. az webapp config container set --name ${WEBAPP} --resource-group ${RESOURCE_GROUP} --container-image-name ${REMOTE_IMAGE_REF} && az webapp restart --name ${WEBAPP} --resource-group ${RESOURCE_GROUP}"
+      log_error "  2. az webapp stop --name ${WEBAPP} --resource-group ${RESOURCE_GROUP} && sleep 5 && az webapp start --name ${WEBAPP} --resource-group ${RESOURCE_GROUP}"
+      log_error "Then re-run this script."
+      exit 1
+    fi
+
+    if [[ "$EXPECTED_IMAGE_SHA" != "unknown" ]] && [[ -z "$REPORTED_IMAGE_SHA" ]]; then
+      log_warn "Health returned 200 but no image_sha field; older image still deployed (pre-Phase-11.0c.2)."
+      log_warn "  reported_image_sha=(missing) — likely the running container predates the IMAGE_SHA pin."
+      log_warn "  expected_image_sha=${EXPECTED_IMAGE_SHA:0:8}"
+      log_warn "Continuing because the legacy /health shape is still 'OK'; future redeploys will pin correctly."
+    fi
+
     log_success "Healthy after $((NOW - START))s (attempt ${attempt}, status ${STATUS})"
-    exit 0
+    if [[ -n "$REPORTED_IMAGE_SHA" ]]; then
+      log_success "  image_sha=${REPORTED_IMAGE_SHA:0:8} (matches expected)"
+    fi
+    if [[ -n "$REPORTED_ALEMBIC_HEAD" ]]; then
+      log_success "  alembic_head=${REPORTED_ALEMBIC_HEAD}"
+    fi
+    break
   fi
 
   NOW=$(date +%s)
@@ -191,3 +259,47 @@ while true; do
   attempt=$((attempt + 1))
   sleep 5
 done
+
+# Step 5: Post-deploy smoke (Phase 11.0c.4 orchestrator).
+# Skipped when SKIP_SMOKE=true OR when smoke env vars (PRESENTATION_ID
+# / ADMIN_USER / ADMIN_PASS) aren't available locally. Failure here
+# fails the whole deploy.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [[ "$SKIP_SMOKE" == "true" ]]; then
+  log_warn "Skipping post-deploy smoke (SKIP_SMOKE=true)"
+  log_success "Deploy complete (smoke skipped)"
+  exit 0
+fi
+
+if [[ -z "${PRESENTATION_ID:-}" ]] || [[ -z "${ADMIN_USER:-}" ]] || [[ -z "${ADMIN_PASS:-}" ]]; then
+  log_warn "Skipping post-deploy smoke: PRESENTATION_ID / ADMIN_USER / ADMIN_PASS not set in env."
+  log_warn "Set all three to enable the smoke-post-deploy.sh orchestrator (or set SKIP_SMOKE=true to suppress this warning)."
+  log_success "Deploy complete (smoke skipped — env vars unset)"
+  exit 0
+fi
+
+if [[ ! -x "${SCRIPT_DIR}/smoke-post-deploy.sh" ]]; then
+  log_error "${SCRIPT_DIR}/smoke-post-deploy.sh missing or not executable."
+  log_error "Either chmod +x it or set SKIP_SMOKE=true to bypass."
+  exit 1
+fi
+
+log_info "Step 5/5: Running smoke-post-deploy.sh against ${BASE_URL:-${HEALTH_URL%/*}}"
+SMOKE_BASE_URL="${BASE_URL:-${HEALTH_URL%/health}}"
+if BASE_URL="$SMOKE_BASE_URL" \
+   PRESENTATION_ID="$PRESENTATION_ID" \
+   ADMIN_USER="$ADMIN_USER" \
+   ADMIN_PASS="$ADMIN_PASS" \
+   bash "${SCRIPT_DIR}/smoke-post-deploy.sh"; then
+  log_success "Post-deploy smoke passed"
+  log_success "Deploy complete + smoke verified"
+  exit 0
+else
+  SMOKE_EXIT=$?
+  log_error "Post-deploy smoke failed (exit ${SMOKE_EXIT})"
+  log_error "The container deployed successfully (image_sha matched) but at least one"
+  log_error "smoke probe regressed. Inspect logs above + the per-feature smoke output,"
+  log_error "or rerun the failing sub-smoke directly with verbose curl."
+  exit "$SMOKE_EXIT"
+fi

@@ -925,6 +925,185 @@
           }
         }
       }
+    },
+    "/api/v1/ppt/chat/conversations": {
+      "get": {
+        "tags": ["Chat"],
+        "summary": "List chat conversation threads for a presentation.",
+        "operationId": "list_chat_conversations",
+        "parameters": [
+          {
+            "name": "presentation_id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "description": "Presentation id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation summaries (most recently updated first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/ChatConversationSummary" }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ppt/chat/history": {
+      "get": {
+        "tags": ["Chat"],
+        "summary": "Get the chat history for a presentation conversation thread.",
+        "operationId": "get_chat_history",
+        "parameters": [
+          {
+            "name": "presentation_id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "description": "Presentation id"
+          },
+          {
+            "name": "conversation_id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "description": "Conversation thread id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat history payload",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ChatHistoryData" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ppt/chat/message": {
+      "post": {
+        "tags": ["Chat"],
+        "summary": "Send a chat message and receive the assistant reply (non-streaming).",
+        "operationId": "send_chat_message",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ChatMessageRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chat reply payload",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ChatMessageResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (e.g. empty message)",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "detail": { "type": "string" } } }
+              }
+            }
+          },
+          "404": {
+            "description": "Presentation not found",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "detail": { "type": "string" } } }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ppt/chat/message/stream": {
+      "post": {
+        "tags": ["Chat"],
+        "summary": "Send a chat message and stream the assistant reply via SSE (text/event-stream).",
+        "operationId": "stream_chat_message",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ChatMessageRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SSE stream emitting status, response, trace, and complete events. The complete event payload is a ChatMessageResponse; trace events are ChatStreamTrace dicts.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "Server-Sent Events. Frame `event` may be `status`, `response`, `trace`, `complete`, or `error`."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (e.g. empty message)",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "detail": { "type": "string" } } }
+              }
+            }
+          },
+          "404": {
+            "description": "Presentation not found",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "detail": { "type": "string" } } }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1291,6 +1470,79 @@
           "success": { "type": "boolean", "default": false },
           "detail": { "type": "string" },
           "error_code": { "type": "string" }
+        }
+      },
+      "ChatMessageRequest": {
+        "type": "object",
+        "required": ["presentation_id", "message"],
+        "properties": {
+          "presentation_id": { "type": "string", "format": "uuid" },
+          "message": { "type": "string", "minLength": 1, "maxLength": 8000 },
+          "conversation_id": { "type": "string", "format": "uuid", "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "ChatMessageResponse": {
+        "type": "object",
+        "required": ["conversation_id", "response"],
+        "properties": {
+          "conversation_id": { "type": "string", "format": "uuid" },
+          "response": { "type": "string" },
+          "tool_calls": {
+            "type": "array",
+            "items": { "type": "string" },
+            "default": []
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChatHistoryMessage": {
+        "type": "object",
+        "required": ["role", "content"],
+        "properties": {
+          "role": { "type": "string", "description": "user or assistant" },
+          "content": { "type": "string" },
+          "created_at": { "type": "string", "nullable": true, "description": "ISO-8601 timestamp" }
+        },
+        "additionalProperties": false
+      },
+      "ChatHistoryData": {
+        "type": "object",
+        "required": ["presentation_id", "conversation_id", "messages"],
+        "properties": {
+          "presentation_id": { "type": "string", "format": "uuid" },
+          "conversation_id": { "type": "string", "format": "uuid" },
+          "messages": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ChatHistoryMessage" }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChatConversationSummary": {
+        "type": "object",
+        "required": ["conversation_id"],
+        "properties": {
+          "conversation_id": { "type": "string", "format": "uuid" },
+          "updated_at": { "type": "string", "nullable": true, "description": "ISO-8601 timestamp of latest activity" },
+          "last_message_preview": { "type": "string", "nullable": true, "description": "Compact preview (<=200 chars)" }
+        },
+        "additionalProperties": false
+      },
+      "ChatStreamTrace": {
+        "type": "object",
+        "description": "Trace payload emitted on SSE `trace` frames during streaming chat. Variant fields populate based on `kind`.",
+        "properties": {
+          "kind": { "type": "string", "enum": ["tool_plan", "tool_call", "model_note", "limit"] },
+          "round": { "type": "integer", "nullable": true },
+          "tool": { "type": "string", "nullable": true },
+          "tools": {
+            "type": "array",
+            "items": { "type": "string" },
+            "nullable": true
+          },
+          "status": { "type": "string", "enum": ["start", "success", "error", "info"], "nullable": true },
+          "message": { "type": "string", "nullable": true }
         }
       }
     }

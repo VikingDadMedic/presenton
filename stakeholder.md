@@ -138,7 +138,7 @@ Async video export at `/api/export-as-video` returns `{ jobId, statusUrl }` imme
 
 ### E. AI Agent Integration (MCP) [LIVE]
 
-MCP server at `/mcp/` exposes **22 tools** auto-registered from the FastAPI OpenAPI spec, including `generate_presentation`, `get_presentation`, `export_presentation`, `edit_slide_field`, `get_enricher_status`, `list_presentations`, `templates_list`, `bulk_generate_narration`, `narration_estimate`, `get_narration_voices`, `get_narration_status`, `get_embed_url`, `export_json`, `generate_async`, `generate_campaign`, `get_campaign_status`, `generate_recap`, `get_agent_profile`, `update_agent_profile`, `get_campaign_presets`, `update_campaign_presets`, and `get_activity_feed`. Works in Cursor, Claude Desktop, n8n, and any MCP-compliant agent. See [EXPORTS.md Section 9](EXPORTS.md#9-mcp-integration) for the canonical tool table.
+MCP server at `/mcp/` exposes **26 tools** auto-registered from the FastAPI OpenAPI spec, including `generate_presentation`, `get_presentation`, `export_presentation`, `edit_slide_field`, `get_enricher_status`, `list_presentations`, `templates_list`, `bulk_generate_narration`, `narration_estimate`, `get_narration_voices`, `get_narration_status`, `get_embed_url`, `export_json`, `generate_async`, `generate_campaign`, `get_campaign_status`, `generate_recap`, `get_agent_profile`, `update_agent_profile`, `get_campaign_presets`, `update_campaign_presets`, `get_activity_feed`, and the four chat tools `list_chat_conversations`, `get_chat_history`, `send_chat_message`, `stream_chat_message`. Works in Cursor, Claude Desktop, n8n, and any MCP-compliant agent. See [EXPORTS.md Section 9](EXPORTS.md#9-mcp-integration) for the canonical tool table.
 
 ### F. Editing & Customization [LIVE]
 
@@ -151,6 +151,7 @@ MCP server at `/mcp/` exposes **22 tools** auto-registered from the FastAPI Open
 | Chart data editor | Dialog-based table for Recharts data arrays |
 | Drag-reorder | @dnd-kit for slides + outlines |
 | Undo/redo | 30-state history |
+| Conversational editing (chat sidebar) | Per-presentation chat thread with 8 LLM-exposed tools (`saveSlide` / `deleteSlide` route through the same `apply_slide_edit_with_pipeline` helper as direct edits — IPA + narration-clear + asset diff + mem0 store on every chat-driven write); 90s per-turn timeout + `CHAT_MAX_SLIDES_PER_TURN=5` budget guard against runaway tool loops |
 | Template groups | 14+ groups: general, modern, swift, neo-* variants, code, education, product-overview, report, travel + 10 travel narrative arcs |
 | Custom templates | Upload `.pptx`/`.ppt`/`.pptm`/`.odp` → AI conversion to React + Zod entry; UUID-prefixed groups compiled at runtime via `@babel/standalone` |
 
@@ -281,7 +282,8 @@ Phases 0-12 of the travel pivot are complete and deployed at `https://presenton-
 - All 6 export formats wired to the UI export dropdown
 - Showcase mode + Pricing Configurator widget + AI Q&A hotspot (with `is_public`-gated public sharing)
 - ElevenLabs narration with usage tracking, monthly budgets, IPA augmentation
-- MCP server at `/mcp/` with 22 tools (see [EXPORTS.md Section 9](EXPORTS.md#9-mcp-integration))
+- MCP server at `/mcp/` with 26 tools (see [EXPORTS.md Section 9](EXPORTS.md#9-mcp-integration))
+- Conversational editing surface — chat sidebar on `/presentation`, 4 chat endpoints + 8 LLM-exposed tools, `saveSlide` and `deleteSlide` grafted onto the shared `apply_slide_edit_with_pipeline` helper so chat-driven edits get full IPA + narration-clear + asset diff + mem0 store parity with direct edits
 - Eggshell Bright Tech theme system (4-theme registry)
 - Async video export job pipeline with file-backed status store and progress polling
 - Azure App Service deployment with `/health` monitoring, single-command redeploy script (`scripts/redeploy-azure.sh`), end-to-end smoke harness (`scripts/smoke-narration.sh`)

@@ -80,6 +80,21 @@ class UserConfig(BaseModel):
     CUSTOM_LLM_API_KEY: Optional[str] = None
     CUSTOM_MODEL: Optional[str] = None
 
+    # Vertex AI (Google Cloud) — supports either api_key OR project/location/credentials
+    VERTEX_API_KEY: Optional[str] = None
+    VERTEX_PROJECT: Optional[str] = None
+    VERTEX_LOCATION: Optional[str] = None
+    VERTEX_BASE_URL: Optional[str] = None
+    VERTEX_MODEL: Optional[str] = None
+
+    # Azure OpenAI
+    AZURE_OPENAI_API_KEY: Optional[str] = None
+    AZURE_OPENAI_ENDPOINT: Optional[str] = None
+    AZURE_OPENAI_API_VERSION: Optional[str] = None
+    AZURE_OPENAI_DEPLOYMENT: Optional[str] = None
+    AZURE_OPENAI_BASE_URL: Optional[str] = None
+    AZURE_OPENAI_MODEL: Optional[str] = None
+
     # Image Provider
     DISABLE_IMAGE_GENERATION: Optional[bool] = None
     IMAGE_PROVIDER: Optional[str] = None

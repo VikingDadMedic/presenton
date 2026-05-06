@@ -8,3 +8,5 @@ class LLMProvider(Enum):
     ANTHROPIC = "anthropic"
     CUSTOM = "custom"
     CODEX = "codex"
+    VERTEX = "vertex"
+    AZURE = "azure"

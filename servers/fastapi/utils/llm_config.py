@@ -4,16 +4,23 @@ from typing import Optional
 from fastapi import HTTPException
 from llmai.shared import (
     AnthropicClientConfig,
+    AzureOpenAIClientConfig,
     ChatGPTClientConfig,
     ClientConfig,
     GoogleClientConfig,
     OpenAIApiType,
     OpenAIClientConfig,
+    VertexAIClientConfig,
 )
 
 from enums.llm_provider import LLMProvider
 from utils.get_env import (
     get_anthropic_api_key_env,
+    get_azure_openai_api_key_env,
+    get_azure_openai_api_version_env,
+    get_azure_openai_base_url_env,
+    get_azure_openai_deployment_env,
+    get_azure_openai_endpoint_env,
     get_codex_access_token_env,
     get_codex_account_id_env,
     get_codex_refresh_token_env,
@@ -34,6 +41,10 @@ from utils.get_env import (
     get_structure_model_name_env,
     get_structure_model_provider_env,
     get_structure_model_reasoning_effort_env,
+    get_vertex_api_key_env,
+    get_vertex_base_url_env,
+    get_vertex_location_env,
+    get_vertex_project_env,
     get_web_grounding_env,
 )
 from utils.llm_provider import get_llm_provider, get_model
@@ -140,12 +151,65 @@ def get_llm_config() -> ClientConfig:
                 access_token=_get_codex_access_token(),
                 account_id=get_codex_account_id_env() or None,
             )
+        case LLMProvider.VERTEX:
+            api_key = get_vertex_api_key_env()
+            project = get_vertex_project_env()
+            location = get_vertex_location_env()
+            base_url = get_vertex_base_url_env()
+            if not api_key and not (project and location):
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        "Vertex AI requires either VERTEX_API_KEY or both "
+                        "VERTEX_PROJECT and VERTEX_LOCATION"
+                    ),
+                )
+            kwargs: dict = {}
+            if api_key:
+                kwargs["api_key"] = api_key
+            else:
+                kwargs["project"] = project
+                kwargs["location"] = location
+            if base_url:
+                kwargs["base_url"] = base_url
+            return VertexAIClientConfig(**kwargs)
+        case LLMProvider.AZURE:
+            api_key = get_azure_openai_api_key_env()
+            api_version = get_azure_openai_api_version_env()
+            endpoint = get_azure_openai_endpoint_env()
+            base_url = get_azure_openai_base_url_env()
+            deployment = get_azure_openai_deployment_env()
+            if not api_key:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Azure OpenAI API Key is not set",
+                )
+            if not api_version:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Azure OpenAI API version (AZURE_OPENAI_API_VERSION) is not set",
+                )
+            if not endpoint and not base_url:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        "Azure OpenAI requires either AZURE_OPENAI_ENDPOINT or "
+                        "AZURE_OPENAI_BASE_URL"
+                    ),
+                )
+            return AzureOpenAIClientConfig(
+                api_key=api_key,
+                api_version=api_version,
+                endpoint=endpoint,
+                base_url=base_url,
+                deployment=deployment,
+            )
         case _:
             raise HTTPException(
                 status_code=400,
                 detail=(
-                    "LLM Provider must be either openai, google, anthropic, "
-                    "ollama, custom, or codex"
+                    "LLM Provider must be one of openai, google, anthropic, "
+                    "ollama, custom, codex, vertex, or azure"
                 ),
             )
 

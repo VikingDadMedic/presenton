@@ -2,11 +2,12 @@ import asyncio
 import uuid
 from unittest.mock import patch
 
+import services.mem0_oss_memory as mem0_oss
 from services.mem0_presentation_memory_service import Mem0PresentationMemoryService
 
 
 class FakeMemoryClient:
-    instances = []
+    instances: list["FakeMemoryClient"] = []
 
     def __init__(self, config=None):
         self.config = config
@@ -45,13 +46,51 @@ class FakeMemoryClient:
         return self.next_search_response
 
 
-class FakeMem0Module:
-    Memory = FakeMemoryClient
+def _mem0_oss_fresh() -> None:
+    mem0_oss._shared_client = None  # type: ignore[attr-defined]
+    mem0_oss._init_attempted = False  # type: ignore[attr-defined]
 
 
 class TestMem0PresentationMemoryService:
     def setup_method(self):
         FakeMemoryClient.instances = []
+        _mem0_oss_fresh()
+
+    def test_shared_client_defaults_to_local_llm_without_openai_key(self):
+        captured = {}
+
+        def _fake_memory_from_config(config, telemetry_base):
+            captured["config"] = config
+            captured["telemetry_base"] = telemetry_base
+            return FakeMemoryClient.from_config(config)
+
+        with patch.dict(
+            "os.environ",
+            {
+                "MEM0_ENABLED": "true",
+                "APP_DATA_DIRECTORY": "/tmp/presenton-test",
+                "OLLAMA_URL": "http://ollama:11434",
+                "OLLAMA_MODEL": "llama3.1:8b",
+                "MEM0_REQUIRE_SPACY_MODEL": "false",
+            },
+            clear=False,
+        ), patch(
+            "services.mem0_oss_memory.memory_from_config",
+            side_effect=_fake_memory_from_config,
+        ):
+            client = mem0_oss.get_shared_mem0_client()
+
+        assert client is not None
+        assert captured["telemetry_base"].endswith("/mem0/telemetry/oss")
+        assert captured["config"]["llm"]["provider"] == "openai"
+        assert captured["config"]["llm"]["config"]["model"] == "llama3.1:8b"
+        assert captured["config"]["llm"]["config"]["api_key"] == "ollama"
+        assert (
+            captured["config"]["llm"]["config"]["openai_base_url"]
+            == "http://ollama:11434/v1"
+        )
+        assert captured["config"]["vector_store"]["provider"] == "qdrant"
+        assert captured["config"]["embedder"]["provider"] == "fastembed"
 
     def test_store_generation_context_uses_presentation_scope(self):
         with patch.dict(
@@ -62,8 +101,25 @@ class TestMem0PresentationMemoryService:
             },
             clear=False,
         ), patch(
-            "services.mem0_presentation_memory_service.import_module",
-            return_value=FakeMem0Module,
+            "services.mem0_presentation_memory_service.get_shared_mem0_client",
+            return_value=FakeMemoryClient.from_config(
+                {
+                    "vector_store": {
+                        "provider": "qdrant",
+                        "config": {
+                            "on_disk": True,
+                            "embedding_model_dims": 384,
+                        },
+                    },
+                    "embedder": {
+                        "provider": "fastembed",
+                        "config": {
+                            "model": "BAAI/bge-small-en-v1.5",
+                            "embedding_dims": 384,
+                        },
+                    },
+                }
+            ),
         ):
             service = Mem0PresentationMemoryService()
             presentation_id = uuid.uuid4()
@@ -115,8 +171,19 @@ class TestMem0PresentationMemoryService:
             },
             clear=False,
         ), patch(
-            "services.mem0_presentation_memory_service.import_module",
-            return_value=FakeMem0Module,
+            "services.mem0_presentation_memory_service.get_shared_mem0_client",
+            return_value=FakeMemoryClient.from_config(
+                {
+                    "vector_store": {"provider": "qdrant", "config": {}},
+                    "embedder": {
+                        "provider": "fastembed",
+                        "config": {
+                            "model": "BAAI/bge-small-en-v1.5",
+                            "embedding_dims": 384,
+                        },
+                    },
+                }
+            ),
         ):
             service = Mem0PresentationMemoryService()
             presentation_id = uuid.uuid4()
@@ -154,3 +221,102 @@ class TestMem0PresentationMemoryService:
             "user_id": f"presentation:{presentation_id}"
         }
         assert client.search_calls[0]["top_k"] == 5
+
+    def test_disabled_via_env_short_circuits_without_init(self):
+        with patch.dict(
+            "os.environ",
+            {"MEM0_ENABLED": "false"},
+            clear=False,
+        ), patch(
+            "services.mem0_oss_memory.memory_from_config",
+        ) as fake_init, patch(
+            "services.mem0_presentation_memory_service.get_shared_mem0_client",
+        ) as fake_get:
+            client = mem0_oss.get_shared_mem0_client()
+            assert client is None
+            fake_init.assert_not_called()
+
+            service = Mem0PresentationMemoryService()
+            assert service._enabled is False
+            asyncio.run(service._add_message(uuid.uuid4(), "noop"))
+            fake_get.assert_not_called()
+
+    def test_spacy_missing_short_circuits_init(self):
+        with patch.dict(
+            "os.environ",
+            {
+                "MEM0_ENABLED": "true",
+                "APP_DATA_DIRECTORY": "/tmp/presenton-test",
+                "MEM0_REQUIRE_SPACY_MODEL": "true",
+            },
+            clear=False,
+        ), patch(
+            "services.mem0_oss_memory._spacy_model_available",
+            return_value=False,
+        ), patch(
+            "services.mem0_oss_memory.memory_from_config",
+        ) as fake_init:
+            first = mem0_oss.get_shared_mem0_client()
+            assert first is None
+            fake_init.assert_not_called()
+            second = mem0_oss.get_shared_mem0_client()
+            assert second is None
+            fake_init.assert_not_called()
+
+    def test_init_failure_short_circuits_subsequent_calls(self):
+        attempts = {"count": 0}
+
+        def _fail_once(config, telemetry_base):
+            attempts["count"] += 1
+            raise RuntimeError("boom")
+
+        with patch.dict(
+            "os.environ",
+            {
+                "MEM0_ENABLED": "true",
+                "APP_DATA_DIRECTORY": "/tmp/presenton-test",
+                "MEM0_REQUIRE_SPACY_MODEL": "false",
+            },
+            clear=False,
+        ), patch(
+            "services.mem0_oss_memory.memory_from_config",
+            side_effect=_fail_once,
+        ):
+            first = mem0_oss.get_shared_mem0_client()
+            second = mem0_oss.get_shared_mem0_client()
+
+        assert first is None
+        assert second is None
+        assert attempts["count"] == 1
+
+    def test_runtime_disabled_after_systemexit_in_search(self):
+        client = FakeMemoryClient.from_config({"vector_store": {}, "embedder": {}})
+
+        def _raise_systemexit(*args, **kwargs):
+            raise SystemExit(1)
+
+        client.search = _raise_systemexit  # type: ignore[assignment]
+
+        service = Mem0PresentationMemoryService()
+        presentation_id = uuid.uuid4()
+
+        with patch(
+            "services.mem0_presentation_memory_service.get_shared_mem0_client",
+            return_value=client,
+        ):
+            first = asyncio.run(
+                service.retrieve_context(presentation_id, "anything")
+            )
+
+        assert first == ""
+        assert service._runtime_enabled is False
+
+        with patch(
+            "services.mem0_presentation_memory_service.get_shared_mem0_client",
+        ) as fake_get:
+            second = asyncio.run(
+                service.retrieve_context(presentation_id, "anything else")
+            )
+            fake_get.assert_not_called()
+
+        assert second == ""

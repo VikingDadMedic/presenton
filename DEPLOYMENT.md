@@ -380,6 +380,26 @@ The Phase 0-6 work is opt-in via existing env vars; no new mandatory env vars. W
 
 ---
 
+## MCP server (Phase 11.4)
+
+`mcp_server.py` runs alongside the FastAPI app (port 8001 by default) and registers the 27 OpenAPI operationIds as MCP tools via `FastMCP.from_openapi`. Auth on the loopback path is now closed end-to-end:
+
+- The OpenAPI spec declares `securitySchemes.basicAuth` (`type: http`, `scheme: basic`) with a top-level `security: [{ basicAuth: [] }]` requirement so MCP clients consuming the spec generate Basic-auth-aware bindings.
+- The loopback `httpx.AsyncClient` is wrapped with `MCPLoopbackAuth` (`servers/fastapi/mcp_server.py`). On every outbound loopback call the shim resolves the Authorization header in this order:
+  1. Header already on the outbound request (caller wins).
+  2. Inbound MCP request via `fastmcp.server.dependencies.get_http_headers(include={"authorization"})` — the canonical path; the MCP client authenticates once, every loopback call inherits.
+  3. `MCP_LOOPBACK_AUTH=basic:<user>:<pass>` env-var fallback — for service-to-service smoke probes and background tasks where no inbound MCP request context exists.
+  4. No header (loopback proceeds unauthenticated; FastAPI middleware 401s it on a configured deployment — fail-closed).
+
+### Optional MCP env var
+
+- `MCP_LOOPBACK_AUTH` (NEW): `basic:<user>:<pass>` — pre-encoded into a Basic Authorization header at startup and used as the fallback when no inbound MCP request carries auth. Leave UNSET in production unless you need service-to-service MCP calls without a logged-in user (e.g., scheduled smoke probes).
+  - Provision via `az webapp config appsettings set --settings MCP_LOOPBACK_AUTH="basic:smoke-bot:<password>"` followed by `az webapp restart`.
+  - When unset, the previous behavior is preserved exactly: loopback requests fail closed at the FastAPI middleware unless an inbound MCP request supplies its own Authorization header.
+  - Wrong scheme prefix (anything other than `basic:`) or malformed payload (no `:` between user and pass) returns None at startup and is treated as if unset — defensive so a typo can't take the MCP server down.
+
+---
+
 ## Scaling and Cost
 
 ### Current Setup

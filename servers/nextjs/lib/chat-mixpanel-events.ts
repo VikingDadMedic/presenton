@@ -223,3 +223,123 @@ export function emitChatToolError(
 ): void {
   tracker(CHAT_EVENT.TOOL_ERROR, buildChatToolErrorPayload(input));
 }
+
+// ---------------------------------------------------------------------------
+// SSE trace dispatch — Phase 10.1
+//
+// Chat.tsx receives `ChatStreamTrace` events over SSE in its `onTrace`
+// handler. Rather than embed the emit-decision logic inline (which would
+// make the Chat.tsx component non-testable without a React + esbuild
+// bundler), the dispatch logic is extracted into a pure helper that takes
+// the trace, a small caller context, and an injected tracker.
+//
+// The trace shape is duck-typed (a structural subset of `ChatStreamTrace`
+// from `services/api/chat.ts`) so this module stays self-contained for the
+// node:test + esbuild test harness without any cross-folder imports.
+//
+// Decision rules:
+//   - tool_call kind + tool + status in {start, success, error}
+//       -> emit Chat_Tool_Called (status passthrough)
+//   - tool === "saveSlide" + status === "success"
+//       -> additionally emit Chat_Slide_Saved
+//   - tool + status === "error"
+//       -> additionally emit Chat_Tool_Error (errorKind = trace.message
+//          or "unknown")
+// ---------------------------------------------------------------------------
+
+export type ChatTelemetryTrace = {
+  kind?: string;
+  tool?: string;
+  status?: string;
+  message?: string;
+};
+
+export type ChatTelemetryContext = {
+  presentationId: string;
+  conversationId: string | null;
+  currentSlide?: number;
+};
+
+const TOOL_CALL_STATUSES = new Set<ChatToolStatus>(["start", "success", "error"]);
+
+function isToolCallStatus(status: string | undefined): status is ChatToolStatus {
+  return typeof status === "string" && TOOL_CALL_STATUSES.has(status as ChatToolStatus);
+}
+
+export function dispatchChatTraceTelemetry(
+  trace: ChatTelemetryTrace,
+  ctx: ChatTelemetryContext,
+  tracker: ChatEventTracker = NOOP_TRACKER,
+): void {
+  if (!trace || typeof trace !== "object") {
+    return;
+  }
+
+  const conversationId = ctx.conversationId ?? "";
+
+  if (
+    trace.kind === "tool_call" &&
+    typeof trace.tool === "string" &&
+    trace.tool.length > 0 &&
+    isToolCallStatus(trace.status)
+  ) {
+    emitChatToolCalled(
+      {
+        presentationId: ctx.presentationId,
+        conversationId,
+        toolName: trace.tool,
+        status: trace.status,
+      },
+      tracker,
+    );
+  }
+
+  if (
+    typeof trace.tool === "string" &&
+    trace.tool === "saveSlide" &&
+    trace.status === "success"
+  ) {
+    emitChatSlideSaved(
+      {
+        presentationId: ctx.presentationId,
+        conversationId,
+        slideIndex:
+          typeof ctx.currentSlide === "number" ? ctx.currentSlide : 0,
+      },
+      tracker,
+    );
+  }
+
+  if (
+    typeof trace.tool === "string" &&
+    trace.tool.length > 0 &&
+    trace.status === "error"
+  ) {
+    emitChatToolError(
+      {
+        presentationId: ctx.presentationId,
+        conversationId,
+        toolName: trace.tool,
+        errorKind:
+          typeof trace.message === "string" && trace.message.trim().length > 0
+            ? trace.message
+            : "unknown",
+      },
+      tracker,
+    );
+  }
+}
+
+// Pure helper: returns true on the moment a brand-new conversation_id arrives
+// from the server while the local state still has `null`. Chat.tsx uses this
+// to decide whether to fire `Chat_Conversation_Started` once per thread.
+export function shouldEmitChatConversationStarted(
+  previousConversationId: string | null,
+  newConversationId: string | null | undefined,
+): boolean {
+  return (
+    previousConversationId === null &&
+    typeof newConversationId === "string" &&
+    newConversationId.length > 0
+  );
+}

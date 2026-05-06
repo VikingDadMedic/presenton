@@ -32,6 +32,13 @@ import {
   inferStatusState,
   isAbortError,
 } from "@/lib/chat-streaming";
+import { track } from "@/utils/mixpanel";
+import {
+  dispatchChatTraceTelemetry,
+  emitChatConversationStarted,
+  emitChatMessageSent,
+  shouldEmitChatConversationStarted,
+} from "@/lib/chat-mixpanel-events";
 
 const suggestions: {
   id: string;
@@ -423,6 +430,9 @@ const Chat = ({
       content: trimmedMessage,
     };
 
+    const previousConversationId = conversationId;
+    const hasHistory = messages.length > 0;
+
     const assistantMessageId = createMessageId();
     setMessages((previous) => [
       ...previous,
@@ -435,6 +445,15 @@ const Chat = ({
         activity: [],
       },
     ]);
+    emitChatMessageSent(
+      {
+        presentationId,
+        conversationId: previousConversationId ?? "",
+        message: trimmedMessage,
+        hasHistory,
+      },
+      track,
+    );
     setExpandedActivityByMessage((previous) => ({
       ...previous,
       [assistantMessageId]: false,
@@ -473,6 +492,15 @@ const Chat = ({
             });
           },
           onTrace: (trace: ChatStreamTrace) => {
+            dispatchChatTraceTelemetry(
+              trace,
+              {
+                presentationId,
+                conversationId: previousConversationId,
+                currentSlide,
+              },
+              track,
+            );
             const traceActivity = formatTraceActivity(trace);
             if (!traceActivity) {
               return;
@@ -500,23 +528,34 @@ const Chat = ({
         delete next[assistantMessageId];
         return next;
       });
-      setConversationId((previous) => {
-        const next =
-          typeof response.conversation_id === "string"
-            ? response.conversation_id
-            : previous;
-        if (
-          next &&
-          presentationId &&
-          typeof sessionStorage !== "undefined"
-        ) {
-          sessionStorage.setItem(
-            conversationStorageKey(presentationId),
-            next,
-          );
-        }
-        return next;
-      });
+      const serverConversationId =
+        typeof response.conversation_id === "string"
+          ? response.conversation_id
+          : null;
+      const nextConversationId =
+        serverConversationId ?? previousConversationId;
+
+      if (
+        nextConversationId &&
+        presentationId &&
+        typeof sessionStorage !== "undefined"
+      ) {
+        sessionStorage.setItem(
+          conversationStorageKey(presentationId),
+          nextConversationId,
+        );
+      }
+
+      if (
+        shouldEmitChatConversationStarted(
+          previousConversationId,
+          serverConversationId,
+        )
+      ) {
+        emitChatConversationStarted({ presentationId }, track);
+      }
+
+      setConversationId(nextConversationId);
 
       await refreshPresentationIfNeeded(
         Array.isArray(response.tool_calls) ? response.tool_calls : [],

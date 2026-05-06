@@ -27,6 +27,15 @@
 #   BUILD_RETRY_DELAY         default: 120 (seconds)
 #   SKIP_BUILD                default: false   (true skips az acr build)
 #   SKIP_HEALTH               default: false   (true skips the health poll)
+#   SKIP_SMOKE                default: false   (true skips post-deploy
+#                                              smoke-post-deploy.sh; useful
+#                                              when smoke env vars
+#                                              PRESENTATION_ID/ADMIN_*
+#                                              aren't available locally)
+#
+# If SKIP_SMOKE is unset and PRESENTATION_ID/ADMIN_USER/ADMIN_PASS are
+# defined, scripts/smoke-post-deploy.sh runs after the /health 200 check
+# and any failure fails the whole deploy.
 #
 
 set -euo pipefail
@@ -42,6 +51,7 @@ MAX_BUILD_RETRIES="${MAX_BUILD_RETRIES:-3}"
 BUILD_RETRY_DELAY="${BUILD_RETRY_DELAY:-120}"
 SKIP_BUILD="${SKIP_BUILD:-false}"
 SKIP_HEALTH="${SKIP_HEALTH:-false}"
+SKIP_SMOKE="${SKIP_SMOKE:-false}"
 
 REGISTRY_HOST="${ACR_NAME}.azurecr.io"
 LOCAL_IMAGE_REF="${REGISTRY_HOST}/${IMAGE_NAME}:${TAG}"
@@ -230,7 +240,7 @@ while true; do
     if [[ -n "$REPORTED_ALEMBIC_HEAD" ]]; then
       log_success "  alembic_head=${REPORTED_ALEMBIC_HEAD}"
     fi
-    exit 0
+    break
   fi
 
   NOW=$(date +%s)
@@ -249,3 +259,47 @@ while true; do
   attempt=$((attempt + 1))
   sleep 5
 done
+
+# Step 5: Post-deploy smoke (Phase 11.0c.4 orchestrator).
+# Skipped when SKIP_SMOKE=true OR when smoke env vars (PRESENTATION_ID
+# / ADMIN_USER / ADMIN_PASS) aren't available locally. Failure here
+# fails the whole deploy.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [[ "$SKIP_SMOKE" == "true" ]]; then
+  log_warn "Skipping post-deploy smoke (SKIP_SMOKE=true)"
+  log_success "Deploy complete (smoke skipped)"
+  exit 0
+fi
+
+if [[ -z "${PRESENTATION_ID:-}" ]] || [[ -z "${ADMIN_USER:-}" ]] || [[ -z "${ADMIN_PASS:-}" ]]; then
+  log_warn "Skipping post-deploy smoke: PRESENTATION_ID / ADMIN_USER / ADMIN_PASS not set in env."
+  log_warn "Set all three to enable the smoke-post-deploy.sh orchestrator (or set SKIP_SMOKE=true to suppress this warning)."
+  log_success "Deploy complete (smoke skipped — env vars unset)"
+  exit 0
+fi
+
+if [[ ! -x "${SCRIPT_DIR}/smoke-post-deploy.sh" ]]; then
+  log_error "${SCRIPT_DIR}/smoke-post-deploy.sh missing or not executable."
+  log_error "Either chmod +x it or set SKIP_SMOKE=true to bypass."
+  exit 1
+fi
+
+log_info "Step 5/5: Running smoke-post-deploy.sh against ${BASE_URL:-${HEALTH_URL%/*}}"
+SMOKE_BASE_URL="${BASE_URL:-${HEALTH_URL%/health}}"
+if BASE_URL="$SMOKE_BASE_URL" \
+   PRESENTATION_ID="$PRESENTATION_ID" \
+   ADMIN_USER="$ADMIN_USER" \
+   ADMIN_PASS="$ADMIN_PASS" \
+   bash "${SCRIPT_DIR}/smoke-post-deploy.sh"; then
+  log_success "Post-deploy smoke passed"
+  log_success "Deploy complete + smoke verified"
+  exit 0
+else
+  SMOKE_EXIT=$?
+  log_error "Post-deploy smoke failed (exit ${SMOKE_EXIT})"
+  log_error "The container deployed successfully (image_sha matched) but at least one"
+  log_error "smoke probe regressed. Inspect logs above + the per-feature smoke output,"
+  log_error "or rerun the failing sub-smoke directly with verbose curl."
+  exit "$SMOKE_EXIT"
+fi

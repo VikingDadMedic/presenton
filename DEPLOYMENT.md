@@ -236,7 +236,7 @@ Why ACR build instead of local Docker build:
 
 App Service caches the previous image. `az webapp restart` forces it to pull `presenton:latest` again. The first pull for a changed image takes 1-3 minutes (only changed layers are downloaded). Full cold pull from scratch takes ~20 minutes.
 
-**Migration call-out (current Alembic head: `c7b70d0f31b1`):**
+**Migration call-out (current Alembic head: `e2b1f4d9a6c3`):**
 
 If you run migrations manually outside container startup, apply Alembic head after deploy:
 
@@ -253,8 +253,9 @@ Revisions in chronological order:
 | `9d2f4f8429de` | `narration_usage_logs` table (drives the monthly budget guardrail and the `/usage/summary` dashboard) |
 | `4b7f8e2c1d9a` | `presentations.is_public` boolean (powers Showcase Mode + the `/api/v1/public/*` namespace) |
 | `c7b70d0f31b1` | `chat_history_messages` table + 3 indexes (Phase 9 conversational editing surface; FK `presentations.id` ON DELETE CASCADE) |
+| `e2b1f4d9a6c3` | `presentations.recap_mode` VARCHAR(32) nullable (Phase 11.2b — Q3 multi-tenant prereq; activity feed prefers this column over title-substring matching) |
 
-Keeping `MIGRATE_DATABASE_ON_STARTUP=true` in App Service also applies all four on boot. After this deploy, `c7b70d0f31b1` MUST be present before chat conversations persist in production (the head also implies `4b7f8e2c1d9a` for Showcase / public viewer / campaign visibility flags).
+Keeping `MIGRATE_DATABASE_ON_STARTUP=true` in App Service also applies all five on boot. After this deploy, `e2b1f4d9a6c3` MUST be present before recap presentations persist their canonical mode column in production. The head also implies all prior revisions (Showcase / chat / narration).
 
 **Step 3: Verify**
 

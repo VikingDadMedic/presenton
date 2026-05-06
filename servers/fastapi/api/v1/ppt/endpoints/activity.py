@@ -5,10 +5,15 @@ Recent-activity feed endpoint that powers the small "Recent campaigns" /
 - Campaign feed reads file-backed campaign job records from
   `${APP_DATA_DIRECTORY}/campaign-jobs/*.json`. We use the existing helpers in
   `utils/campaign_job_store.py` (no schema migration needed).
-- Recap feed queries the `presentations` table for titles containing a recap
-  mode marker ("welcome home recap", "anniversary recap", "next planning
-  window recap"). v1 heuristic — see plan note on adding a `recap_mode`
-  column in a future migration.
+- Recap feed queries the `presentations` table. As of Phase 11.2b (alembic
+  revision e2b1f4d9a6c3) presentations carry an explicit `recap_mode` column
+  (`welcome_home` / `anniversary` / `next_planning_window`) set by the
+  recap pipeline; the activity feed prefers this column when populating
+  recap rows. For legacy presentations created before the migration the
+  column is NULL — we still match those by title-substring (`welcome home
+  recap`, `anniversary recap`, `next planning window recap`) as a
+  best-effort fallback. Both selectors are OR'd into the same WHERE clause
+  so we don't have to maintain two parallel queries.
 """
 import json
 import os
@@ -146,27 +151,43 @@ async def _list_recap_activity(
     limit: int, sql_session: AsyncSession
 ) -> List[ActivityItem]:
     """
-    v1 fuzzy match: pull presentations whose title contains any of the recap
-    mode markers. We deliberately use a small ILIKE OR-chain rather than a
-    full-text index — recap volume is low and this avoids a migration.
+    Pull presentations that look like recaps. Two selectors OR'd together:
+      1. `recap_mode IS NOT NULL` — the canonical post-Phase-11.2b path.
+         Set by `_generate_single_recap` on every new recap presentation.
+      2. `title ILIKE %marker%` — best-effort fallback for legacy rows
+         created before the migration. Markers match the lowercased natural
+         shape of the three modes ("welcome home recap" etc.).
+
+    The response `extra` field reports which path matched (`match_source`)
+    so the dashboard can distinguish migrated rows from legacy rows during
+    the cutover window.
     """
-    conditions = [
+    title_conditions = [
         PresentationModel.title.ilike(f"%{marker}%") for marker in RECAP_TITLE_MARKERS
     ]
     query = (
         select(PresentationModel)
-        .where(or_(*conditions))
+        .where(or_(PresentationModel.recap_mode.is_not(None), *title_conditions))
         .order_by(PresentationModel.updated_at.desc())
         .limit(limit)
     )
     result = await sql_session.execute(query)
     rows: List[ActivityItem] = []
     for presentation in result.scalars().all():
-        title_lower = (presentation.title or "").lower()
-        matched_marker = next(
-            (marker for marker in RECAP_TITLE_MARKERS if marker in title_lower),
-            None,
-        )
+        explicit_mode = getattr(presentation, "recap_mode", None)
+        if explicit_mode:
+            extra = {"recap_mode": explicit_mode, "match_source": "column"}
+        else:
+            title_lower = (presentation.title or "").lower()
+            matched_marker = next(
+                (marker for marker in RECAP_TITLE_MARKERS if marker in title_lower),
+                None,
+            )
+            extra = (
+                {"recap_marker": matched_marker, "match_source": "title_substring"}
+                if matched_marker
+                else None
+            )
         rows.append(
             ActivityItem(
                 kind="recap",
@@ -178,7 +199,7 @@ async def _list_recap_activity(
                 updated_at=presentation.updated_at.isoformat()
                 if presentation.updated_at
                 else None,
-                extra={"recap_marker": matched_marker} if matched_marker else None,
+                extra=extra,
             )
         )
     return rows

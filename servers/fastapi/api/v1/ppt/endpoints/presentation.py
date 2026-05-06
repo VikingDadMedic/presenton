@@ -1322,6 +1322,7 @@ async def _generate_single_recap(
     )
     if generated_presentation:
         generated_presentation.narration_tone = recap_generation_request.narration_tone
+        generated_presentation.recap_mode = request.mode.value
         resolved_voice_id = _resolve_recap_voice_id(
             recap_generation_request.narration_tone or ""
         )

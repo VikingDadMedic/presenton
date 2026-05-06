@@ -177,6 +177,34 @@
         }
       }
     },
+    "/api/v1/ppt/slide/{slide_id}": {
+      "delete": {
+        "tags": ["Slide"],
+        "summary": "Delete a slide and its narration audio.",
+        "description": "Atomically removes a slide row, clears its narration columns, and deletes any persisted narration audio file at `/app_data/audio/<presentation_id>/slide_*.mp3`. Reuses the same `clear_slide_with_narration` helper that the chat `deleteSlide` tool uses, so REST and chat agree on the cleanup contract. Returns 204 No Content on success.",
+        "operationId": "delete_slide",
+        "parameters": [
+          {
+            "name": "slide_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Slide ID to delete"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Slide deleted; narration audio cleared"
+          },
+          "404": {
+            "description": "Slide or parent presentation not found"
+          }
+        }
+      }
+    },
     "/api/v1/ppt/enrichers/status": {
       "get": {
         "tags": ["Enrichers"],

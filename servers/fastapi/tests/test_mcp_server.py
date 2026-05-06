@@ -27,7 +27,7 @@ def _collect_operation_ids(spec: dict) -> list[str]:
     return operation_ids
 
 
-EXPECTED_MCP_TOOL_COUNT = 26
+EXPECTED_MCP_TOOL_COUNT = 27
 
 EXPECTED_OPERATION_IDS = {
     "generate_campaign",
@@ -45,6 +45,7 @@ EXPECTED_OPERATION_IDS = {
     "get_chat_history",
     "send_chat_message",
     "stream_chat_message",
+    "delete_slide",
 }
 
 

@@ -1,7 +1,7 @@
 import copy
 import json
 from typing import Annotated, Optional
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 
@@ -14,7 +14,10 @@ from services.image_generation_service import ImageGenerationService
 from services.mem0_presentation_memory_service import (
     MEM0_PRESENTATION_MEMORY_SERVICE,
 )
-from services.slide_edit_pipeline import apply_slide_edit_with_pipeline
+from services.slide_edit_pipeline import (
+    apply_slide_edit_with_pipeline,
+    clear_slide_with_narration,
+)
 from utils.asset_directory_utils import get_images_directory
 from utils.llm_calls.edit_slide import get_edited_field_value
 from utils.llm_calls.edit_slide_html import get_edited_slide_html
@@ -145,6 +148,42 @@ def _coerce_type(new_value_str: str, original_value):
         except (json.JSONDecodeError, ValueError):
             return new_value_str
     return new_value_str
+
+
+@SLIDE_ROUTER.delete(
+    "/{slide_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+)
+async def delete_slide(
+    slide_id: Annotated[uuid.UUID, Path(alias="slide_id")],
+    sql_session: AsyncSession = Depends(get_async_session),
+):
+    """Delete a slide row + its narration audio in one atomic operation.
+
+    Phase 10.6 of the Phase 10 final consolidation plan. Reuses the same
+    `clear_slide_with_narration` helper (in `services/slide_edit_pipeline.py`)
+    that the chat `deleteSlide` tool uses, so REST and chat agree on the
+    cleanup contract:
+      1. Audio file at `/app_data/audio/<presentation_id>/slide_*.mp3` is
+         removed if present.
+      2. Narration columns (`narration_audio_url`, `narration_text_hash`,
+         `narration_generated_at`) are cleared.
+      3. The slide row is deleted from the `slides` table.
+      4. Commit happens inside the helper.
+    Returns 204 No Content on success, 404 if the slide (or its parent
+    presentation row) is missing.
+    """
+    slide = await sql_session.get(SlideModel, slide_id)
+    if not slide:
+        raise HTTPException(status_code=404, detail="Slide not found")
+
+    presentation = await sql_session.get(PresentationModel, slide.presentation)
+    if not presentation:
+        raise HTTPException(status_code=404, detail="Presentation not found")
+
+    await clear_slide_with_narration(slide, sql_session)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @SLIDE_ROUTER.patch("/edit-field")

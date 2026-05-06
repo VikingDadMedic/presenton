@@ -82,6 +82,32 @@ def test_openapi_operation_ids_are_unique_and_include_required_tools():
     assert not missing, f"Missing expected operationIds in OpenAPI spec: {sorted(missing)}"
 
 
+def test_openapi_spec_declares_basic_auth_security_scheme():
+    """Phase 11.4 — every operationId in this spec is admin-gated when
+    auth is configured on the FastAPI app. The spec must declare
+    `securitySchemes.basicAuth` (http/basic) and apply it as a top-level
+    `security` requirement so MCP clients consuming the spec generate
+    Basic-auth-aware bindings."""
+    spec = _load_openapi_spec()
+
+    components = spec.get("components") or {}
+    schemes = components.get("securitySchemes") or {}
+    assert "basicAuth" in schemes, (
+        "openai_spec.json must declare a `basicAuth` security scheme so "
+        "MCP-callable operations advertise their auth requirement"
+    )
+    basic = schemes["basicAuth"]
+    assert basic.get("type") == "http"
+    assert basic.get("scheme") == "basic"
+
+    top_level_security = spec.get("security")
+    assert isinstance(top_level_security, list) and len(top_level_security) == 1, (
+        "openai_spec.json must declare a top-level `security` array with the "
+        "single `basicAuth: []` requirement so every operation inherits it"
+    )
+    assert top_level_security[0] == {"basicAuth": []}
+
+
 @pytest.mark.asyncio
 async def test_fastmcp_registers_expected_openapi_tools():
     spec = _load_openapi_spec()

@@ -22,7 +22,7 @@ The next chapter is the **content / syndication engine**. Travel agents and BDMs
 - Newsletter and email-shaped pieces that fit the channels where buyers actually read proposals.
 - Partner co-marketing assets (DMOs, hotels, airlines) that fund the agent's content production.
 
-**The strategic insight: TripStory already has roughly 80% of the engine to produce all of those creatives.** Twenty-six travel layouts are shipped ([servers/nextjs/app/presentation-templates/travel/](servers/nextjs/app/presentation-templates/travel/)). Six narrative arcs are shipped, five of them not even itineraries (`travel-itinerary`, `travel-reveal`, `travel-contrast`, `travel-audience`, `travel-micro`, `travel-local` -- see [servers/nextjs/app/presentation-templates/index.tsx](servers/nextjs/app/presentation-templates/index.tsx) lines 277-282). Six export formats and showcase mode are shipped. Seventeen enrichers plus pricing are shipped. Mem0 per-presentation memory plus AI Q&A pills are shipped.
+**The strategic insight: TripStory already has roughly 80% of the engine to produce all of those creatives.** Thirty travel layouts are shipped ([servers/nextjs/app/presentation-templates/travel/](servers/nextjs/app/presentation-templates/travel/)). Ten narrative arcs are shipped, nine of them not even itineraries (`travel-itinerary`, `travel-reveal`, `travel-contrast`, `travel-audience`, `travel-micro`, `travel-local`, `travel-series`, `travel-recap`, `travel-deal-flash`, `travel-partner-spotlight` -- see [servers/nextjs/app/presentation-templates/index.tsx](servers/nextjs/app/presentation-templates/index.tsx) lines 810-873). Six export formats and showcase mode are shipped. Seventeen enrichers plus pricing are shipped. Mem0 per-presentation memory plus AI Q&A pills are shipped.
 
 What we are building in this plan is **distribution polish, packaging, and one big aspect-ratio refactor** -- not a second generation engine.
 
@@ -603,7 +603,7 @@ Document in [EXPORTS.md Section 2](EXPORTS.md#2-export-an-existing-presentation)
 
 #### 6.3 Per-layout responsive pass
 
-The 26 travel layouts were designed for 16:9. Each needs a vertical / square responsive branch.
+The 30 travel layouts were designed for 16:9. Each needs a vertical / square responsive branch.
 
 - **Translate naturally** (single-column, hero-style; minimal work): `DestinationHeroLayout`, `GoldenHourMoodBoardLayout`, `CuisineDiscoveryLayout`, `AmbientSoundsLayout`, `BeforeAfterArrivalLayout`, `DayNightSplitLayout` (rotate split orientation), `BookingCTALayout`.
 - **Need explicit vertical / square branches** (multi-column, side-by-side): `PricingComparisonLayout`, `PricingConfiguratorLayout`, `CompareDestinationsLayout`, `ItineraryTimelineLayout`, `AccommodationCardLayout`, `FlightInfoLayout`, `ExperienceCardsLayout`, `PackageInclusionsLayout`.
@@ -630,7 +630,7 @@ Once Phase 6 lands, every Phase 3 campaign variant gains an `aspect_ratio` field
 #### Phase 6 -- Deliverables
 
 - Three aspect ratios produced by every export route.
-- 26 layouts pass visual review at all three aspect ratios.
+- 30 layouts pass visual review at all three aspect ratios.
 - Hyperframes vertical timeline animation profiles.
 - App Service render budget validated.
 - Phase 3 campaign presets updated with per-variant defaults.
@@ -743,7 +743,7 @@ flowchart LR
 | Phase 3 | M | 1 week | ~6 (campaign endpoint, runner, UI page, MCP, webhook event, status route) | ~6-8 (router registration, UI navigation, EXPORTS.md docs) | One prompt -> N coordinated assets |
 | Phase 4 | M | 1 week | ~3 (recap endpoint, recap prompt, dashboard recap entry) | ~5-7 (presentation router, generation pipeline branch, narration tone defaults, EXPORTS.md docs) | Post-trip memory + anniversary nudges |
 | Phase 5 | M-L | 1-2 weeks | 4 (new arc directories) + 2-3 (new layouts) | ~6-8 (index.tsx + constants.py + tone defaults + AGENTS.md) | Series, recap, deal-flash, partner-spotlight arcs surface in upload + campaign |
-| Phase 6 | L | 2-3 weeks | 0 | ~20+ (export pipeline + 26 layouts + Hyperframes profiles + EXPORTS.md docs) | 9:16 + 1:1 + 16:9 across all export formats |
+| Phase 6 | L | 2-3 weeks | 0 | ~20+ (export pipeline + 30 layouts + Hyperframes profiles + EXPORTS.md docs) | 9:16 + 1:1 + 16:9 across all export formats |
 
 Total estimated effort for one developer: **~6-8 weeks elapsed, full-time**. Phases 0-2 alone deliver ~50% of the total business value in the first week.
 
@@ -779,7 +779,7 @@ Per phase acceptance is documented inline. The roll-up:
 | Narration character cost multiplied by N campaign variants | Phase 3 | Existing `ELEVENLABS_MONTHLY_CHARACTER_BUDGET` enforcement holds; campaign UI must surface per-variant character estimate before submit. |
 | Viator Partner API affiliate compliance for `travel-partner-spotlight` | Phase 5 | Hotel and airline spotlights must show clear disclosure language (already required by Viator T&Cs); copy review needed before shipping the partner arc. |
 | Per-layout responsive design debt for vertical / square | Phase 6 | Bake into the phase scope; do not defer the responsive pass to a later phase. |
-| Brand-stamp visual conflict with existing layout designs | Phase 2 | Single agreed top-right placement; 60% opacity logo; smoke test on all 26 layouts. |
+| Brand-stamp visual conflict with existing layout designs | Phase 2 | Single agreed top-right placement; 60% opacity logo; smoke test on all 30 layouts. |
 | Campaign generator job-store contention at scale | Phase 3 | File-backed v1 sufficient; revisit Redis-backed store when concurrent campaigns exceed 50. |
 | Mem0 retrieval latency on multi-turn AskPanel | Phase 1 | Top-k bounded; cache by question hash if needed; documented as monitoring point. |
 | Agent profile data conflicts with single-admin auth model | Phase 2 | v1 single-admin scope holds; multi-tenant agent profiles defer to Q3 roadmap. |

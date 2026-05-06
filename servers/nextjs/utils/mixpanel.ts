@@ -73,6 +73,7 @@ export enum MixpanelEvent {
   Settings_CheckOllamaModelPulled_API_Call = 'Settings Check Ollama Model Pulled API Call',
   Settings_DownloadOllamaModel_API_Call = 'Settings Download Ollama Model API Call',
   PresentationPage_Refresh_Page_Button_Clicked = 'Presentation Page Refresh Page Button Clicked',
+  PresentationPage_Chat_Sheet_Opened = 'Presentation Page Chat Sheet Opened',
   PresentationMode_Fullscreen_Toggle_Clicked = 'Presentation Mode Fullscreen Toggle Clicked',
   PresentationMode_Exit_Clicked = 'Presentation Mode Exit Clicked',
   ImageEditor_GetPreviousGeneratedImages_API_Call = 'Image Editor Get Previous Generated Images API Call',

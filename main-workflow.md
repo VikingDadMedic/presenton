@@ -101,7 +101,7 @@ Structure content: inspiration -> logistics -> conversion.
 **Search web for current travel advisories, visa requirements, pricing**
 ```
 
-> **ISSUE**: This prompt says "travel content creator" for ALL templates, not just travel.
+> ~~**ISSUE**: This prompt says "travel content creator" for ALL templates, not just travel.~~ Resolved May 2026 — see Section 6.A.
 
 **User Prompt**:
 ```
@@ -180,7 +180,7 @@ Select layout index for each of {n_slides} slides.
   - Content: SlideOutlineModel(content='# Market Analysis...')
 ```
 
-> **ISSUE**: Uses Pydantic `__str__` representation, not raw content.
+> **ISSUE**: Uses Pydantic `__str__` representation, not raw content. (Issue F — unresolved; tracked in Phase 11 backlog.)
 
 **Response Schema**:
 ```json
@@ -191,7 +191,7 @@ Select layout index for each of {n_slides} slides.
 
 **Post-processing**: Out-of-bounds indices are replaced with random valid indices.
 
-> **ISSUE**: Call 2 only sees layout names/descriptions, NOT the JSON schemas. It can't make schema-aware decisions (e.g., "this outline has metrics data, layout 5 has a metrics schema").
+> ~~**ISSUE**: Call 2 only sees layout names/descriptions, NOT the JSON schemas. It can't make schema-aware decisions (e.g., "this outline has metrics data, layout 5 has a metrics schema").~~ Resolved May 2026 — see Section 6.C (markdown `Fields:` projection now ships per-layout shape hints to the LLM).
 
 ---
 
@@ -394,25 +394,21 @@ flowchart TD
 
 ## 6. Key Findings for Refactoring
 
-### A. System Prompt is Travel-Hardcoded
+### A. System Prompt is Travel-Hardcoded (RESOLVED — May 2026)
 
 **File**: `utils/llm_calls/generate_presentation_outlines.py`
 
-The Call 1 system prompt says "You are an expert travel content creator and destination specialist" regardless of template. Non-travel presentations (general, modern, standard) get travel-specific instructions like "Emphasize sensory destination details" and "Search web for current travel advisories."
+**Original drift**: the Call 1 system prompt said "You are an expert travel content creator and destination specialist" regardless of template, and non-travel presentations (general, modern, standard) received travel-specific instructions like "Emphasize sensory destination details" and "Search web for current travel advisories."
 
-**Impact**: Non-travel presentations receive irrelevant travel guidance, potentially degrading quality for generic content.
+**Canonical resolution**: `get_system_prompt(template: str = "")` now gates the entire travel persona block behind `if template and template.startswith("travel")`. Non-travel templates receive only the generic outline-generation guidance; the travel block is appended only for travel-template runs. The function signature was updated and `generate_ppt_outline` now passes the template name through.
 
-**Fix**: Condition the system prompt persona and guidelines on the template group. Pass `template_name` to `generate_ppt_outline`.
+### B. Call 3 is Sequential in Streaming Path (RESOLVED — May 2026)
 
-### B. Call 3 is Sequential in Streaming Path
+**File**: `api/v1/ppt/endpoints/presentation.py` `stream_presentation`; helper `utils/call3_concurrency.py`.
 
-**File**: `api/v1/ppt/endpoints/presentation.py`, lines 340-387
+**Original drift**: the streaming path used a plain `for` loop with `await` per slide. Each Call 3 LLM request blocked until the response arrived before the next slide began. With 8 slides and ~5-10s per LLM call, this meant 40-80 seconds of sequential LLM time. The `/generate` path already batched 10 slides in parallel via `asyncio.gather`, taking only 5-10 seconds total.
 
-The streaming path uses a plain `for` loop with `await` per slide. Each Call 3 LLM request blocks until the response arrives before the next slide begins. With 8 slides and ~5-10s per LLM call, this means 40-80 seconds of sequential LLM time.
-
-The `/generate` path already batches 10 slides in parallel via `asyncio.gather`, taking only 5-10 seconds total. The streaming path can't directly parallelize (SSE must send slides in order), but it could fire multiple LLM calls ahead and buffer, or use a producer-consumer pattern.
-
-**Impact**: Streaming path is 4-8x slower than it needs to be for the LLM portion.
+**Canonical resolution**: commit `c1a69c60` introduced a producer/consumer pattern. The producer fires N concurrent `get_slide_content_from_type_and_outline` tasks gated by `asyncio.Semaphore(CONTENT_MODEL_CONCURRENCY)` (default 4, max 12, set via `CONTENT_MODEL_CONCURRENCY` env var); the consumer drains a result queue through `OrderedSlideEmitter` which buffers out-of-order completions and emits SSE chunks in slide-index order. Per-slide LLM failures yield a structured `SSEErrorResponse` for that slot but the stream completes for surviving slides — fail-fast behavior is gone. Real-world speedup matches the documented 4-8x estimate.
 
 ### C. Call 2 Doesn't See JSON Schemas (RESOLVED — May 2026)
 
@@ -431,15 +427,13 @@ The `/generate` path already batches 10 slides in parallel via `asyncio.gather`,
 
 **Unblocks**: Recipes 8 (visa+safety explainer) and 9 (package comparison) in `docs/CREATIVE-RECIPES.md`, which previously relied on probabilistic layout selection because the un-ordered `travel` template surface had to choose layouts purely from name/description matching.
 
-### D. `ordered` Flag is Broken in Frontend
+### D. `ordered` Flag is Broken in Frontend (RESOLVED — May 2026)
 
-**File**: `outline/hooks/usePresentationGeneration.ts`, line 131
+**File**: `outline/hooks/usePresentationGeneration.ts` (built-in template branch).
 
-The `usePresentationGeneration` hook hardcodes `ordered: false` when building the layout payload for `/prepare`. The `selectedTemplate.settings.ordered` value (which is `true` for travel-itinerary) is never read or passed.
+**Original drift**: the `usePresentationGeneration` hook hardcoded `ordered: false` when building the layout payload for `/prepare`. The `selectedTemplate.settings.ordered` value (which is `true` for travel-itinerary and the 9 other ordered narrative arcs) was never read or passed, so the fixed narrative sequence (hero → highlights → day → accommodation → flights → pricing → CTA) fell through to LLM-based layout assignment like any other template.
 
-**Impact**: The travel-itinerary template's fixed narrative sequence (hero -> highlights -> day -> accommodation -> flights -> pricing -> CTA) is never enforced. It falls through to LLM-based layout assignment like any other template.
-
-**Fix**: Read `selectedTemplate.settings?.ordered ?? false` and pass it in the layout object.
+**Canonical resolution**: the built-in template path now reads `ordered: selectedTemplate.settings?.ordered ?? false` and forwards it to the `/prepare` payload. The custom-template branch keeps `ordered: false` (custom decks have no settings.json `ordered` flag). Travel-itinerary and the other 9 ordered arcs (`travel-reveal`, `travel-contrast`, `travel-audience`, `travel-micro`, `travel-local`, `travel-series`, `travel-recap`, `travel-deal-flash`, `travel-partner-spotlight`) now correctly skip Call 2 in production.
 
 ### E. Enriched Context Injection Inconsistency (RESOLVED — May 2026)
 

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useLayoutEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import "../../utils/prism-languages";
@@ -17,10 +17,16 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
+import type { ImperativePanelHandle } from "react-resizable-panels";
 import { useIsMobile } from "@/lib/use-is-mobile";
 import { usePathname, useRouter } from "next/navigation";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
-import { AlertCircle, MessageCircle } from "lucide-react";
+import { AlertCircle, MessageCircle, PanelLeftOpen } from "lucide-react";
 import {
   usePresentationStreaming,
   usePresentationData,
@@ -44,6 +50,10 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [error, setError] = useState(false);
   const [isChatSheetOpen, setIsChatSheetOpen] = useState(false);
+  const [isThumbnailsCollapsed, setIsThumbnailsCollapsed] = useState(false);
+  const [isChatCollapsed, setIsChatCollapsed] = useState(false);
+  const thumbnailsPanelRef = useRef<ImperativePanelHandle>(null);
+  const chatPanelRef = useRef<ImperativePanelHandle>(null);
   const router = useRouter();
   const isMobile = useIsMobile();
 
@@ -152,91 +162,90 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
     );
   }
 
-  return (
-    <div className="h-screen overflow-hidden font-display ">
+  /** Slide canvas + header, shared between mobile (single column) and desktop (middle ResizablePanel). */
+  const canvasBody = (
+    <div className="min-w-0 w-full h-screen pr-[25px] pl-2 overflow-y-auto">
+      <PresentationHeader
+        presentation_id={presentation_id}
+        isPresentationSaving={isSaving}
+        currentSlide={selectedSlide}
+      />
       <div
         style={{
-          background: "var(--card, #ffffff)",
+          background: "color-mix(in srgb, var(--card) 10%, transparent)",
+          boxShadow:
+            "0 0 20px 0 color-mix(in srgb, var(--primary) 16%, transparent) inset",
         }}
-        id="presentation-slides-wrapper"
-        className="flex  gap-6 relative "
+        className="p-6 rounded-[20px] font-sans flex flex-col items-center overflow-hidden justify-center border border-border"
       >
-        <div className="w-[200px]">
-          <SidePanel
-            selectedSlide={selectedSlide}
-            onSlideClick={handleSlideClick}
-            presentationId={presentation_id}
-            loading={loading}
-          />
-        </div>
-        <div className="min-w-0 w-full h-[calc(100vh-20px)] pr-[25px] pl-2 overflow-y-auto">
-          <PresentationHeader presentation_id={presentation_id} isPresentationSaving={isSaving} currentSlide={selectedSlide} />
-          <div
-
-            style={{
-              background: "color-mix(in srgb, var(--card) 10%, transparent)",
-              boxShadow: "0 0 20px 0 color-mix(in srgb, var(--primary) 16%, transparent) inset",
-            }}
-            className="p-6 rounded-[20px] font-sans flex flex-col items-center overflow-hidden justify-center  border border-border "
-          >
-            <div className="w-full max-w-[1280px] h-full">
-
-              {!presentationData ||
-                loading ||
-                !presentationData?.slides ||
-                presentationData?.slides.length === 0 ? (
-                skeletonSlides.length > 0 ? (
-                  <div className="flex flex-col gap-4">
-                    {skeletonSlides.map((sk, i) => (
-                      <SlideSkeleton
-                        key={`skeleton-${i}`}
-                        outlineText={sk.outlineText}
-                        layoutName={sk.layoutName}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="relative w-full h-[calc(100vh-120px)] mx-auto">
-                    <div className="">
-                      {Array.from({ length: 2 }).map((_, index) => (
-                        <Skeleton
-                          key={index}
-                          className="aspect-video bg-muted-foreground/20 my-4 w-full mx-auto "
-                        />
-                      ))}
-                    </div>
-                    {stream && <LoadingState />}
-                  </div>
-                )
-              ) : (
-                <>
-                  {presentationData.slides.map((slide: any, index: number) => (
-                    <SlideContent
-                      key={`${slide.type}-${index}-${slide.index}`}
-                      slide={slide}
-                      index={index}
-                      presentationId={presentation_id}
+        <div className="w-full max-w-[1280px] h-full">
+          {!presentationData ||
+          loading ||
+          !presentationData?.slides ||
+          presentationData?.slides.length === 0 ? (
+            skeletonSlides.length > 0 ? (
+              <div className="flex flex-col gap-4">
+                {skeletonSlides.map((sk, i) => (
+                  <SlideSkeleton
+                    key={`skeleton-${i}`}
+                    outlineText={sk.outlineText}
+                    layoutName={sk.layoutName}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="relative w-full h-[calc(100vh-120px)] mx-auto">
+                <div className="">
+                  {Array.from({ length: 2 }).map((_, index) => (
+                    <Skeleton
+                      key={index}
+                      className="aspect-video bg-muted-foreground/20 my-4 w-full mx-auto"
                     />
                   ))}
-                  {isStreaming &&
-                    skeletonSlides.slice(presentationData.slides.length).map((sk, i) => (
-                      <SlideSkeleton
-                        key={`skeleton-pending-${presentationData.slides.length + i}`}
-                        outlineText={sk.outlineText}
-                        layoutName={sk.layoutName}
-                      />
-                    ))}
-                </>
-              )}
-            </div>
-          </div>
+                </div>
+                {stream && <LoadingState />}
+              </div>
+            )
+          ) : (
+            <>
+              {presentationData.slides.map((slide: any, index: number) => (
+                <SlideContent
+                  key={`${slide.type}-${index}-${slide.index}`}
+                  slide={slide}
+                  index={index}
+                  presentationId={presentation_id}
+                />
+              ))}
+              {isStreaming &&
+                skeletonSlides
+                  .slice(presentationData.slides.length)
+                  .map((sk, i) => (
+                    <SlideSkeleton
+                      key={`skeleton-pending-${presentationData.slides.length + i}`}
+                      outlineText={sk.outlineText}
+                      layoutName={sk.layoutName}
+                    />
+                  ))}
+            </>
+          )}
         </div>
-        {/* Phase 11.0b.5 mobile drawer skeleton: 3rd column at md: and above
-            (existing layout); collapses into a right-side <Sheet> below md:
-            with a floating Chat toggle button. Full mobile UX polish (gesture
-            dismissal, keyboard-avoidance for the composer, responsive typography
-            inside Chat itself) lives on the Phase 11.x deferred batch. */}
-        {isMobile ? (
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="h-screen overflow-hidden font-display">
+      {isMobile ? (
+        /* Mobile (<md:): single-column + chat Sheet + FAB. Slide thumbnails
+         * are intentionally hidden on mobile — the canvas takes the full
+         * viewport since slides are too small to be useful as thumbnails
+         * on a phone screen. */
+        <div
+          id="presentation-slides-wrapper"
+          style={{ background: "var(--card, #ffffff)" }}
+          className="relative h-screen w-full"
+        >
+          {canvasBody}
           <Sheet open={isChatSheetOpen} onOpenChange={setIsChatSheetOpen}>
             <SheetTrigger asChild>
               <Button
@@ -255,10 +264,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
                 <MessageCircle className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent
-              side="right"
-              className="w-full p-0 sm:max-w-[420px]"
-            >
+            <SheetContent side="right" className="w-full p-0 sm:max-w-[420px]">
               <SheetTitle className="sr-only">Chat assistant</SheetTitle>
               <SheetDescription className="sr-only">
                 Edit slides and ask questions about this presentation.
@@ -272,16 +278,91 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
               </div>
             </SheetContent>
           </Sheet>
-        ) : (
-          <div className="w-full max-w-[370px] min-w-[280px] h-full shrink self-start sticky top-0 hidden md:block">
-            <Chat
-              presentationId={presentation_id}
-              currentSlide={selectedSlide}
-              onPresentationChanged={fetchUserSlides}
-            />
-          </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        /* Desktop (>=md:): three-panel layout with resize handles. Both side
+         * panels are collapsible (drag handle to 0% to hide); panel sizes
+         * persist via `autoSaveId="editor-layout"` (localStorage). */
+        <div
+          id="presentation-slides-wrapper"
+          style={{ background: "var(--card, #ffffff)" }}
+          className="relative h-screen"
+        >
+          <ResizablePanelGroup
+            direction="horizontal"
+            autoSaveId="editor-layout"
+            className="h-full"
+          >
+            <ResizablePanel
+              ref={thumbnailsPanelRef}
+              defaultSize={15}
+              minSize={10}
+              maxSize={25}
+              collapsible
+              collapsedSize={0}
+              onCollapse={() => setIsThumbnailsCollapsed(true)}
+              onExpand={() => setIsThumbnailsCollapsed(false)}
+            >
+              <SidePanel
+                selectedSlide={selectedSlide}
+                onSlideClick={handleSlideClick}
+                presentationId={presentation_id}
+                loading={loading}
+              />
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={60} minSize={40} className="min-w-0">
+              {canvasBody}
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel
+              ref={chatPanelRef}
+              defaultSize={25}
+              minSize={15}
+              maxSize={35}
+              collapsible
+              collapsedSize={0}
+              onCollapse={() => setIsChatCollapsed(true)}
+              onExpand={() => setIsChatCollapsed(false)}
+            >
+              <Chat
+                presentationId={presentation_id}
+                currentSlide={selectedSlide}
+                onPresentationChanged={fetchUserSlides}
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+
+          {/* Floating expand affordances when a side panel is fully collapsed.
+           * react-resizable-panels keeps the handle clickable at width 0, but
+           * dragging from a 1px-wide spline is non-discoverable UX, so we
+           * surface explicit re-expand buttons. */}
+          {isThumbnailsCollapsed && (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label="Show slide thumbnails"
+              className="fixed bottom-4 left-4 z-40 h-10 w-10 rounded-md shadow-lg"
+              onClick={() => thumbnailsPanelRef.current?.expand()}
+            >
+              <PanelLeftOpen className="h-4 w-4" />
+            </Button>
+          )}
+          {isChatCollapsed && (
+            <Button
+              type="button"
+              variant="default"
+              size="icon"
+              aria-label="Open chat assistant"
+              className="fixed bottom-4 right-4 z-40 h-12 w-12 rounded-full shadow-lg"
+              onClick={() => chatPanelRef.current?.expand()}
+            >
+              <MessageCircle className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

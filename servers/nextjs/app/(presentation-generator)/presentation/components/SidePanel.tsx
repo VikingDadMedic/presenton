@@ -132,7 +132,7 @@ const SidePanel = ({
   }
 
   return (
-    <div className="bg-muted pt-8 px-4 w-[200px]">
+    <div className="bg-muted pt-8 px-4 h-full w-full overflow-hidden">
 
       <img onClick={() => {
         router.push("/dashboard");

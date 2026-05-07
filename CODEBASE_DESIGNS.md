@@ -22,7 +22,7 @@
 | Color Picker | react-colorful | ^5.6.1 | Presentation theme editor |
 | Toast | Sonner | ^2.0.6 | Heavily customized wrapper with dark-mode styles |
 | State | Redux Toolkit | ^2.2.8 | 4 slices; theme data lives in `presentationGeneration` |
-| Dark Mode | next-themes | ^0.4.6 | **Active** -- ThemeProvider wraps app, attribute="data-theme", defaultTheme="light" |
+| Dark Mode | next-themes | ^0.4.6 | **Active** -- ThemeProvider wraps app, attribute="data-theme", defaultTheme="eggshell-dark". 4 themes registered: `eggshell-light`, `eggshell-dark`, `velara-light`, `velara-dark`. Eggshell-dark is the post-Phase-C (PR #8) default; users can toggle via `/settings` -> Appearance. |
 | Animations | tailwindcss-animate | ^1.0.7 | Plugin + 5 custom keyframes in `globals.css` |
 | Typography | @tailwindcss/typography | ^0.5.16 | `.prose` classes for markdown content |
 
@@ -205,25 +205,49 @@ flowchart TD
 
 ### Namespace A -- App UI (hex/rgba-based, CSS cascade)
 
-Defined in `globals.css` `:root` (dark-first, Velara charcoal) and `[data-theme="light"]` (light overrides). Values are hex/rgba tokens, mapped directly in the `@theme` block to produce Tailwind-ready colors.
+Defined in `globals.css` as a **4-theme registry** under `@layer base`. Each `[data-theme="..."]` block is a complete palette; `:root` mirrors `eggshell-light` as the default fallback. `next-themes` flips the `data-theme` attribute at runtime. All values are hex/rgba tokens, registered in the `@theme` block to produce Tailwind-ready color utilities (`bg-card`, `text-foreground`, etc.).
 
-**Light mode palette** (applied via `[data-theme="light"]`):
+**The 4 themes** registered (post-Phase-C — PR #8 merged 2026-05-07):
+
+| Theme | Selector | Brand | Notes |
+|---|---|---|---|
+| `eggshell-light` | `:root, [data-theme="eggshell-light"]` | Eggshell Bright Tech (light) | `:root` mirrors this as default fallback |
+| `eggshell-dark` | `[data-theme="eggshell-dark"]` | Eggshell Bright Tech (dark) | **Post-Phase-C `defaultTheme` — new visitors land here** |
+| `velara-light` | `[data-theme="velara-light"]` | Velara Gold (light) | Legacy palette, still toggle-available |
+| `velara-dark` | `[data-theme="velara-dark"]` | Velara Gold (dark) | Legacy palette, still toggle-available |
+
+**Eggshell Bright Tech (light) palette** (applied via `[data-theme="eggshell-light"]` and mirrored on `:root`):
 
 | Token | Value | Approximate |
 |---|---|---|
-| `--background` | `#f5f1e8` | Warm parchment |
-| `--foreground` | `#1a1a2e` | Deep navy |
-| `--primary` | `#9a6a1a` | Gold |
-| `--primary-foreground` | `#faf8f5` | Off-white |
-| `--secondary` | `#e8e2d6` | Warm gray |
-| `--muted` | `#e8e2d6` | Warm gray |
-| `--muted-foreground` | `#6b6459` | Warm mid-gray |
-| `--accent` | `#e8e2d6` | Warm gray |
-| `--destructive` | `#dc2626` | Red |
-| `--border` | `#d4cdc1` | Sand |
-| `--ring` | `#9a6a1a` | Gold |
+| `--background` | `#f8f4ec` | Warm eggshell |
+| `--foreground` | `#101414` | Ink |
+| `--primary` | `#047C7A` | Primary teal |
+| `--primary-foreground` | `#ffffff` | White |
+| `--secondary` | `#608c8a` | Teal-gray |
+| `--muted` | `#e6f0ef` | Mist |
+| `--muted-foreground` | `#5a6e6d` | Muted teal |
+| `--accent` | `#00BFD8` | Bright cyan |
+| `--coral` | `#FF6B5F` | Coral |
+| `--gold` | `#C6A47E` | Gold sand |
+| `--border` | `#e6f0ef` | Mist |
+| `--ring` | `#00BFD8` | Bright cyan |
 
-**Dark mode** (`:root`): dark-first design with Velara charcoal tones. All 13 color pairs are defined directly in `:root`. Chart colors use a complementary warm palette. **ThemeProvider is active** with `attribute="data-theme"`, `defaultTheme="light"`. Dark mode tokens live in `:root`, light overrides in `[data-theme="light"]`.
+**Eggshell Bright Tech (dark) palette** (applied via `[data-theme="eggshell-dark"]`, the post-Phase-C default):
+
+| Token | Value | Approximate |
+|---|---|---|
+| `--background` | `#0d1818` | Deep teal |
+| `--foreground` | `#f8f4ec` | Eggshell |
+| `--card` | `#132222` | Deep teal-glass card |
+| `--primary` | `#00BFD8` | Bright cyan (flipped) |
+| `--primary-foreground` | `#0d1818` | Deep teal |
+| `--muted` | `#1a2e2e` | Dark teal-glass |
+| `--muted-foreground` | `#8cb8b6` | Mid teal |
+| `--accent` | `#047C7A` | Primary teal (flipped) |
+| `--border` | `#1e3838` | Dark teal-glass |
+
+5 status token pairs (`--success`/`--warning`/`--info`/`--error`/`--premium` each with `-bg` companion) are defined per theme. 8 sidebar tokens (`--sidebar-background`, `--sidebar-foreground`, `--sidebar-primary`, `--sidebar-primary-foreground`, `--sidebar-accent`, `--sidebar-accent-foreground`, `--sidebar-border`, `--sidebar-ring`) are defined per theme to support the shadcn `<Sidebar>` primitive added in Phase B (PR #7). The `--color-sidebar` alias in `@theme` resolves the `bg-sidebar` Tailwind utility class to `--sidebar-background`.
 
 ### Namespace B -- Presentation Themes (hex-based, imperative injection)
 
@@ -523,6 +547,13 @@ The **app shell** (dashboard, navigation, sidebar) uses standard Tailwind respon
 - Padding scales: `px-5 sm:px-10 lg:px-20`
 - Flex direction changes: `flex xl:flex-row flex-col`
 
+**Sidebar architecture (post-Phase-B — PR #7 merged 2026-05-07):** the app uses two distinct primitives for collapsible side rails:
+
+- **shadcn `<Sidebar>`** (`components/ui/sidebar.tsx`) — for top-level navigation rails. Used by the dashboard nav (`DashboardSidebar.tsx`, `collapsible="icon"` mode collapses to 56px icon-only with hover tooltips). State persists via the `sidebar:state` cookie (read server-side via `cookies()` from `next/headers` for SSR-aware first paint). Wrapped in `<SidebarProvider>` at the layout level + `<SidebarInset>` for main content. Keyboard shortcut: `Ctrl/Cmd+B`.
+- **shadcn `<ResizablePanelGroup>`** (`components/ui/resizable.tsx`, wrapping `react-resizable-panels`) — for editor-style layouts where the user drags handles between regions. Used by the presentation editor (`PresentationPage.tsx`) with 3 panels (slide thumbnails 15% / canvas 60% / chat 25%) + 2 `<ResizableHandle>` instances. Both side panels are `collapsible collapsedSize={0}` with FAB re-expand affordances; sizes persist via `autoSaveId="editor-layout"` (localStorage).
+
+Both primitives gracefully fall back to `<Sheet>` mobile drawers below `md:` (768px) via the `useIsMobile()` hook in `lib/use-is-mobile.ts`. Detailed extension recipes live in [Section 9](#9-adding-a-new-sidebar-surface) and [Section 10](#10-adding-a-resizablepanelgroup-layout).
+
 **Slide templates are NOT responsive.** They render at fixed 1280x720 and are scaled via CSS transforms. This is intentional: slides must produce identical output for PPTX/PDF export.
 
 ---
@@ -552,12 +583,127 @@ The composite layout ID format is `"templateGroupName:layoutId"` (e.g., `"genera
 
 ---
 
+## Quick-Reference: Adding a new Sidebar surface
+
+> Added in Phase B (PR #7, 2026-05-07). Canonical examples:
+> [`DashboardSidebar.tsx`](servers/nextjs/app/(presentation-generator)/(dashboard)/Components/DashboardSidebar.tsx) (icon-collapse mode)
+> + [`(dashboard)/layout.tsx`](servers/nextjs/app/(presentation-generator)/(dashboard)/layout.tsx) (provider wrapping).
+
+The app uses shadcn `<Sidebar>` ([`components/ui/sidebar.tsx`](servers/nextjs/components/ui/sidebar.tsx))
+for top-level navigation rails. To add a new sidebar:
+
+1. **Wrap the parent route layout** in `<SidebarProvider>` and render
+   `<Sidebar collapsible="icon" | "offcanvas" | "none">` + `<SidebarInset>` for main content.
+
+2. **Use the menu primitives** for nav items:
+   ```tsx
+   <SidebarMenu>
+     <SidebarMenuItem>
+       <SidebarMenuButton asChild isActive={isActive} tooltip="My Section">
+         <Link href="/my-section"><Icon /><span>My Section</span></Link>
+       </SidebarMenuButton>
+     </SidebarMenuItem>
+   </SidebarMenu>
+   ```
+
+3. **Always pass the `tooltip` prop** on `SidebarMenuButton`. In `collapsible="icon"` mode
+   the label is hidden and only the icon shows; the tooltip is what surfaces the
+   label on hover. Without it, collapsed icons are unlabeled.
+
+4. **Read the persisted state server-side** via `cookies()` from `next/headers` to
+   avoid expand-then-collapse flicker on first paint:
+
+   ```tsx
+   import { cookies } from 'next/headers';
+   const cookieStore = await cookies();
+   const defaultOpen = cookieStore.get('sidebar:state')?.value !== 'false';
+   ```
+
+   Pass the resolved value as `<SidebarProvider defaultOpen={defaultOpen}>`. The
+   shadcn `<SidebarProvider>` writes the canonical `sidebar:state` cookie on every
+   user toggle.
+
+5. **Do NOT nest `<SidebarProvider>` inside another `<SidebarProvider>`.** For
+   sub-rails inside a route that already has a provider (e.g., the settings page
+   filter rail inside the dashboard), use a flex container with theme tokens
+   (`bg-muted` / `border-border`) instead. Canonical example of the
+   non-Sidebar pattern: [`SettingSideBar.tsx`](servers/nextjs/app/(presentation-generator)/(dashboard)/settings/SettingSideBar.tsx).
+
+6. **Keyboard shortcut** `Ctrl/Cmd+B` toggles all sidebars under any
+   `SidebarProvider` (built into the primitive).
+
+---
+
+## Quick-Reference: Adding a ResizablePanelGroup layout
+
+> Added in Phase B (PR #7, 2026-05-07). Canonical example:
+> the editor 3-panel layout in
+> [`PresentationPage.tsx`](servers/nextjs/app/(presentation-generator)/presentation/components/PresentationPage.tsx).
+
+Use `<ResizablePanelGroup>` ([`components/ui/resizable.tsx`](servers/nextjs/components/ui/resizable.tsx),
+wrapping `react-resizable-panels`) for layouts where the user should drag-resize
+between regions (e.g., side panels + main canvas).
+
+1. **Wrap in `<ResizablePanelGroup direction="horizontal" autoSaveId="...">`.** The
+   `autoSaveId` is what makes panel sizes persist via localStorage. **Pick a
+   unique key per route** so different routes don't share a single saved layout.
+
+2. **Add a `<ResizablePanel>` per region** with size constraints in percent:
+
+   ```tsx
+   <ResizablePanel defaultSize={15} minSize={10} maxSize={25}>
+     <SideContent />
+   </ResizablePanel>
+   ```
+
+3. **Add `<ResizableHandle withHandle />` between panels** for visible drag
+   handles (the `withHandle` prop renders the small grip indicator).
+
+4. **To make a panel collapsible** (drag-to-zero), add `collapsible collapsedSize={0}`
+   plus `onCollapse` / `onExpand` callbacks. **Always** add a fixed-position
+   re-expand affordance (FAB) when the panel is collapsed:
+
+   ```tsx
+   const panelRef = useRef<ImperativePanelHandle>(null);
+   const [isCollapsed, setIsCollapsed] = useState(false);
+
+   <ResizablePanel
+     ref={panelRef}
+     collapsible
+     collapsedSize={0}
+     onCollapse={() => setIsCollapsed(true)}
+     onExpand={() => setIsCollapsed(false)}
+   >...</ResizablePanel>
+
+   {isCollapsed && (
+     <Button onClick={() => panelRef.current?.expand()} className="fixed ...">
+       <Icon />
+     </Button>
+   )}
+   ```
+
+   Without the FAB, the user is **trapped** because a 0px-wide handle is
+   non-discoverable. This is a hard requirement.
+
+5. **Mobile branch**: gate the entire `<ResizablePanelGroup>` behind
+   `useIsMobile()` (from [`lib/use-is-mobile.ts`](servers/nextjs/lib/use-is-mobile.ts))
+   and fall back to a single-column layout + `<Sheet>` drawer below the `md:`
+   breakpoint (768px). The editor's mobile chat drawer in `PresentationPage.tsx`
+   is the canonical pattern.
+
+6. **Preserve the slide-canvas `id="presentation-slides-wrapper"`** when the
+   panel group lives inside the presentation editor — `applyPresentationThemeToElement`
+   uses this ID to inject CSS variables. Put it on the `<div>` wrapping the
+   `<ResizablePanelGroup>` (or on each branch of the mobile/desktop switch).
+
+---
+
 ## Quick-Reference: Provider Hierarchy
 
 ```html
 <html lang="en">
   <body className="${dmSans.variable} ${cormorant.variable} ${dmMono.variable} antialiased">
-    <ThemeProvider attribute="data-theme" defaultTheme="light">
+    <ThemeProvider attribute="data-theme" defaultTheme="eggshell-dark">
       <Providers>                              <!-- Redux Provider -->
         <MixpanelInitializer>                  <!-- Analytics (passthrough) -->
           <ConfigurationInitializer>           <!-- LLM config + route guard (presentation routes only) -->
@@ -571,7 +717,7 @@ The composite layout ID format is `"templateGroupName:layoutId"` (e.g., `"genera
 </html>
 ```
 
-ThemeProvider IS present with `attribute="data-theme"`, `defaultTheme="light"`. Dark mode tokens are in `:root`, light overrides in `[data-theme="light"]`.
+ThemeProvider IS present with `attribute="data-theme"`, `defaultTheme="eggshell-dark"` (post-Phase-C). 4 themes registered: `eggshell-light`/`eggshell-dark` (canonical Eggshell Bright Tech) + `velara-light`/`velara-dark` (legacy). `:root` mirrors `eggshell-light` as the default fallback for browsers that haven't received the `data-theme` attribute yet.
 
 ---
 

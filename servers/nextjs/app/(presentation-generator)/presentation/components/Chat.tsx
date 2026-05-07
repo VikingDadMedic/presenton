@@ -178,7 +178,7 @@ type ChatProps = {
 };
 
 const AssistantMarker = () => (
-  <div className="mb-3 flex items-center gap-1.5 text-[#A4A7AE]">
+  <div className="mb-3 flex items-center gap-1.5 text-muted-foreground">
     <MessageCircleMore className="h-4 w-4" />
     <ChevronRight className="h-3 w-3" />
   </div>
@@ -640,10 +640,10 @@ const Chat = ({
   };
 
   return (
-    <div className="flex h-full w-full flex-col bg-white">
+    <div className="flex h-full w-full flex-col bg-card">
       <div className="flex items-center justify-between px-4 pt-8">
         <div className="flex items-center gap-2">
-          <h4 className="flex items-center gap-2 text-sm font-semibold text-[#101828]">
+          <h4 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <span className="text-primary">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -676,7 +676,7 @@ const Chat = ({
           type="button"
           onClick={resetChat}
           disabled={isSending || isHistoryLoading}
-          className="rounded-full p-1 text-[#8C8C8C] transition-colors hover:bg-[#F7F7F7] hover:text-[#191919] disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="Reset chat"
           title="Reset chat"
         >
@@ -691,14 +691,14 @@ const Chat = ({
         className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-9 hide-scrollbar"
       >
         {isHistoryLoading && messages.length === 0 ? (
-          <div className="flex items-center justify-center py-8 text-sm text-[#99A1AF]">
+          <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Loading chat…
           </div>
         ) : messages.length === 0 ? (
           <>
             <div>
-              <h4 className="mb-2 text-[10px] font-normal leading-[15px] tracking-[0.367px] text-[#99A1AF]">
+              <h4 className="mb-2 text-[10px] font-normal leading-[15px] tracking-[0.367px] text-muted-foreground">
                 SUGGESTIONS
               </h4>
               <div className="flex flex-col gap-1.5">
@@ -707,12 +707,12 @@ const Chat = ({
                     key={suggestion.id}
                     type="button"
                     onClick={() => applyPrompt(suggestion.suggestion)}
-                    className="flex cursor-pointer items-center gap-3 rounded-[10px] border border-[#F4F4F4] px-3 py-2 text-left transition-colors hover:bg-[#FAFAFA]"
+                    className="flex cursor-pointer items-center gap-3 rounded-[10px] border border-border px-3 py-2 text-left transition-colors hover:bg-muted"
                   >
                     <span className={suggestion.iconClassName}>
                       {suggestion.icon}
                     </span>
-                    <span className="text-xs font-normal leading-[15px] tracking-[0.367px] text-[#364153]">
+                    <span className="text-xs font-normal leading-[15px] tracking-[0.367px] text-foreground">
                       {suggestion.suggestion}
                     </span>
                   </button>
@@ -721,7 +721,7 @@ const Chat = ({
             </div>
 
             <div className="mt-10">
-              <h4 className="mb-2 text-[10px] font-normal leading-[15px] tracking-[0.367px] text-[#99A1AF]">
+              <h4 className="mb-2 text-[10px] font-normal leading-[15px] tracking-[0.367px] text-muted-foreground">
                 QUICK PROMPTS
               </h4>
               <div className="flex flex-wrap gap-2">
@@ -730,9 +730,9 @@ const Chat = ({
                     key={prompt}
                     type="button"
                     onClick={() => applyPrompt(prompt)}
-                    className="cursor-pointer rounded-[10px] border border-[#F4F4F4] px-2.5 py-1 transition-colors hover:bg-[#FAFAFA]"
+                    className="cursor-pointer rounded-[10px] border border-border px-2.5 py-1 transition-colors hover:bg-muted"
                   >
-                    <span className="text-xs font-normal leading-[15px] tracking-[0.367px] text-[#364153]">
+                    <span className="text-xs font-normal leading-[15px] tracking-[0.367px] text-foreground">
                       {prompt}
                     </span>
                   </button>
@@ -764,21 +764,21 @@ const Chat = ({
                         {message.content}
                       </div>
                     ) : (
-                      <div className="chat-markdown mb-0 text-sm font-normal leading-5 text-[#535862]">
+                      <div className="chat-markdown mb-0 text-sm font-normal leading-5 text-foreground">
                         <MarkdownRenderer
                           content={message.content}
-                          className="chat-markdown mb-0 text-sm font-normal leading-5 text-[#535862]"
+                          className="chat-markdown mb-0 text-sm font-normal leading-5 text-foreground"
                         />
                         {isSending && message.id === activeAssistantMessageId && (
                           <span
                             aria-hidden="true"
-                            className="ml-1 inline-block h-4 w-0.5 animate-pulse rounded-full bg-[#98A2B3] align-middle"
+                            className="ml-1 inline-block h-4 w-0.5 animate-pulse rounded-full bg-muted-foreground align-middle"
                           />
                         )}
                       </div>
                     )
                   ) : (
-                    <div className="text-sm font-normal leading-5 text-[#535862]">
+                    <div className="text-sm font-normal leading-5 text-foreground">
                       {isSending && message.role === "assistant"
                         ? message.activity?.[message.activity.length - 1]
                             ?.label || "Working on it..."
@@ -790,7 +790,7 @@ const Chat = ({
                       <button
                         type="button"
                         onClick={() => toggleActivityExpanded(message.id)}
-                        className="inline-flex items-center gap-1 text-left text-xs font-medium text-[#667085] hover:text-[#475467]"
+                        className="inline-flex items-center gap-1 text-left text-xs font-medium text-muted-foreground hover:text-foreground"
                       >
                         {expandedActivityByMessage[message.id] ? (
                           <ChevronDown className="h-3 w-3" />
@@ -801,7 +801,7 @@ const Chat = ({
                         {message.activity.some(
                           (item) => item.state === "running",
                         ) && (
-                          <Loader2 className="h-3 w-3 animate-spin text-[#98A2B3]" />
+                          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                         )}
                       </button>
 
@@ -810,10 +810,10 @@ const Chat = ({
                           {message.activity.map((activityItem) => (
                             <div
                               key={activityItem.id}
-                              className="text-xs leading-4 text-[#667085]"
+                              className="text-xs leading-4 text-muted-foreground"
                             >
                               {activityItem.tool && (
-                                <span className="mr-1 text-[#475467]">
+                                <span className="mr-1 text-foreground">
                                   {getToolLabel(activityItem.tool)}:
                                 </span>
                               )}
@@ -821,7 +821,7 @@ const Chat = ({
                             </div>
                           ))}
                           {message.toolCalls && message.toolCalls.length > 0 && (
-                            <div className="pt-0.5 text-[11px] text-[#98A2B3]">
+                            <div className="pt-0.5 text-[11px] text-muted-foreground">
                               Tools called: {message.toolCalls.join(", ")}
                             </div>
                           )}
@@ -841,7 +841,7 @@ const Chat = ({
       <form
         onSubmit={handleSubmit}
         aria-busy={isSending}
-        className="relative mx-4 mb-4 rounded-[8px] border border-[#F4F4F4] bg-white px-2.5 py-3"
+        className="relative mx-4 mb-4 rounded-[8px] border border-border bg-card px-2.5 py-3"
         style={{
           boxShadow: "0 4px 14px 0 rgba(0, 0, 0, 0.04)",
         }}
@@ -850,7 +850,7 @@ const Chat = ({
           ref={inputRef}
           name="chat-input"
           id="chat-input"
-          className="min-h-[92px] w-full resize-none bg-transparent pb-10 text-sm text-[#101828] placeholder:text-[#99A1AF] focus:outline-none focus:ring-0"
+          className="min-h-[92px] w-full resize-none bg-transparent pb-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0"
           rows={4}
           value={input}
           disabled={isSending || isHistoryLoading}
@@ -868,27 +868,27 @@ const Chat = ({
         <button
           type="button"
           disabled
-          className="absolute bottom-3 left-3 h-[28px] rounded-[64px] border border-[#EDEEEF] bg-white px-3 py-1 opacity-50"
+          className="absolute bottom-3 left-3 h-[28px] rounded-[64px] border border-border bg-card px-3 py-1 opacity-50"
           aria-label="Attach files"
           title="Attachments are not supported yet"
         >
-          <Plus className="h-3 w-3 text-black" />
+          <Plus className="h-3 w-3 text-foreground" />
         </button>
         {isSending ? (
           <div className="absolute bottom-3 right-3 flex items-center gap-2">
             <button
               type="button"
               disabled
-              className="flex cursor-wait items-center gap-1.5 rounded-[34px] border border-[#EAECF0] bg-[#F9FAFB] px-3 py-2 text-sm font-medium text-[#667085]"
+              className="flex cursor-wait items-center gap-1.5 rounded-[34px] border border-border bg-muted px-3 py-2 text-sm font-medium text-muted-foreground"
               aria-label="Chat is processing"
             >
-              <Loader2 className="h-3 w-3 animate-spin text-[#667085]" />
+              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
               Processing
             </button>
             <button
               type="button"
               onClick={stopStreaming}
-              className="flex items-center gap-1.5 rounded-[34px] border border-[#E4E7EC] bg-white px-3 py-2 text-sm font-medium text-[#344054] transition-colors hover:bg-[#F9FAFB]"
+              className="flex items-center gap-1.5 rounded-[34px] border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
               aria-label="Stop chat response"
             >
               <Square className="h-3 w-3 fill-current" />

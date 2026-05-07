@@ -209,7 +209,7 @@ export default function AuthGate() {
       <div className="pointer-events-none absolute -right-32 -top-32 h-[380px] w-[380px] rounded-full bg-primary/20 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-40 -left-32 h-[420px] w-[420px] rounded-full bg-primary/15 blur-3xl" />
 
-      <section className="relative z-10 w-full max-w-xl rounded-2xl border border-[#E1E1E5] bg-white/90 p-7 shadow-xl backdrop-blur-sm sm:p-10">
+      <section className="relative z-10 w-full max-w-xl rounded-2xl border border-border bg-card/90 p-7 shadow-xl backdrop-blur-sm sm:p-10">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center gap-4">
             <div className="flex h-[74px] w-[74px] shrink-0 items-center justify-center rounded-[4px] bg-card p-3">

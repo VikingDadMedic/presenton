@@ -244,9 +244,9 @@ const Toaster = ({ icons, ...props }: ToasterProps) => {
             toast: "group toast",
             description: "group-[.toast]:text-muted-foreground",
             actionButton:
-              "group-[.toast]:rounded-md group-[.toast]:border group-[.toast]:border-slate-200 group-[.toast]:bg-white group-[.toast]:text-slate-900 hover:group-[.toast]:bg-slate-50",
+              "group-[.toast]:rounded-md group-[.toast]:border group-[.toast]:border-border group-[.toast]:bg-card group-[.toast]:text-foreground hover:group-[.toast]:bg-muted",
             cancelButton:
-              "group-[.toast]:rounded-md group-[.toast]:border group-[.toast]:border-slate-200 group-[.toast]:bg-white group-[.toast]:text-slate-700 hover:group-[.toast]:bg-slate-50",
+              "group-[.toast]:rounded-md group-[.toast]:border group-[.toast]:border-border group-[.toast]:bg-card group-[.toast]:text-muted-foreground hover:group-[.toast]:bg-muted",
           },
         }}
         {...props}

@@ -435,7 +435,7 @@ const SettingsPage = () => {
             </div>
           </div>
 
-          {mode === 'nanobanana' && <div className=" w-full bg-[#F9F8F8] p-7 rounded-[20px]">
+          {mode === 'nanobanana' && <div className=" w-full bg-card p-7 rounded-[20px]">
             <h4>Nano Banana</h4>
           </div>}
           {mode === 'presenton' && selectedProvider === 'text-provider' && <TextProvider
@@ -454,7 +454,7 @@ const SettingsPage = () => {
             <div className="w-full max-w-lg space-y-5 rounded-[20px] border border-border bg-card p-7">
               <div>
                 <h4 className="font-unbounded text-lg font-normal text-foreground">Theme</h4>
-                <p className="mt-2 font-syne text-sm leading-relaxed text-[#494A4D]">
+                <p className="mt-2 font-syne text-sm leading-relaxed text-muted-foreground">
                   Choose how the app looks. Your preference is saved to this device.
                 </p>
               </div>
@@ -479,7 +479,7 @@ const SettingsPage = () => {
             <div className="w-full max-w-lg space-y-5 rounded-[20px] border border-border bg-card p-7">
               <div>
                 <h4 className="font-unbounded text-lg font-normal text-foreground">Sign out</h4>
-                <p className="mt-2 font-syne text-sm leading-relaxed text-[#494A4D]">
+                <p className="mt-2 font-syne text-sm leading-relaxed text-muted-foreground">
                   End your session on this deployment. You will need to sign in again to use the app and access the API.
                 </p>
               </div>

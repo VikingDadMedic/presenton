@@ -43,7 +43,7 @@ const PrivacySettings = () => {
 
   if (trackingEnabled === null) {
     return (
-      <div className="w-full bg-[#F9F8F8] p-7 rounded-[20px] flex items-center justify-center min-h-[200px]">
+      <div className="w-full bg-card p-7 rounded-[20px] flex items-center justify-center min-h-[200px]">
         <Loader2 className="w-5 h-5 animate-spin text-primary" />
       </div>
     );
@@ -51,11 +51,11 @@ const PrivacySettings = () => {
 
   return (
     <div className="w-full space-y-6">
-      <div className="bg-[#F9F8F8] p-7 rounded-[20px]">
-        <h4 className="text-sm font-semibold text-[#191919] mb-1">
+      <div className="bg-card p-7 rounded-[20px]">
+        <h4 className="text-sm font-semibold text-foreground mb-1">
           Usage analytics
         </h4>
-        <p className="text-xs text-[#6B7280] mb-6 leading-relaxed max-w-lg">
+        <p className="text-xs text-muted-foreground mb-6 leading-relaxed max-w-lg">
           Share anonymous usage data to help us improve TripStory. No personal information or presentation content is collected.
         </p>
 
@@ -63,7 +63,7 @@ const PrivacySettings = () => {
           <div>
             <label
               htmlFor="tracking-toggle"
-              className="text-sm font-medium text-[#191919] cursor-pointer select-none block"
+              className="text-sm font-medium text-foreground cursor-pointer select-none block"
             >
               Share anonymous usage data
             </label>

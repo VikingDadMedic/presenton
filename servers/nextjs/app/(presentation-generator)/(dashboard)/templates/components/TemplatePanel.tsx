@@ -74,7 +74,7 @@ export const CustomTemplateCard = React.memo(function CustomTemplateCard({ templ
 
     return (
         <Card
-            className="cursor-pointer flex flex-col shadow-none sm:shadow-none relative hover:-translate-y-1 hover:shadow-lg transition-all duration-200 group overflow-hidden rounded-[22px] border border-[#E8E9EC] bg-card"
+            className="cursor-pointer flex flex-col shadow-none sm:shadow-none relative hover:-translate-y-1 hover:shadow-lg transition-all duration-200 group overflow-hidden rounded-[22px] border border-border bg-card"
             onClick={handleOpen}
         >
             <TemplatePreviewStage>
@@ -141,7 +141,7 @@ const InbuiltTemplateCard = React.memo(function InbuiltTemplateCard({
     return (
         <Card
             key={template.id}
-            className="group relative cursor-pointer overflow-hidden rounded-[22px] border border-[#E8E9EC] bg-card shadow-none sm:shadow-none transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+            className="group relative cursor-pointer overflow-hidden rounded-[22px] border border-border bg-card shadow-none sm:shadow-none transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
             onClick={handleOpen}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
@@ -316,22 +316,22 @@ const LayoutPreview = () => {
             />
 
             <div className="l mx-auto px-6 py-8">
-                <div className='p-1 rounded-[40px] bg-[#ffffff] w-fit border border-border flex items-center justify-center '>
-                    <button className='px-5  py-2 text-xs font-medium text-[#3A3A3A] rounded-[70px]'
+                <div className='p-1 rounded-[40px] bg-card w-fit border border-border flex items-center justify-center '>
+                    <button className='px-5  py-2 text-xs font-medium text-muted-foreground rounded-[70px]'
                         onClick={() => { trackEvent(MixpanelEvent.Templates_Tab_Switched, { tab: 'custom' }); setTab('custom'); }}
                         style={{
                             background: tab === 'custom' ? 'var(--primary-5, rgba(154,106,26,0.05))' : 'transparent',
-                            color: tab === 'custom' ? 'var(--primary)' : '#3A3A3A'
+                            color: tab === 'custom' ? 'var(--primary)' : 'var(--muted-foreground)'
                         }}
                     >Custom</button>
                     <svg xmlns="http://www.w3.org/2000/svg" className='mx-1' width="2" height="17" viewBox="0 0 2 17" fill="none">
                         <path d="M1 0V16.5" stroke="#EDECEC" strokeWidth="2" />
                     </svg>
-                    <button className='px-5  py-2 text-xs font-medium text-[#3A3A3A] rounded-[70px]'
+                    <button className='px-5  py-2 text-xs font-medium text-muted-foreground rounded-[70px]'
                         onClick={() => { trackEvent(MixpanelEvent.Templates_Tab_Switched, { tab: 'default' }); setTab('default'); }}
                         style={{
                             background: tab === 'default' ? 'var(--primary-5, rgba(154,106,26,0.05))' : 'transparent',
-                            color: tab === 'default' ? 'var(--primary)' : '#3A3A3A'
+                            color: tab === 'default' ? 'var(--primary)' : 'var(--muted-foreground)'
                         }}
                     >Built-in</button>
                 </div>
@@ -405,7 +405,7 @@ const LayoutPreview = () => {
                                             );
                                             return (
                                                 <div key={category} className="space-y-8">
-                                                    <h4 className="text-base font-semibold text-[#101828] mb-2 font-display tracking-tight">
+                                                    <h4 className="text-base font-semibold text-foreground mb-2 font-display tracking-tight">
                                                         Travel
                                                     </h4>
                                                     {openArcs.length > 0 ? (
@@ -448,7 +448,7 @@ const LayoutPreview = () => {
 
                                         return (
                                             <div key={category}>
-                                                <h4 className="text-base font-semibold text-[#101828] mb-6 font-display tracking-tight">
+                                                <h4 className="text-base font-semibold text-foreground mb-6 font-display tracking-tight">
                                                     {category}
                                                 </h4>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -473,7 +473,7 @@ const LayoutPreview = () => {
                                     (template) => !template.settings?.category,
                                 ) && neoInbuilt.length > 0 ? (
                                     <div>
-                                        <h4 className="text-base font-semibold text-[#101828] mb-6 font-display tracking-tight">
+                                        <h4 className="text-base font-semibold text-foreground mb-6 font-display tracking-tight">
                                             Report
                                         </h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

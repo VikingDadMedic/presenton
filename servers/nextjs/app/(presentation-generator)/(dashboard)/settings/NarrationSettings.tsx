@@ -93,7 +93,7 @@ const NarrationSettings: React.FC<NarrationSettingsProps> = ({
   }, [llmConfig.ELEVENLABS_API_KEY]);
 
   return (
-    <div className="space-y-6 rounded-[12px] bg-[#F9F8F8] p-7">
+    <div className="space-y-6 rounded-[12px] bg-card p-7">
       <div className="rounded-xl border border-border bg-card px-5 py-4">
         <h4 className="font-unbounded text-base text-foreground">Narration</h4>
         <p className="mt-1 text-sm text-muted-foreground">

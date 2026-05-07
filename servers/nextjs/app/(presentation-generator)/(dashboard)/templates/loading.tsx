@@ -44,7 +44,7 @@ const Loading = () => {
             </div>
 
             <div className="mx-auto px-6 py-8">
-                <div className="p-1 rounded-lg bg-[#ffffff] w-fit border border-border flex items-center justify-center">
+                <div className="p-1 rounded-lg bg-card w-fit border border-border flex items-center justify-center">
                     <Skeleton className="h-8 w-20 rounded-md" />
                     <svg xmlns="http://www.w3.org/2000/svg" className="mx-1" width="2" height="17" viewBox="0 0 2 17" fill="none">
                         <path d="M1 0V16.5" stroke="#EDECEC" strokeWidth="2" />

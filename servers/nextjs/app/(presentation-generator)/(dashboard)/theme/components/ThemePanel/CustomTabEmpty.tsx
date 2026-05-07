@@ -19,7 +19,7 @@ const CustomTabEmpty = () => {
                     }}
                 ><div className='w-[26px] h-[26px] rounded-full bg-card flex items-center justify-center'>
 
-                        <Plus className='w-4 h-4 text-[#A2A0A1]' />
+                        <Plus className='w-4 h-4 text-muted-foreground' />
                     </div>
                 </div>
             </div>
@@ -29,8 +29,8 @@ const CustomTabEmpty = () => {
                     <Sparkles className='w-6 h-6 text-white' />
                 </div>
                 <div>
-                    <h4 className='text-[#191919] text-sm font-semibold '>Build Theme</h4>
-                    <p className='flex text-[#808080] text-sm  font-medium items-center gap-2'>From colors <ArrowRight className='w-3 h-3' /> fonts </p>
+                    <h4 className='text-foreground text-sm font-semibold '>Build Theme</h4>
+                    <p className='flex text-muted-foreground text-sm  font-medium items-center gap-2'>From colors <ArrowRight className='w-3 h-3' /> fonts </p>
                 </div>
 
             </div>

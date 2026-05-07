@@ -61,7 +61,7 @@ const DashboardPage: React.FC = () => {
     <div className="min-h-screen  w-full px-6 pb-10 relative">
       <div className="sticky top-0 right-0 z-50 py-[28px]   backdrop-blur mb-4 ">
         <div className="flex xl:flex-row flex-col gap-6 xl:gap-0 items-center justify-between">
-          <h3 className=" text-[28px] tracking-[-0.84px] font-display font-normal text-[#101828] flex items-center gap-2">
+          <h3 className=" text-[28px] tracking-[-0.84px] font-display font-normal text-foreground flex items-center gap-2">
 
             Slide Presentations
           </h3>

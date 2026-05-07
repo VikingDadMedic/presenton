@@ -20,7 +20,7 @@ const CreateCustomTemplate = () => {
                     }}
                 ><div className='w-[26px] h-[26px] rounded-full bg-card flex items-center justify-center'>
 
-                        <Plus className='w-4 h-4 text-[#A2A0A1]' />
+                        <Plus className='w-4 h-4 text-muted-foreground' />
                     </div>
                 </div>
             </div>
@@ -30,8 +30,8 @@ const CreateCustomTemplate = () => {
                     <Sparkles className='w-6 h-6 text-white' />
                 </div>
                 <div>
-                    <h4 className='text-[#191919] text-sm font-semibold '>Build Template</h4>
-                    <p className='flex text-[#808080] text-sm  font-medium items-center gap-2'>Build Your Own Template</p>
+                    <h4 className='text-foreground text-sm font-semibold '>Build Template</h4>
+                    <p className='flex text-muted-foreground text-sm  font-medium items-center gap-2'>Build Your Own Template</p>
                 </div>
 
             </div>

@@ -210,10 +210,10 @@ The enricher pipeline generates static map images via Google Maps Static API. Fo
 - Call 2 schema-aware layout assignment (include JSON schema fields in prompt, not just names/descriptions)
 
 ### UI & Design Backlog
-- Dark mode Phase 2: ~68 files with `bg-white`, ~59 files with hardcoded gray hex, 12 pill-shaped buttons blocking `defaultTheme` switch from `"light"` to `"dark"`
-- Eggshell Bright Tech theme system (multi-theme registry with palette swapper)
+- ~~Dark mode Phase 2~~ **SHIPPED 2026-05-07** across PRs #6/#7/#8 (UI/CSS Architectural Refactor — see [`AGENTS.md`](AGENTS.md) line 101). `defaultTheme` flipped to `eggshell-dark`; live counts: 5 `bg-white` files (intentional residuals), 0 hex tokens in `Chat.tsx`. Editor toolbar pill buttons (Theme/Narration) migrated to shadcn `<Button>` with `rounded-md`.
+- ~~Eggshell Bright Tech theme system~~ **SHIPPED** earlier in 2026 (4-theme registry with `eggshell-light`/`eggshell-dark`/`velara-light`/`velara-dark`).
 - Logo image assets in `/public/` still need TripStory visual replacements
-- Raw `<button>` -> shadcn `<Button>` migration (~150 instances)
+- Raw `<button>` -> shadcn `<Button>` migration (editor toolbar shipped in Phase A; ~30+ remaining instances are largely decorative/custom shapes — defer blanket migration)
 
 ---
 

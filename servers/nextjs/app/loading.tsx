@@ -61,7 +61,7 @@ const loading = () => {
             </main>
 
             {/* Fixed Bottom Button Skeleton */}
-            <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
+            <div className="flex-shrink-0 bg-card border-t border-border p-4">
                 <div className="container mx-auto max-w-3xl">
                     <div className="h-12 w-full bg-gray-200 animate-pulse rounded-lg" />
                 </div>

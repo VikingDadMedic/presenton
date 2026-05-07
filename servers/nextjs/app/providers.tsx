@@ -8,7 +8,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider
       attribute="data-theme"
-      defaultTheme="eggshell-light"
+      defaultTheme="eggshell-dark"
       themes={["eggshell-light", "eggshell-dark", "velara-light", "velara-dark"]}
       enableSystem={false}
       disableTransitionOnChange

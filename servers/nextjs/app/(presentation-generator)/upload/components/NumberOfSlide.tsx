@@ -34,7 +34,7 @@ const NumberOfSlide = ({ value, onValueChange }: { value: string, onValueChange:
             <SelectContent className="font-instrument_sans">
                 {/* Sticky custom input at the top */}
                 <div
-                    className="sticky top-0 z-10 bg-white  p-2 border-b"
+                    className="sticky top-0 z-10 bg-popover p-2 border-b"
                     onMouseDown={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={(e) => e.stopPropagation()}

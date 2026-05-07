@@ -154,34 +154,20 @@ test("PresentationHeader.tsx title h2 no longer hardcodes w-[450px] (responsive 
   );
 });
 
-test("PresentationPage.tsx slide-canvas column has min-w-0 to allow flex shrinking", () => {
+test("PresentationPage.tsx slide-canvas body retains min-w-0 for flex shrinking", () => {
   // Without `min-w-0` on a flex child, the default `min-width: auto` floor
   // prevents the column from shrinking below its content size, causing
   // horizontal overflow on a sticky toolbar at narrower viewports. The
-  // canonical responsive-flex fix is to add `min-w-0` to all shrink-eligible
-  // flex children.
+  // canonical responsive-flex fix is to add `min-w-0` to the shrink-eligible
+  // canvas wrapper. Phase B moved the structure into `<ResizablePanel>`
+  // children but the inner canvas wrapper must still carry min-w-0 to
+  // shrink correctly inside the panel.
   const source = readSource(PRESENTATION_PAGE_PATH);
-  const slideCanvasPattern =
-    /<div className="min-w-0 w-full h-\[calc\(100vh-20px\)\]/;
+  const slideCanvasPattern = /<div className="min-w-0 w-full h-screen/;
   assert.ok(
     slideCanvasPattern.test(source),
-    "PresentationPage.tsx slide-canvas column must include `min-w-0` so the " +
-      "column shrinks correctly inside the parent flex container.",
-  );
-});
-
-test("PresentationPage.tsx chat column uses shrink + min-w to prevent horizontal overflow", () => {
-  // The chat column was `shrink-0` (refused to shrink) which is a major
-  // contributor to the horizontal-clip bug. Migrating to `shrink min-w-[280px]`
-  // keeps a usable floor while letting the column give way when the toolbar
-  // grows. Phase B will replace this with a proper resizable panel; this
-  // is the minimal Phase A fix.
-  const source = readSource(PRESENTATION_PAGE_PATH);
-  const chatColumnPattern =
-    /max-w-\[370px\]\s+min-w-\[280px\]\s+h-full\s+shrink\s+self-start/;
-  assert.ok(
-    chatColumnPattern.test(source),
-    "PresentationPage.tsx desktop chat column must use `shrink min-w-[280px]` " +
-      "(not `shrink-0`) so it yields width to the toolbar at narrower viewports.",
+    "PresentationPage.tsx slide-canvas body wrapper must include `min-w-0 " +
+      "w-full h-screen` so the column shrinks correctly inside the parent " +
+      "flex/ResizablePanel container.",
   );
 });

@@ -59,6 +59,7 @@
   --color-premium: var(--premium);
   --color-premium-bg: var(--premium-bg);
 
+  --color-sidebar: var(--sidebar-background);
   --color-sidebar-background: var(--sidebar-background);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);

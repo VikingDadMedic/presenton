@@ -834,10 +834,10 @@ const PresentationHeader = ({
             "disabled:pointer-events-none disabled:opacity-100 disabled:hover:bg-transparent"
           )}
         >
-          <h2 className="min-w-0 flex-1 font-display text-lg w-[450px] leading-snug text-foreground">
+          <h2 className="min-w-0 flex-1 font-display leading-snug text-foreground">
             <MarkdownRenderer
               content={presentationData?.title || "Presentation"}
-              className="mb-0 min-w-0 overflow-hidden text-ellipsis line-clamp-1 text-sm text-foreground prose-p:my-0 prose-headings:my-0"
+              className="mb-0 min-w-0 overflow-hidden text-ellipsis line-clamp-1 text-sm font-semibold text-foreground prose-p:my-0 prose-headings:my-0"
             />
           </h2>
           {presentationData && !isStreaming && (
@@ -870,13 +870,15 @@ const PresentationHeader = ({
           {presentationData && presentationData.slides && presentationData.slides.length > 0 ? (
             <Popover open={narrationPopoverOpen} onOpenChange={setNarrationPopoverOpen}>
               <PopoverTrigger asChild>
-                <button
+                <Button
                   type="button"
-                  className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-md gap-2"
                 >
                   <Volume2 className="h-3.5 w-3.5 text-primary" />
                   Narration
-                </button>
+                </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-[360px] rounded-xl p-4">
                 <div className="space-y-4">
@@ -960,38 +962,52 @@ const PresentationHeader = ({
             </Popover>
           ) : null}
 
-          <div className="flex items-center gap-2 bg-muted px-3.5 h-[38px] border border-border rounded-lg">
+          <div className="flex items-center gap-1 bg-muted px-1.5 h-[38px] border border-border rounded-md">
 
             <ToolTip content="Regenerate Presentation">
-              <button type="button" onClick={handleReGenerate} className="group">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={handleReGenerate}
+                className="h-7 w-7 rounded-md group"
+              >
                 <MotionIcon name="RotateCcw" animation="spin" trigger="hover" size={14} />
-              </button>
+              </Button>
             </ToolTip>
             <Separator orientation="vertical" className="h-4" />
             <ToolTip content="Undo">
-              <button type="button" disabled={!canUndo} className=" disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group" onClick={() => {
-                onUndo();
-              }}>
-
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                disabled={!canUndo}
+                onClick={() => { onUndo(); }}
+                className="h-7 w-7 rounded-md group"
+              >
                 <MotionIcon name="Undo2" animation="swing" trigger="hover" size={14} />
-
-              </button>
+              </Button>
             </ToolTip>
             <Separator orientation="vertical" className="h-4" />
             <ToolTip content="Redo">
-
-              <button type="button" disabled={!canRedo} className=" disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group" onClick={() => {
-
-                onRedo();
-              }}>
-                <MotionIcon name="Redo2" animation="swing" trigger="hover" size={14} />
-
-              </button>
-            </ToolTip>
-            <Separator orientation="vertical" className="h-4 w-[2px]" />
-            <ToolTip content="Present">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-sm"
+                disabled={!canRedo}
+                onClick={() => { onRedo(); }}
+                className="h-7 w-7 rounded-md group"
+              >
+                <MotionIcon name="Redo2" animation="swing" trigger="hover" size={14} />
+              </Button>
+            </ToolTip>
+            <Separator orientation="vertical" className="h-4" />
+            <ToolTip content="Present">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                disabled={isStreaming || !presentationData?.slides || presentationData?.slides.length === 0}
                 onClick={() => {
                   const to = `?id=${presentation_id}&mode=present&slide=${currentSlide || 0}`;
                   trackEvent(MixpanelEvent.Presentation_Mode_Entered, {
@@ -1003,19 +1019,24 @@ const PresentationHeader = ({
                   trackEvent(MixpanelEvent.Navigation, { from: pathname, to });
                   router.push(to);
                 }}
-                disabled={isStreaming || !presentationData?.slides || presentationData?.slides.length === 0} className="cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group">
+                className="h-7 w-7 rounded-md group"
+              >
                 <MotionIcon name="Play" animation="pulse" trigger="hover" size={14} />
-              </button>
+              </Button>
             </ToolTip>
           </div>
 
           <Popover open={open} onOpenChange={setOpen} >
             <PopoverTrigger asChild>
-              <button type="button" className="flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-semibold bg-primary text-primary-foreground shadow-[var(--shadow-teal-soft)] hover:bg-primary/90 hover:-translate-y-0.5 transition-all"
+              <Button
+                type="button"
+                variant="default"
+                size="default"
                 disabled={isExporting || isStreaming === true}
+                className="gap-2 font-semibold"
               >
                 {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Export"} <ArrowRightFromLine className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-[200px] rounded-xl space-y-2 p-0  ">
               <ExportOptions mobile={false} />

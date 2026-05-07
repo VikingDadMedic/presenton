@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 import { Palette } from 'lucide-react';
 
 import { useDispatch } from 'react-redux';
@@ -46,9 +47,14 @@ const ThemeSelector = ({ current_theme, themes: allThemes }: { current_theme: an
     return (
         <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
-                <button className={`text-sm px-[18px] py-2.5 gap-1.5 flex items-center  border border-border bg-muted   duration-300 rounded-[88px] font-medium font-display ${isOpen ? 'text-primary' : 'text-foreground'}`}>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={`rounded-md gap-1.5 font-medium font-display ${isOpen ? 'text-primary' : 'text-foreground'}`}
+                >
                     <Palette className={`h-4 w-4 ${isOpen ? 'text-primary' : 'text-foreground'}`} /> Theme
-                </button>
+                </Button>
             </PopoverTrigger>
             <PopoverContent className="w-fit rounded-[18px] max-h-80 overflow-y-auto hide-scrollbar">
                 <div className='pb-2 flex  gap-2 justify-end'>

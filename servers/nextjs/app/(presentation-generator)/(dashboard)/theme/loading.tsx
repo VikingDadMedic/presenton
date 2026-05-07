@@ -34,9 +34,9 @@ const Loading = () => {
     return (
         <div className="space-y-6">
             {/* Tabs skeleton */}
-            <div className="p-1 rounded-lg bg-[#F7F6F9] w-fit border border-[#F4F4F4] flex items-center justify-center">
+            <div className="p-1 rounded-lg bg-muted w-fit border border-border flex items-center justify-center">
                 <Skeleton className="h-8 w-20 rounded-md" />
-                <div className="mx-1 w-[2px] h-[17px] bg-[#EDECEC]" />
+                <div className="mx-1 w-[2px] h-[17px] bg-border" />
                 <Skeleton className="h-8 w-20 rounded-md" />
             </div>
 

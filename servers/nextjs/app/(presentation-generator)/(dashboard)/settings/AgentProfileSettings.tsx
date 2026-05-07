@@ -187,7 +187,7 @@ const AgentProfileSettings = () => {
 
   if (loading) {
     return (
-      <div className="w-full rounded-[20px] bg-[#F9F8F8] p-7">
+      <div className="w-full rounded-[20px] bg-card p-7">
         <div className="flex min-h-[220px] items-center justify-center">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
@@ -197,9 +197,9 @@ const AgentProfileSettings = () => {
 
   return (
     <div className="w-full space-y-6">
-      <div className="rounded-[20px] bg-[#F9F8F8] p-7">
-        <h4 className="text-sm font-semibold text-[#191919]">Agent profile</h4>
-        <p className="mt-1 max-w-2xl text-xs leading-relaxed text-[#6B7280]">
+      <div className="rounded-[20px] bg-card p-7">
+        <h4 className="text-sm font-semibold text-foreground">Agent profile</h4>
+        <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
           These values are used as defaults for booking CTA slides and export
           branding layers. Leave a field blank if you want template defaults.
         </p>
@@ -215,7 +215,7 @@ const AgentProfileSettings = () => {
               key={field.key}
               className="flex flex-col gap-1.5 rounded-[10px] border border-border bg-card p-3"
             >
-              <span className="text-xs font-medium text-[#191919]">
+              <span className="text-xs font-medium text-foreground">
                 {field.label}
               </span>
               <input
@@ -230,14 +230,14 @@ const AgentProfileSettings = () => {
                 className="w-full rounded-md border border-border px-2.5 py-2 text-xs outline-none transition focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
               />
               {field.helper ? (
-                <span className="text-[11px] text-[#6B7280]">{field.helper}</span>
+                <span className="text-[11px] text-muted-foreground">{field.helper}</span>
               ) : null}
             </label>
           ))}
         </div>
 
         <div className="mt-5 flex items-center justify-between">
-          <p className="text-[11px] text-[#6B7280]">
+          <p className="text-[11px] text-muted-foreground">
             {lastSavedAt
               ? `Last saved at ${lastSavedAt.toLocaleTimeString()}`
               : "No changes saved in this session yet."}

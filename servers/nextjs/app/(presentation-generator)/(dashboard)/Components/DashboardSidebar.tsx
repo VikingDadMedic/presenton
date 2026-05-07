@@ -1,10 +1,10 @@
 "use client";
 
-import React from "react";
-import { LayoutDashboard, Star, Brain, Settings, Palette, HelpCircle, Megaphone, History, Bookmark } from "lucide-react";
+import { LayoutDashboard, Palette, Megaphone, History, Bookmark } from "lucide-react";
 import { MotionIcon } from "motion-icons-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 import {
     Sidebar,
@@ -16,6 +16,7 @@ import {
     SidebarMenuItem,
     SidebarRail,
 } from "@/components/ui/sidebar";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 
 export const defaultNavItems = [
     { key: "dashboard" as const, label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", motionIcon: "LayoutDashboard" },
@@ -25,24 +26,20 @@ export const defaultNavItems = [
     { key: "theme" as const, label: "Themes", icon: Palette, href: "/theme", motionIcon: "Palette" },
 ];
 
-export const BelongingNavItems = [
-    { key: "settings" as const, label: "Settings", icon: Settings },
-];
-
 const DashboardSidebar = () => {
     const pathname = usePathname();
 
     return (
         <Sidebar collapsible="icon" variant="sidebar" aria-label="Dashboard sidebar">
             <SidebarHeader className="px-2 pt-3 pb-1">
-                <Link href="/dashboard" className="flex items-center justify-center">
-                    <div className="bg-primary rounded-lg cursor-pointer p-1 flex justify-center items-center w-full max-w-[44px] aspect-square">
-                        <img
-                            src="/logo-with-bg.png"
-                            alt="TripStory logo"
-                            className="h-7 w-7 object-contain"
-                        />
-                    </div>
+                <Link href="/dashboard" className="flex items-center justify-center px-2">
+                    <Image
+                        src="/logo-light.svg"
+                        alt="TripStory"
+                        width={108}
+                        height={28}
+                        className="h-7 w-auto cursor-pointer object-contain"
+                    />
                 </Link>
             </SidebarHeader>
             <SidebarContent className="font-display">
@@ -74,7 +71,9 @@ const DashboardSidebar = () => {
                 </SidebarMenu>
             </SidebarContent>
             <SidebarFooter className="px-2 pb-3">
-                {/* Settings link hidden for TripStory; reserved slot for future per-AGENTS.md */}
+                <div className="flex justify-center">
+                    <ThemeSwitcher compact />
+                </div>
             </SidebarFooter>
             <SidebarRail />
         </Sidebar>

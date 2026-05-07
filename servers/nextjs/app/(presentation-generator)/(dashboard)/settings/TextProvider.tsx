@@ -250,7 +250,7 @@ const TextProvider = ({
     }, [selectedProvider, modelsChecked, modelsLoading]);
 
     return (
-        <div className="space-y-6 bg-[#F9F8F8] p-7 rounded-[12px] ">
+        <div className="space-y-6 bg-card p-7 rounded-[12px] ">
             {/* API Key Input */}
             <div className="mb-4 flex items-end justify-between rounded-[12px] bg-card pt-5 pb-10 px-10">
                 <div className=" max-w-[290px] ">
@@ -263,7 +263,7 @@ const TextProvider = ({
                             <path d="M11.9594 26.5762H19.9324" stroke="#4C5554" strokeWidth="1.59459" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     </div>
-                    <h3 className="text-xl font-normal text-[#191919] py-2.5">Text Generation Settings</h3>
+                    <h3 className="text-xl font-normal text-foreground py-2.5">Text Generation Settings</h3>
                     <p className=" text-sm  text-muted-foreground">
                         Choosing where text content comes from
                     </p>
@@ -569,7 +569,7 @@ const TextProvider = ({
             {/* <div className="bg-card flex justify-between items-center p-10 rounded-[12px]">
                 <div className=' max-w-[290px]'>
 
-                    <h4 className="text-xl font-normal text-[#191919]">Advanced</h4>
+                    <h4 className="text-xl font-normal text-foreground">Advanced</h4>
                     <p className="mt-2.5 text-sm  text-muted-foreground">
                         Configure advanced AI features.
                     </p>

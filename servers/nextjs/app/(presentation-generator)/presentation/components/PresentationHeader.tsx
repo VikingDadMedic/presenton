@@ -6,6 +6,7 @@ import {
   Redo2,
   Undo2,
   RotateCcw,
+  ArrowLeft,
   ArrowRightFromLine,
   ArrowUpRight,
   Pencil,
@@ -18,6 +19,7 @@ import {
 import { MotionIcon } from "motion-icons-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import {
   Popover,
   PopoverContent,
@@ -48,6 +50,7 @@ import { Theme } from "../../services/api/types";
 import MarkdownRenderer from "@/components/MarkDownRender";
 import { cn } from "@/lib/utils";
 import EmbedShareDialog from "./EmbedShareDialog";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import VoicePicker from "@/components/narration/VoicePicker";
 import TonePresetPicker from "@/components/narration/TonePresetPicker";
 import {
@@ -854,11 +857,20 @@ const PresentationHeader = ({
   return (
     <>
       <div className="py-7 sticky top-0 bg-background z-50 mb-[17px] font-display flex justify-between items-center gap-4">
-        {presentationData && !isStreaming && !isEditingTitle ? (
-          <ToolTip content="Rename presentation">{titleBlock}</ToolTip>
-        ) : (
-          titleBlock
-        )}
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <ToolTip content="Back to dashboard">
+            <Button type="button" variant="ghost" size="icon-sm" asChild>
+              <Link href="/dashboard" aria-label="Back to dashboard">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </Button>
+          </ToolTip>
+          {presentationData && !isStreaming && !isEditingTitle ? (
+            <ToolTip content="Rename presentation">{titleBlock}</ToolTip>
+          ) : (
+            titleBlock
+          )}
+        </div>
 
         <div className="flex items-center gap-2.5">
 
@@ -866,6 +878,7 @@ const PresentationHeader = ({
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
           </div>}
           {presentationData && presentationData.slides && presentationData.slides.length > 0 && !presentationData.slides[0]?.layout?.includes("custom") && <ThemeSelector current_theme={presentationData?.theme || {}} themes={themes} />}
+          <ThemeSwitcher compact />
 
           {presentationData && presentationData.slides && presentationData.slides.length > 0 ? (
             <Popover open={narrationPopoverOpen} onOpenChange={setNarrationPopoverOpen}>

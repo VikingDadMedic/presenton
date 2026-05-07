@@ -14,7 +14,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,6 +71,17 @@ function countMatchingFiles(pattern) {
   return matches.size;
 }
 
+function countMatchingFilesWithin(rootRelativePath, pattern) {
+  const matches = new Set();
+  for (const file of walkSourceFiles(rootRelativePath)) {
+    const source = readFileSync(file, "utf8");
+    if (pattern.test(source)) {
+      matches.add(file);
+    }
+  }
+  return matches.size;
+}
+
 test("Dark Mode Phase 2: bg-white file count stays at or below sweep floor", () => {
   // Threshold is the current floor (5) + small headroom (1) = 6. Each new
   // `bg-white` adoption above the threshold means the sweep is regressing.
@@ -96,7 +107,7 @@ test("Dark Mode Phase 2: arbitrary grayscale hex token count stays at or below s
   // strings, embed player overlay shadows). New components must use
   // theme tokens.
   const count = countMatchingFiles(/\[#[0-9A-Fa-f]{3,6}\]/);
-  const THRESHOLD = 50;
+  const THRESHOLD = 40;
   assert.ok(
     count <= THRESHOLD,
     `Arbitrary hex token file count is ${count}, threshold is ${THRESHOLD}. ` +
@@ -162,5 +173,17 @@ test("Dark Mode Phase 2: Chat.tsx grayscale hex tokens fully swept", () => {
     0,
     `Chat.tsx must contain ZERO arbitrary hex grayscale tokens after Phase C.4 ` +
       `sweep. Found: ${hexTokens.join(", ")}`,
+  );
+});
+
+test("Dark Mode Phase E.0: dashboard files do not use text-[#101828]", () => {
+  const count = countMatchingFilesWithin(
+    path.join("app", "(presentation-generator)", "(dashboard)"),
+    /text-\[#101828\]/,
+  );
+  assert.strictEqual(
+    count,
+    0,
+    "Dashboard route files must not hardcode `text-[#101828]` after Phase E.0.",
   );
 });

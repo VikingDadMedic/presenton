@@ -26,7 +26,13 @@ import type { ImperativePanelHandle } from "react-resizable-panels";
 import { useIsMobile } from "@/lib/use-is-mobile";
 import { usePathname, useRouter } from "next/navigation";
 import { trackEvent, MixpanelEvent } from "@/utils/mixpanel";
-import { AlertCircle, MessageCircle, PanelLeftOpen } from "lucide-react";
+import {
+  AlertCircle,
+  MessageCircle,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+} from "lucide-react";
 import {
   usePresentationStreaming,
   usePresentationData,
@@ -303,12 +309,24 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
               onCollapse={() => setIsThumbnailsCollapsed(true)}
               onExpand={() => setIsThumbnailsCollapsed(false)}
             >
-              <SidePanel
-                selectedSlide={selectedSlide}
-                onSlideClick={handleSlideClick}
-                presentationId={presentation_id}
-                loading={loading}
-              />
+              <div className="relative h-full">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="absolute right-2 top-2 z-20 h-6 w-6"
+                  onClick={() => thumbnailsPanelRef.current?.collapse()}
+                  aria-label="Collapse thumbnails"
+                >
+                  <PanelLeftClose className="h-3.5 w-3.5" />
+                </Button>
+                <SidePanel
+                  selectedSlide={selectedSlide}
+                  onSlideClick={handleSlideClick}
+                  presentationId={presentation_id}
+                  loading={loading}
+                />
+              </div>
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={60} minSize={40} className="min-w-0">
@@ -325,11 +343,23 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
               onCollapse={() => setIsChatCollapsed(true)}
               onExpand={() => setIsChatCollapsed(false)}
             >
-              <Chat
-                presentationId={presentation_id}
-                currentSlide={selectedSlide}
-                onPresentationChanged={fetchUserSlides}
-              />
+              <div className="relative h-full">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="absolute right-2 top-2 z-20 h-6 w-6"
+                  onClick={() => chatPanelRef.current?.collapse()}
+                  aria-label="Collapse chat"
+                >
+                  <PanelRightClose className="h-3.5 w-3.5" />
+                </Button>
+                <Chat
+                  presentationId={presentation_id}
+                  currentSlide={selectedSlide}
+                  onPresentationChanged={fetchUserSlides}
+                />
+              </div>
             </ResizablePanel>
           </ResizablePanelGroup>
 

@@ -1,7 +1,7 @@
 function Shimmer({ className }: { className?: string }) {
     return (
         <div
-            className={`bg-[#E1E1E5] animate-pulse rounded-md ${className ?? ""}`}
+            className={`bg-border animate-pulse rounded-md ${className ?? ""}`}
             aria-hidden
         />
     );
@@ -22,8 +22,8 @@ export default function LoadingSettings() {
 
             <main className="w-full mx-auto gap-6 overflow-hidden flex">
                 {/* SettingSideBar structure */}
-                <div className="w-full max-w-[230px] h-screen px-4 pt-[22px] bg-[#F9FAFB] flex flex-col shrink-0">
-                    <div className="mt-[3.15rem] border-b border-[#E1E1E5] pb-3.5">
+                <div className="w-full max-w-[230px] h-screen px-4 pt-[22px] bg-muted flex flex-col shrink-0">
+                    <div className="mt-[3.15rem] border-b border-border pb-3.5">
                         <Shimmer className="h-3 w-16" />
                     </div>
                     <div className="mt-6 flex-1 min-h-0">
@@ -45,7 +45,7 @@ export default function LoadingSettings() {
                             ))}
                         </div>
                     </div>
-                    <div className="border-t border-[#E1E1E5] py-5">
+                    <div className="border-t border-border py-5">
                         <Shimmer className="h-3 w-12 mb-2.5" />
                         <div className="w-full rounded-[6px] p-3 py-4 flex items-center gap-1.5 border border-border bg-card">
                             <Shimmer className="h-6 w-6 rounded-full shrink-0" />
@@ -63,7 +63,7 @@ export default function LoadingSettings() {
                         </div>
                     </div>
 
-                    <div className="space-y-6 bg-[#F9F8F8] p-7 rounded-[12px] pr-4 sm:pr-7">
+                    <div className="space-y-6 bg-card p-7 rounded-[12px] pr-4 sm:pr-7">
                         {/* TextProvider top card: white panel, icon + copy left, controls right */}
                         <div className="mb-4 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 rounded-[12px] bg-card pt-5 pb-10 px-6 sm:px-10">
                             <div className="max-w-[290px] shrink-0">

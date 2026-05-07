@@ -111,7 +111,7 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
 
 
     return (
-        <div className="space-y-6 bg-[#F9F8F8] p-7 rounded-[12px] ">
+        <div className="space-y-6 bg-card p-7 rounded-[12px] ">
             {/* API Key Input */}
             <div className="mb-4  bg-card p-10 pt-5 rounded-[12px]">
                 <ToolTip content="Enable/Disable Image Generation" className='flex justify-end items-center'>
@@ -133,7 +133,7 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
                         >
                             <img src="/image-markup.svg" className='w-full h-full object-cover' alt='image-markup' />
                         </div>
-                        <h3 className="text-xl font-normal text-[#191919] py-2.5">Image Generation Settings</h3>
+                        <h3 className="text-xl font-normal text-foreground py-2.5">Image Generation Settings</h3>
                         <p className=" text-sm  text-muted-foreground">
                             Choosing where images come from
                         </p>
@@ -382,7 +382,7 @@ const ImageProvider = ({ llmConfig, setLlmConfig }: { llmConfig: LLMConfig, setL
             {/* <div className="bg-card flex justify-between items-center p-10 rounded-[12px]">
                 <div className=' max-w-[290px]'>
 
-                    <h4 className="text-xl font-normal text-[#191919]">Advanced</h4>
+                    <h4 className="text-xl font-normal text-foreground">Advanced</h4>
                     <p className="mt-2.5 text-sm  text-muted-foreground">
                         Configure advanced AI features.
                     </p>

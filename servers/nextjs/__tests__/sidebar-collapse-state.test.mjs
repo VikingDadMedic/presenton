@@ -62,7 +62,7 @@ test("sidebar.tsx writes to document.cookie inside SidebarProvider's setOpen", (
   const cookieWritePattern = /document\.cookie\s*=\s*[`"'][^`"']*\$\{SIDEBAR_COOKIE_NAME\}/;
   assert.ok(
     cookieWritePattern.test(source),
-    "sidebar.tsx must write `document.cookie = `${SIDEBAR_COOKIE_NAME}=...`` " +
+    "sidebar.tsx must write `document.cookie = SIDEBAR_COOKIE_NAME=...` " +
       "inside SidebarProvider's setOpen so collapse state persists across reloads.",
   );
 });
@@ -94,18 +94,18 @@ test("sidebar.tsx exports the canonical primitives the editor + dashboard rely o
 });
 
 test("dashboard layout.tsx forwards persisted cookie value to SidebarProvider defaultOpen", () => {
-  // The default is `true` (sidebar starts expanded). Only flip to false
-  // if the cookie explicitly says 'false'. This means a brand-new visitor
-  // (no cookie) sees the expanded sidebar — discoverable default.
+  // Phase E.1d flips the dashboard default to collapsed. Only expand the
+  // sidebar if the cookie explicitly says 'true'. This prevents first-load
+  // card-grid squeezing in dashboard views.
   const source = readSource(DASHBOARD_LAYOUT_PATH);
   const defaultOpenLogicPattern =
-    /defaultOpen\s*=\s*sidebarStateCookie\?\.value\s*!==\s*['"]false['"]/;
+    /defaultOpen\s*=\s*sidebarStateCookie\?\.value\s*===\s*['"]true['"]/;
   assert.ok(
     defaultOpenLogicPattern.test(source),
     "(dashboard)/layout.tsx must compute defaultOpen as " +
-      "`sidebarStateCookie?.value !== 'false'` so a new visitor sees the " +
-      "expanded sidebar (discoverable default) and only collapses if the " +
-      "user explicitly toggled it.",
+      "`sidebarStateCookie?.value === 'true'` so a new visitor starts in " +
+      "collapsed icon mode and only sees the expanded sidebar after an " +
+      "explicit user preference.",
   );
 });
 

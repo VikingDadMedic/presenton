@@ -284,8 +284,26 @@ const Chat = ({
   }, [presentationId]);
 
   useEffect(() => {
+    if (messages.length === 0 && !isSending) {
+      return;
+    }
     messagesEndRef.current?.scrollIntoView({ block: "end" });
-  }, [messages, isSending]);
+  }, [messages.length, isSending]);
+
+  useEffect(() => {
+    if (!isSending || !activeAssistantMessageId) {
+      return;
+    }
+    setExpandedActivityByMessage((previous) => {
+      if (previous[activeAssistantMessageId]) {
+        return previous;
+      }
+      return {
+        ...previous,
+        [activeAssistantMessageId]: true,
+      };
+    });
+  }, [isSending, activeAssistantMessageId]);
 
   const buildBackendMessage = (message: string) => {
     if (typeof currentSlide !== "number") {
@@ -523,11 +541,6 @@ const Chat = ({
             : message,
         ),
       );
-      setExpandedActivityByMessage((previous) => {
-        const next = { ...previous };
-        delete next[assistantMessageId];
-        return next;
-      });
       const serverConversationId =
         typeof response.conversation_id === "string"
           ? response.conversation_id
@@ -573,11 +586,6 @@ const Chat = ({
               : message,
           ),
         );
-        setExpandedActivityByMessage((previous) => {
-          const next = { ...previous };
-          delete next[assistantMessageId];
-          return next;
-        });
         return;
       }
 
@@ -595,11 +603,6 @@ const Chat = ({
             : entry,
         ),
       );
-      setExpandedActivityByMessage((previous) => {
-        const next = { ...previous };
-        delete next[assistantMessageId];
-        return next;
-      });
       setErrorMessage(message);
       setMessages((previous) => [
         ...previous,

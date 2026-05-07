@@ -1,16 +1,16 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import { cookies } from 'next/headers';
 import DashboardSidebar from './Components/DashboardSidebar';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 
-const Layout = async ({ children }: { children: React.ReactNode }) => {
+const Layout = async ({ children }: { children: ReactNode }) => {
     /** Read the persisted collapse state from the `sidebar:state` cookie so the
      * sidebar paints in the correct state on first server render — avoids the
      * "expand-then-collapse" flicker on a hard reload when the user previously
      * collapsed the rail. shadcn's standard cookie name is `sidebar:state`. */
     const cookieStore = await cookies();
     const sidebarStateCookie = cookieStore.get('sidebar:state');
-    const defaultOpen = sidebarStateCookie?.value !== 'false';
+    const defaultOpen = sidebarStateCookie?.value === 'true';
 
     return (
         <SidebarProvider defaultOpen={defaultOpen}>

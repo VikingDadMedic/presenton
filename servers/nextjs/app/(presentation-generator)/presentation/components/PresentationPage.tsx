@@ -169,7 +169,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             loading={loading}
           />
         </div>
-        <div className=" w-full h-[calc(100vh-20px)]  pr-[25px] pl-2 overflow-y-auto">
+        <div className="min-w-0 w-full h-[calc(100vh-20px)] pr-[25px] pl-2 overflow-y-auto">
           <PresentationHeader presentation_id={presentation_id} isPresentationSaving={isSaving} currentSlide={selectedSlide} />
           <div
 
@@ -273,7 +273,7 @@ const PresentationPage: React.FC<PresentationPageProps> = ({
             </SheetContent>
           </Sheet>
         ) : (
-          <div className="w-full max-w-[370px] h-full shrink-0 self-start sticky top-0 hidden md:block">
+          <div className="w-full max-w-[370px] min-w-[280px] h-full shrink self-start sticky top-0 hidden md:block">
             <Chat
               presentationId={presentation_id}
               currentSlide={selectedSlide}
